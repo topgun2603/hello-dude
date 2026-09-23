@@ -1,0 +1,384 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "CompanionHome.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "8 · Companion home",
+      "w": 390,
+      "x": 0,
+      "y": 1244
+    },
+    "Earnings.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "10 · Earnings",
+      "w": 390,
+      "x": 940,
+      "y": 1244
+    },
+    "Home.dc.html": {
+      "h": 844,
+      "radius": 36,
+      "title": "4 · Home",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "InCall.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "5 · In call",
+      "w": 390,
+      "x": 1880,
+      "y": 0
+    },
+    "Incoming.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "9 · Incoming call",
+      "w": 390,
+      "x": 470,
+      "y": 1244
+    },
+    "Language.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "3 · Choose language",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "1 · Sign up",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Otp.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "2 · Verify number",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Profile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "7 · Profile",
+      "w": 390,
+      "x": 2820,
+      "y": 0
+    },
+    "Wallet.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 36,
+      "title": "6 · Wallet",
+      "w": 390,
+      "x": 2350,
+      "y": 0
+    },
+    "Gifts.dc.html": {
+      "x": 0,
+      "y": 2488,
+      "w": 390,
+      "h": 844,
+      "title": "11 · Gifts in call",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "FirstRecharge.dc.html": {
+      "x": 470,
+      "y": 2488,
+      "w": 390,
+      "h": 844,
+      "title": "12 · First-recharge offer",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Favourites.dc.html": {
+      "x": 940,
+      "y": 2488,
+      "w": 390,
+      "h": 844,
+      "title": "13 · Favourites",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Schedule.dc.html": {
+      "x": 1410,
+      "y": 2488,
+      "w": 390,
+      "h": 844,
+      "title": "14 · Schedule a call",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Vip.dc.html": {
+      "x": 1880,
+      "y": 2488,
+      "w": 390,
+      "h": 844,
+      "title": "15 · VIP",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Chat.dc.html": {
+      "x": 0,
+      "y": 3732,
+      "w": 390,
+      "h": 844,
+      "title": "16 · Chat",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Notifications.dc.html": {
+      "x": 470,
+      "y": 3732,
+      "w": 390,
+      "h": 844,
+      "title": "17 · Notifications",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "CheckIn.dc.html": {
+      "x": 940,
+      "y": 3732,
+      "w": 390,
+      "h": 844,
+      "title": "18 · Daily bonus",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "RateCall.dc.html": {
+      "x": 1410,
+      "y": 3732,
+      "w": 390,
+      "h": 844,
+      "title": "19 · Rate call",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Referral.dc.html": {
+      "x": 1880,
+      "y": 3732,
+      "w": 390,
+      "h": 844,
+      "title": "20 · Invite friends",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Report.dc.html": {
+      "x": 0,
+      "y": 4976,
+      "w": 390,
+      "h": 844,
+      "title": "21 · Report in call",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "CallDetails.dc.html": {
+      "x": 470,
+      "y": 4976,
+      "w": 390,
+      "h": 844,
+      "title": "22 · Call details & refund",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "KycSelfie.dc.html": {
+      "x": 940,
+      "y": 4976,
+      "w": 390,
+      "h": 844,
+      "title": "23 · Companion selfie KYC",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Rewards.dc.html": {
+      "x": 0,
+      "y": 6220,
+      "w": 390,
+      "h": 844,
+      "title": "24 · Levels, goals & bonuses",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Training.dc.html": {
+      "x": 470,
+      "y": 6220,
+      "w": 390,
+      "h": 844,
+      "title": "25 · Companion academy",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "Rooms.dc.html": {
+      "x": 0,
+      "y": 7464,
+      "w": 390,
+      "h": 844,
+      "title": "26 · Voice rooms",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "RoomLive.dc.html": {
+      "x": 470,
+      "y": 7464,
+      "w": 390,
+      "h": 844,
+      "title": "27 · Live room",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "ShareCard.dc.html": {
+      "x": 940,
+      "y": 7464,
+      "w": 390,
+      "h": 844,
+      "title": "28 · Share card",
+      "is_interactive": true,
+      "radius": 36
+    },
+    "AdminDashboard.dc.html": {
+      "x": 0,
+      "y": 8708,
+      "w": 1440,
+      "h": 900,
+      "title": "29 · Admin dashboard",
+      "is_interactive": true
+    },
+    "AdminPayouts.dc.html": {
+      "x": 1520,
+      "y": 8708,
+      "w": 1440,
+      "h": 900,
+      "title": "30 · Payout approvals",
+      "is_interactive": true
+    },
+    "AdminPricing.dc.html": {
+      "x": 3040,
+      "y": 8708,
+      "w": 1440,
+      "h": 900,
+      "title": "31 · Pricing & experiments",
+      "is_interactive": true
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-23T10:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "companion": {
+      "kind": "title1",
+      "maxW": 1330,
+      "text": "Companion side",
+      "w": 240,
+      "x": 0,
+      "y": 984
+    },
+    "flow": {
+      "kind": "title1",
+      "maxW": 3210,
+      "text": "Onboarding & core flow",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "sec0": {
+      "x": 0,
+      "y": 2228,
+      "text": "Earn more per user",
+      "kind": "title1",
+      "maxW": 2270
+    },
+    "sec1": {
+      "x": 0,
+      "y": 3472,
+      "text": "Bring users back",
+      "kind": "title1",
+      "maxW": 2270
+    },
+    "sec2": {
+      "x": 0,
+      "y": 4716,
+      "text": "Safety & trust",
+      "kind": "title1",
+      "maxW": 1330
+    },
+    "sec3": {
+      "x": 0,
+      "y": 5960,
+      "text": "Companion growth",
+      "kind": "title1",
+      "maxW": 860
+    },
+    "sec4": {
+      "x": 0,
+      "y": 7204,
+      "text": "Group rooms & sharing",
+      "kind": "title1",
+      "maxW": 1330
+    },
+    "admin": {
+      "x": 0,
+      "y": 8448,
+      "text": "Admin panel (web)",
+      "kind": "title1",
+      "maxW": 4480
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Otp.dc.html",
+    "Language.dc.html",
+    "Home.dc.html",
+    "InCall.dc.html",
+    "Wallet.dc.html",
+    "Profile.dc.html",
+    "CompanionHome.dc.html",
+    "Incoming.dc.html",
+    "Earnings.dc.html",
+    "Gifts.dc.html",
+    "FirstRecharge.dc.html",
+    "Favourites.dc.html",
+    "Schedule.dc.html",
+    "Vip.dc.html",
+    "Chat.dc.html",
+    "Notifications.dc.html",
+    "CheckIn.dc.html",
+    "RateCall.dc.html",
+    "Referral.dc.html",
+    "Report.dc.html",
+    "CallDetails.dc.html",
+    "KycSelfie.dc.html",
+    "Rewards.dc.html",
+    "Training.dc.html",
+    "Rooms.dc.html",
+    "RoomLive.dc.html",
+    "ShareCard.dc.html",
+    "AdminDashboard.dc.html",
+    "AdminPayouts.dc.html",
+    "AdminPricing.dc.html"
+  ],
+  "pages": [],
+  "title": "Voice Chat App — Screens"
+}

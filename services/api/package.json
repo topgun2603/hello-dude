@@ -1,0 +1,51 @@
+{
+  "name": "@pesu/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "worker": "tsx --env-file=.env src/worker.ts",
+    "openapi": "tsx --env-file=.env scripts/export-openapi.ts",
+    "seed:dev": "tsx --env-file=.env scripts/seed-dev.ts",
+    "make-admin": "tsx --env-file=.env scripts/make-admin.ts",
+    "test-aadhaar": "tsx --env-file=.env scripts/make-test-aadhaar.ts",
+    "push:test": "tsx --env-file=.env scripts/push-test.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^9.9.0",
+    "@fastify/swagger-ui": "^6.1.1",
+    "@fastify/websocket": "^11.3.1",
+    "@xmldom/xmldom": "^0.9.12",
+    "@zip.js/zip.js": "^2.17.0",
+    "fastify": "^5.12.5",
+    "fastify-type-provider-zod": "^7.0.0",
+    "firebase-admin": "^14.4.0",
+    "ioredis": "^6.0.0",
+    "jose": "^6.2.12",
+    "livekit-server-sdk": "^2.19.1",
+    "pg": "^8.23.0",
+    "xml-crypto": "^6.3.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.1",
+    "selfsigned": "^5.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

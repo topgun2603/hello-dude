@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wallet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0A0A18;font-family:'Figtree','Segoe UI',system-ui,sans-serif;color:#FFFFFF}
+a{color:#F9A8D4}a:hover{color:#FBCFE8}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px 20px 24px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(circle at 110% 6%, rgba(236,72,153,0.38), transparent 30%), radial-gradient(circle at -12% 60%, rgba(124,58,237,0.42), transparent 32%), #0A0A18; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; color: #FFFFFF;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 48px;">
+    <a href="InCall.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 20px;">Wallet</h1>
+    <button type="button" aria-label="Help" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.4M12 17h.01"></path></svg>
+    </button>
+  </div>
+
+  <div style="margin-top: 16px; padding: 18px 20px; border-radius: 26px; position: relative; overflow: hidden; background: linear-gradient(125deg, #6D28D9, #C026D3 55%, #EA580C); box-shadow: 0 16px 40px rgba(192,38,211,0.3);">
+    <div style="position: absolute; right: -30px; top: -40px; width: 150px; height: 150px; border-radius: 75px; border: 1.5px solid rgba(255,255,255,0.22);"></div>
+    <div style="font-size: 13px; font-weight: 600; color: #FCE7F3;">Your balance</div>
+    <div style="margin-top: 6px; display: flex; align-items: center; gap: 10px;">
+      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#FBBF24"></circle><circle cx="12" cy="12" r="6.5" fill="none" stroke="#FEF3C7" stroke-width="1.6"></circle><path d="M12 8.5v7" stroke="#FEF3C7" stroke-width="1.8" stroke-linecap="round"></path></svg>
+      <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 38px; letter-spacing: -1px; line-height: 1;">10</div>
+      <div style="font-size: 16px; font-weight: 600; color: #FCE7F3; margin-top: 8px;">coins</div>
+    </div>
+    <div style="margin-top: 8px; font-size: 13.5px; color: #FDF2F8;">Enough for about 1 minute of voice calls</div>
+  </div>
+
+  <div style="margin-top: 22px; display: flex; align-items: baseline; justify-content: space-between;">
+    <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 17px;">Add coins</div>
+    <div style="font-size: 12.5px; color: #C9C5DD;">Paid securely via Google Play</div>
+  </div>
+
+  <div role="radiogroup" aria-label="Coin packs" style="margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+    <sc-for list="{{packs}}" as="k" hint-placeholder-count="6">
+      <button type="button" role="radio" aria-checked="{{k.checked}}" onClick="{{k.pick}}" style="position: relative; height: 94px; box-sizing: border-box; padding: 12px 8px 10px; border-radius: 18px; border: 2px solid {{k.border}}; background: {{k.bg}}; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: 'Figtree', 'Segoe UI', sans-serif; cursor: pointer;">
+        <sc-if value="{{k.hasTag}}" hint-placeholder-val="{{ false }}">
+          <span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 2px 8px; border-radius: 10px; background: linear-gradient(90deg, #DB2777, #EA580C); font-size: 10.5px; font-weight: 700; white-space: nowrap;">{{k.tag}}</span>
+        </sc-if>
+        <span style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 21px; line-height: 1.1;">{{k.coins}}</span>
+        <span style="font-size: 11.5px; color: #C9C5DD;">coins</span>
+        <span style="font-size: 13.5px; font-weight: 700; color: #F9A8D4;">₹[price]</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <button type="button" style="margin-top: 16px; height: 54px; border: 0; border-radius: 27px; background: linear-gradient(90deg, #7C3AED, #DB2777 55%, #EA580C); color: #FFFFFF; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-size: 16.5px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 28px rgba(219,39,119,0.35);">{{buyLabel}}</button>
+
+  <div style="margin-top: 22px; display: flex; align-items: baseline; justify-content: space-between;">
+    <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 17px;">Coin history</div>
+    <a href="#" style="font-size: 14px; font-weight: 600; text-decoration: none;">See all</a>
+  </div>
+
+  <div style="margin-top: 10px; border-radius: 20px; background: rgba(22,20,44,0.78); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; padding: 4px 14px;">
+    <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+      <div style="height: 58px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid {{h.divider}};">
+        <span style="width: 36px; height: 36px; border-radius: 18px; background: {{h.iconBg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{h.iconColor}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{h.icon}}"></path></svg>
+        </span>
+        <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+          <span style="font-size: 14.5px; font-weight: 600;">{{h.title}}</span>
+          <span style="font-size: 12.5px; color: #C9C5DD;">{{h.sub}}</span>
+        </span>
+        <span style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 15px; color: {{h.amountColor}};">{{h.amount}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { pack: 2 };
+  }
+  renderVals() {
+    const defs = [
+      { coins: 50, tag: '' },
+      { coins: 120, tag: '' },
+      { coins: 300, tag: 'Popular' },
+      { coins: 650, tag: '+10% bonus' },
+      { coins: 1400, tag: '' },
+      { coins: 3000, tag: 'Best value' }
+    ];
+    const packs = defs.map((d, i) => {
+      const on = this.state.pack === i;
+      return {
+        coins: d.coins.toLocaleString('en-IN'),
+        tag: d.tag,
+        hasTag: !!d.tag,
+        checked: on ? 'true' : 'false',
+        border: on ? '#EC4899' : 'rgba(255,255,255,0.12)',
+        bg: on ? 'rgba(236,72,153,0.16)' : 'rgba(22,20,44,0.78)',
+        pick: () => this.setState({ pack: i })
+      };
+    });
+    const chosen = defs[this.state.pack];
+    const rows = [
+      { title: 'Call with Priya', sub: 'In progress · 5 min billed', amount: '−50', type: 'call' },
+      { title: 'Coins added', sub: 'Today, 10:28 · Google Play', amount: '+50', type: 'add' },
+      { title: 'Welcome bonus', sub: 'Today, 10:15', amount: '+10', type: 'bonus' }
+    ];
+    const icons = {
+      call: { icon: 'M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z', bg: 'rgba(236,72,153,0.18)', color: '#F9A8D4' },
+      bonus: { icon: 'M4 11h16v10H4zM3 7h18v4H3zM12 7v14M12 7c-2-4-6-4-6-1.5S9 7 12 7c3 0 6-1 6-1.5S14 3 12 7', bg: 'rgba(96,165,250,0.18)', color: '#93C5FD' },
+      add: { icon: 'M12 5v14M5 12h14', bg: 'rgba(52,211,153,0.18)', color: '#6EE7B7' }
+    };
+    const history = rows.map((r, i) => ({
+      title: r.title,
+      sub: r.sub,
+      amount: r.amount,
+      icon: icons[r.type].icon,
+      iconBg: icons[r.type].bg,
+      iconColor: icons[r.type].color,
+      amountColor: r.type === 'call' ? '#FDA4AF' : '#6EE7B7',
+      divider: i === rows.length - 1 ? 'transparent' : 'rgba(255,255,255,0.08)'
+    }));
+    return {
+      packs,
+      history,
+      buyLabel: 'Add ' + chosen.coins.toLocaleString('en-IN') + ' coins'
+    };
+  }
+}
+</script>
+</body>
+</html>

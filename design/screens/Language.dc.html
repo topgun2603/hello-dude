@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose your language</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=Caveat:wght@500;600&amp;family=Noto+Sans+Tamil:wght@700&amp;family=Noto+Sans+Telugu:wght@700&amp;family=Noto+Sans+Kannada:wght@700&amp;family=Noto+Sans+Malayalam:wght@700&amp;family=Noto+Sans+Devanagari:wght@700&amp;family=Noto+Sans+Bengali:wght@700&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;font-family:'Figtree','Segoe UI',system-ui,sans-serif;color:#14122B}
+a{color:#6D28D9}a:hover{color:#5B21B6}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px 20px 96px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(circle at 100% 0%, rgba(236,72,153,0.08), transparent 40%), #FDFCFF; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; color: #14122B;">
+
+  <svg style="position: absolute; left: 0; bottom: 0;" width="390" height="130" viewBox="0 0 390 130" fill="none" aria-hidden="true">
+    <path d="M0 52c60-34 120 10 190 0s130-46 200-18v96H0z" fill="#EDE4FF"></path>
+    <path d="M0 84c70-26 130 18 200 6s120-40 190-14v54H0z" fill="#DCEBFF"></path>
+    <path d="M0 108c80-18 150 12 220 2s110-20 170-8v28H0z" fill="#F7E0F4"></path>
+  </svg>
+  <div style="position: absolute; right: 22px; bottom: 22px; display: flex; align-items: flex-end; gap: 6px; transform: rotate(-9deg);">
+    <div style="font-family: 'Caveat', cursive; font-size: 20px; line-height: 0.95; text-align: right; color: #3730A3;">Different languages,<br>same connection</div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#E11D48" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.4-9.3C1.2 8.3 3.4 4.5 7 4.5c2 0 3.6 1.1 5 2.8 1.4-1.7 3-2.8 5-2.8 3.6 0 5.8 3.8 4.4 7.2C19.5 16.4 12 21 12 21z"></path></svg>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 48px; position: relative;">
+    <a href="Otp.dc.html" aria-label="Back" style="width: 46px; height: 46px; border-radius: 23px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(20,18,43,0.1); display: flex; align-items: center; justify-content: center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14122B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <div style="display: flex; gap: 8px;" aria-label="Step 2 of 3">
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #D9D5EA;"></div>
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #7C3AED;"></div>
+      <div style="width: 8px; height: 8px; border-radius: 4px; background: #D9D5EA;"></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 32px; height: 32px; border-radius: 16px; background: linear-gradient(135deg, #7C3AED, #DB2777 55%, #F97316); display: flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"></path></svg>
+      </div>
+      <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 19px;">Pesu</div>
+    </div>
+  </div>
+
+  <h1 style="margin: 22px 0 0; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 30px; line-height: 1.14; letter-spacing: -0.8px; color: #14122B;">Which language <span style="background: linear-gradient(90deg, #4F46E5, #9333EA 50%, #DB2777); -webkit-background-clip: text; background-clip: text; color: transparent;">do you want to talk in?</span></h1>
+  <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.45; color: #4B4868;">We'll match you with people who speak it. You can change this later in settings.</p>
+
+  <div role="radiogroup" aria-label="Language" style="margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; position: relative;">
+    <sc-for list="{{langs}}" as="l" hint-placeholder-count="8">
+      <button type="button" role="radio" aria-checked="{{l.checked}}" onClick="{{l.pick}}" style="position: relative; height: 84px; box-sizing: border-box; padding: 10px 12px; border-radius: 20px; border: 2px solid {{l.border}}; background: {{l.bg}}; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; box-shadow: {{l.shadow}};">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="{{l.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{l.d}}"></path></svg>
+        <span style="display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-family: {{l.font}}; font-weight: 700; font-size: 18px; line-height: 1.25; color: #14122B;">{{l.native}}</span>
+          <span style="font-family: 'Figtree', 'Segoe UI', sans-serif; font-size: 13px; font-weight: 500; color: #4B4868;">{{l.english}}</span>
+        </span>
+        <sc-if value="{{l.selected}}" hint-placeholder-val="{{ false }}">
+          <span style="position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 11px; background: linear-gradient(135deg, #7C3AED, #DB2777); display: flex; align-items: center; justify-content: center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+          </span>
+        </sc-if>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <sc-if value="{{chosen}}" hint-placeholder-val="{{ true }}">
+    <a href="Home.dc.html" style="height: 56px; border-radius: 28px; background: linear-gradient(90deg, #7C3AED, #DB2777 55%, #EA580C); color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-size: 17px; font-weight: 700; text-decoration: none; box-shadow: 0 10px 28px rgba(219,39,119,0.3); position: relative;">
+      {{ctaLabel}}
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </a>
+  </sc-if>
+  <sc-if value="{{notChosen}}" hint-placeholder-val="{{ false }}">
+    <button type="button" disabled="{{ true }}" style="width: 100%; height: 56px; border: 0; border-radius: 28px; background: #E9E4F5; color: #4B4868; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-size: 17px; font-weight: 700; position: relative;">Pick a language</button>
+  </sc-if>
+
+  <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #4B4868; position: relative;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"></path></svg>
+    More languages coming soon
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { lang: 'ta' };
+  }
+  renderVals() {
+    const list = [
+      { id: 'ta', native: 'தமிழ்', english: 'Tamil', font: "'Noto Sans Tamil', sans-serif", color: '#7C3AED', bg: '#F3EEFF',
+        d: 'M8 40h28M11 40v-6h22v6M13 34l2-7h14l2 7M16 27l1.6-7h8.8l1.6 7M18.5 20l1.3-7h4.4l1.3 7M22 13V7M19 40v-4a3 3 0 0 1 6 0v4' },
+      { id: 'te', native: 'తెలుగు', english: 'Telugu', font: "'Noto Sans Telugu', sans-serif", color: '#EA580C', bg: '#FFF1E6',
+        d: 'M6 40h32M9 40V14M35 40V14M7 14h4M33 14h4M9 14c0-4 2-6 0-8M35 14c0-4-2-6 0-8M12 40V24h20v16M17 40v-8a5 5 0 0 1 10 0v8M12 24c3-5 17-5 20 0' },
+      { id: 'kn', native: 'ಕನ್ನಡ', english: 'Kannada', font: "'Noto Sans Kannada', sans-serif", color: '#059669', bg: '#E8F8F1',
+        d: 'M6 40h32M8 40V28h28v12M13 28v12M19 28v12M25 28v12M31 28v12M12 28a10 10 0 0 1 20 0M22 18v-6M20 12h4' },
+      { id: 'ml', native: 'മലയാളം', english: 'Malayalam', font: "'Noto Sans Malayalam', sans-serif", color: '#2563EB', bg: '#EAF1FE',
+        d: 'M24 33c0-8-2-14-6-18M18 15c-4-2-9 0-11 3M18 15c4-3 10-2 12 1M18 15c-1-4 1-8 5-9M18 15c-3-3-8-4-11-1M6 34h32l-5 6H11z' },
+      { id: 'hi', native: 'हिन्दी', english: 'Hindi', font: "'Noto Sans Devanagari', sans-serif", color: '#E11D48', bg: '#FDEDEF',
+        d: 'M6 40h32M10 40V16h24v24M8 16h28M16 40V28a6 6 0 0 1 12 0v12M12 12h20v4M16 12V8h12v4' },
+      { id: 'bn', native: 'বাংলা', english: 'Bengali', font: "'Noto Sans Bengali', sans-serif", color: '#D97706', bg: '#FEF5E4',
+        d: 'M3 32h38M3 37h38M9 37V14M35 37V14M9 14l13 10 13-10M9 22l13-6 13 6M15 32v-8M22 32v-8M29 32v-8' },
+      { id: 'mr', native: 'मराठी', english: 'Marathi', font: "'Noto Sans Devanagari', sans-serif", color: '#9333EA', bg: '#F5EDFD',
+        d: 'M6 40h32M8 40V20h28v20M18 40V30a4 4 0 0 1 8 0v10M8 20l2-4h24l2 4M11 16v-4M33 16v-4M22 16v-6M11 26h3M30 26h3' },
+      { id: 'en', native: 'English', english: 'English', font: "'Plus Jakarta Sans', sans-serif", color: '#0891B2', bg: '#E6F6FA',
+        d: 'M16 40h12M18 40V15h8v25M18 15l4-8 4 8M22 7V3M22 23a3 3 0 1 0 0-6 3 3 0 0 0 0 6M22 20v-1.5M20 30h4M20 35h4' }
+    ];
+    const langs = list.map((l) => {
+      const on = this.state.lang === l.id;
+      return {
+        native: l.native,
+        english: l.english,
+        font: l.font,
+        color: l.color,
+        d: l.d,
+        selected: on,
+        checked: on ? 'true' : 'false',
+        border: on ? '#8B5CF6' : 'transparent',
+        bg: l.bg,
+        shadow: on ? '0 8px 22px rgba(124,58,237,0.22)' : 'none',
+        pick: () => this.setState({ lang: l.id })
+      };
+    });
+    const chosen = list.find((l) => l.id === this.state.lang);
+    return {
+      langs,
+      chosen: !!chosen,
+      notChosen: !chosen,
+      ctaLabel: chosen ? 'Continue in ' + chosen.english : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

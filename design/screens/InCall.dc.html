@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voice call</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0A0A18;font-family:'Figtree','Segoe UI',system-ui,sans-serif;color:#FFFFFF}
+a{color:#F9A8D4}a:hover{color:#FBCFE8}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px 20px 30px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: stretch; background: radial-gradient(circle at 50% 30%, rgba(219,39,119,0.42), transparent 42%), radial-gradient(circle at 0% 100%, rgba(124,58,237,0.5), transparent 40%), radial-gradient(circle at 100% 95%, rgba(234,88,12,0.3), transparent 35%), #0A0A18; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; color: #FFFFFF;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 48px;">
+    <button type="button" aria-label="Minimise call" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+    </button>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: #D4D0E6;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+      Private voice call
+    </div>
+    <button type="button" aria-label="Report or block" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>
+    </button>
+  </div>
+
+  <div style="margin-top: 40px; height: 230px; position: relative; display: flex; align-items: center; justify-content: center;">
+    <div style="position: absolute; width: 228px; height: 228px; border-radius: 114px; border: 1px solid rgba(244,114,182,0.18);"></div>
+    <div style="position: absolute; width: 190px; height: 190px; border-radius: 95px; border: 1.5px solid rgba(244,114,182,0.3);"></div>
+    <div style="position: absolute; width: 154px; height: 154px; border-radius: 77px; background: rgba(236,72,153,0.16);"></div>
+    <div style="width: 124px; height: 124px; border-radius: 62px; background: linear-gradient(135deg, #EC4899, #9333EA); border: 3px solid rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 48px; box-shadow: 0 16px 40px rgba(236,72,153,0.5);">P</div>
+  </div>
+
+  <div style="margin-top: 14px; text-align: center; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.5px;">Priya</div>
+  <div style="margin-top: 4px; text-align: center; font-size: 14px; color: #D4D0E6;">Tamil · English</div>
+  <div style="margin-top: 14px; display: flex; justify-content: center;">
+    <div style="padding: 6px 14px; border-radius: 16px; background: rgba(255,255,255,0.1); font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 18px; letter-spacing: 1px;">04:32</div>
+  </div>
+
+  <svg style="margin: 18px auto 0; display: block;" width="200" height="36" viewBox="0 0 200 36" fill="none" aria-hidden="true">
+    <path d="M4 16v4M16 12v12M28 6v24M40 10v16M52 2v32M64 8v20M76 13v10M88 5v26M100 0v36M112 7v22M124 12v12M136 4v28M148 9v18M160 14v8M172 8v20M184 12v12M196 16v4" stroke="url(#wave)" stroke-width="4" stroke-linecap="round"></path>
+    <defs><linearGradient id="wave" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#C084FC"></stop><stop offset="0.5" stop-color="#F472B6"></stop><stop offset="1" stop-color="#FB923C"></stop></linearGradient></defs>
+  </svg>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="padding: 14px 14px 14px 16px; border-radius: 20px; background: rgba(245,158,11,0.14); border: 1px solid rgba(251,191,36,0.45); display: flex; align-items: center; gap: 12px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10" fill="#F59E0B"></circle><circle cx="12" cy="12" r="6.5" fill="none" stroke="#FDE68A" stroke-width="1.6"></circle><path d="M12 8.5v7" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round"></path></svg>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">About 1 min left</div>
+      <div style="font-size: 12.5px; color: #FDE68A;">10 coins left. Add coins to keep talking.</div>
+    </div>
+    <a href="Wallet.dc.html" style="height: 40px; padding: 0 14px; border-radius: 20px; background: #FBBF24; color: #1C1917; display: flex; align-items: center; font-size: 14px; font-weight: 700; text-decoration: none; flex-shrink: 0;">Add coins</a>
+  </div>
+
+  <div style="margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+    <sc-for list="{{controls}}" as="c" hint-placeholder-count="3">
+      <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.toggle}}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; border: 0; background: transparent; color: #FFFFFF; font-family: 'Figtree', 'Segoe UI', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;">
+        <span style="width: 60px; height: 60px; border-radius: 30px; background: {{c.bg}}; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{c.stroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg>
+        </span>
+        {{c.label}}
+      </button>
+    </sc-for>
+  </div>
+
+  <a href="Home.dc.html" aria-label="End call" style="margin: 22px auto 0; width: 76px; height: 76px; border-radius: 38px; background: linear-gradient(135deg, #FB7185, #E11D48); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(225,29,72,0.55);">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 9c-3.2 0-6.2.9-8.6 2.5-.6.4-.8 1.2-.5 1.8l1.2 2c.3.6 1 .8 1.6.6l2.7-1c.5-.2.8-.7.8-1.2v-1.6c1.8-.5 3.8-.5 5.6 0v1.6c0 .5.3 1 .8 1.2l2.7 1c.6.2 1.3 0 1.6-.6l1.2-2c.3-.6.1-1.4-.5-1.8C18.2 9.9 15.2 9 12 9z"></path></svg>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mute: false, speaker: true, video: false };
+  }
+  renderVals() {
+    const defs = [
+      { key: 'mute', label: 'Mute', on: 'Muted',
+        icon: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0zM5 11a7 7 0 0 0 14 0M12 18v3' },
+      { key: 'speaker', label: 'Speaker', on: 'Speaker',
+        icon: 'M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12' },
+      { key: 'video', label: 'Video', on: 'Video on',
+        icon: 'M2 6h14v12H2zM16 10.5l6-3.5v10l-6-3.5' }
+    ];
+    const controls = defs.map((d) => {
+      const on = !!this.state[d.key];
+      return {
+        label: on ? d.on : d.label,
+        icon: d.icon,
+        pressed: on ? 'true' : 'false',
+        bg: on ? '#FFFFFF' : 'rgba(255,255,255,0.1)',
+        stroke: on ? '#6D28D9' : '#FFFFFF',
+        toggle: () => this.setState({ [d.key]: !on })
+      };
+    });
+    return { controls };
+  }
+}
+</script>
+</body>
+</html>

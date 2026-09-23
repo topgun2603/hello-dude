@@ -1,0 +1,27 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+
+# Flutter
+apps/mobile/build/
+apps/mobile/android/build/
+apps/mobile/android/.kotlin/
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins*
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+
+# Next.js
+apps/admin/.next/
+infra/livekit.dev.yaml
+.data/
+
+# Secrets: Firebase/Google service-account keys
+service_account.json
+*service-account*.json
+# Firebase app config (API key); download from the Firebase console, see README
+apps/mobile/android/app/google-services.json

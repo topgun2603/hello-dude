@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev Call Console</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<style>
+  :root { --bg:#0A0A18; --card:rgba(22,20,44,.78); --line:rgba(255,255,255,.1); --text:#fff; --muted:#C9C5DD;
+          --green:#10B981; --green2:#0E7490; --danger:#E11D48; --warn:#F59E0B; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background: radial-gradient(circle at 100% 0%, rgba(16,185,129,.25), transparent 40%), var(--bg);
+         color:var(--text); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } .muted { color: var(--muted); font-size: 13.5px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin-top: 16px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+  button { border:0; border-radius: 999px; padding: 11px 18px; font: 600 15px system-ui; color:#fff; cursor:pointer;
+           background: linear-gradient(90deg, var(--green), var(--green2)); }
+  button.secondary { background: rgba(255,255,255,.1); border:1px solid var(--line); }
+  button.danger { background: var(--danger); }
+  button:disabled { opacity:.45; cursor: default; }
+  select { background:#16142C; color:#fff; border:1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; }
+  .pill { display:inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
+  .on { background: rgba(16,185,129,.2); color:#6EE7B7; } .off { background: rgba(255,255,255,.1); color: var(--muted); }
+  .ringing { animation: pulse 1s infinite; border-color: var(--green); }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(16,185,129,.15); } }
+  video { width: 100%; border-radius: 16px; background: #000; margin-top: 12px; max-height: 320px; }
+  #log { font: 12.5px/1.5 ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; max-height: 180px; overflow:auto; }
+  .big { font-size: 28px; font-weight: 800; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dev Call Console <span class="pill off">DEV ONLY</span></h1>
+  <div class="muted">Use this PC as the other side of a call with the phone app, with the PC's microphone and camera.
+    This page exists only while the API runs with OTP_PROVIDER=dev.</div>
+
+  <section class="card" id="login">
+    <div class="row">
+      <select id="who">
+        <optgroup label="Companion (answer the phone's calls)">
+        <option value="6000000001">Priya (Tamil, English)</option>
+        <option value="6000000002">Kavya (Tamil, English)</option>
+        <option value="6000000003">Divya (Tamil)</option>
+        <option value="6000000004">Meena (Tamil, Telugu)</option>
+        </optgroup>
+        <optgroup label="Caller (ring a companion on the phone)">
+          <option value="9000055555" data-caller="1">Dev caller (500 test coins)</option>
+        </optgroup>
+      </select>
+      <button id="signin">Sign in</button>
+    </div>
+    <div class="muted" style="margin-top:8px">Demo companions come from <code>npm run seed:dev</code>. Dev OTP is used automatically.</div>
+  </section>
+
+  <section class="card" id="status" hidden>
+    <div class="row" style="justify-content:space-between">
+      <div><div class="big" id="name"></div><span class="pill off" id="presence">Offline</span></div>
+      <button id="toggle">Go online</button>
+    </div>
+    <div class="muted" style="margin-top:8px">Earnings: <b id="earnings">–</b></div>
+  </section>
+
+  <section class="card" id="callerPanel" hidden>
+    <div class="row" style="justify-content:space-between">
+      <div><div class="big">Online companions</div><div class="muted">Tamil · refreshes every 5 s · <span id="coins"></span></div></div>
+    </div>
+    <div id="companionList" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card" id="incoming" hidden>
+    <div class="muted">Incoming <b id="inType"></b> call</div>
+    <div class="big" id="inName"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="accept">Accept</button>
+      <button class="danger" id="reject">Decline</button>
+    </div>
+  </section>
+
+  <section class="card" id="incall" hidden>
+    <div class="row" style="justify-content:space-between">
+      <div><div class="muted">In call with</div><div class="big" id="callName"></div></div>
+      <div class="big" id="timer">0:00</div>
+    </div>
+    <div class="muted" id="callState">Connecting…</div>
+    <video id="remote" autoplay playsinline hidden></video>
+    <div class="row" style="margin-top:12px">
+      <button class="secondary" id="mute">Mute</button>
+      <button class="danger" id="hangup">Hang up</button>
+    </div>
+  </section>
+
+  <section class="card"><div class="muted" style="margin-bottom:6px">Log</div><div id="log"></div></section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = async (method, path, body) => {
+  const res = await fetch("/v1" + path, {
+    method, headers: { "content-type": "application/json", ...(state.token ? { authorization: "Bearer " + state.token } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) throw new Error(data?.error?.message || res.statusText);
+  return data;
+};
+const log = (m) => { $("log").textContent = new Date().toLocaleTimeString() + "  " + m + "\n" + $("log").textContent; };
+const state = { token: null, online: false, heartbeat: null, ws: null, call: null, room: null, timer: null };
+
+$("signin").onclick = async () => {
+  const opt = $("who").selectedOptions[0];
+  const phone = opt.value;
+  state.caller = !!opt.dataset.caller;
+  try {
+    await api("POST", "/auth/otp/send", { phone }).catch((e) => { if (!/Wait/.test(e.message)) throw e; });
+    let r = await api("POST", "/auth/otp/verify", { phone, code: "123456" });
+    if (r.status !== "signed_in") {
+      if (!state.caller) throw new Error("This demo companion does not exist — run npm run seed:dev");
+      r = await api("POST", "/auth/signup", { signupToken: r.signupToken, gender: "male", language: "ta", displayName: "Dev caller", ageConfirmed: true });
+    }
+    state.token = r.tokens.accessToken;
+    $("login").hidden = true;
+    log("signed in as " + r.profile.displayName);
+    connectWs();
+    if (state.caller) { $("callerPanel").hidden = false; refreshCompanions(); setInterval(refreshCompanions, 5000); }
+    else { $("name").textContent = r.profile.displayName; $("status").hidden = false; refreshEarnings(); }
+  } catch (e) { log("sign-in failed: " + e.message); }
+};
+
+async function refreshCompanions() {
+  if (state.call) return;
+  const [list, wallet] = await Promise.all([api("GET", "/companions/online?language=ta"), api("GET", "/wallet")]);
+  $("coins").textContent = wallet.coins + " coins" + (wallet.coins < 10 ? " — run npm run seed:dev to top up" : "");
+  const box = $("companionList"); box.innerHTML = "";
+  if (!list.companions.length) box.innerHTML = '<div class="muted">Nobody online. On the phone: Companion home → switch Online.</div>';
+  for (const c of list.companions) {
+    const row = document.createElement("div"); row.className = "row"; row.style.margin = "8px 0";
+    // Names are user-entered: insert as text, never HTML.
+    const name = document.createElement("b"); name.style.flex = "1"; name.textContent = c.displayName;
+    const info = document.createElement("span"); info.className = "muted";
+    info.textContent = c.busy ? "in a call" : c.rates.audioCoinsPerMin + " coins/min";
+    row.append(name, info);
+    const btn = document.createElement("button"); btn.textContent = "Call"; btn.disabled = c.busy;
+    btn.onclick = () => placeCall(c);
+    row.appendChild(btn); box.appendChild(row);
+  }
+}
+
+async function placeCall(c) {
+  try {
+    const join = await api("POST", "/calls", { companionId: c.id, type: "audio" });
+    state.call = { id: join.callId, type: "audio", caller: { displayName: c.displayName } };
+    $("callName").textContent = c.displayName; $("incall").hidden = false; $("callState").textContent = "Ringing the phone…";
+    await joinRoom(join, "audio");
+    log("calling " + c.displayName);
+  } catch (e) { log("call failed: " + e.message); cleanup(); }
+}
+
+async function joinRoom(join, type) {
+  const room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+  state.room = room;
+  room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+    if (track.kind === "video") { $("remote").hidden = false; track.attach($("remote")); }
+    else document.body.appendChild(track.attach());
+  });
+  room.on(LivekitClient.RoomEvent.Disconnected, () => log("left the room"));
+  await room.connect(join.liveKitUrl, join.token);
+  await room.localParticipant.setMicrophoneEnabled(true);
+  if (type === "video") await room.localParticipant.setCameraEnabled(true, { resolution: LivekitClient.VideoPresets.h480.resolution });
+}
+
+async function refreshEarnings() {
+  const w = await api("GET", "/wallet");
+  $("earnings").textContent = "₹" + (w.earningsPaise / 100).toFixed(2);
+}
+
+$("toggle").onclick = async () => {
+  const online = !state.online;
+  await api("POST", "/companion/presence", { online });
+  state.online = online;
+  clearInterval(state.heartbeat);
+  if (online) state.heartbeat = setInterval(() => api("POST", "/companion/presence", { online: true }), 60_000);
+  $("presence").textContent = online ? "Online" : "Offline";
+  $("presence").className = "pill " + (online ? "on" : "off");
+  $("toggle").textContent = online ? "Go offline" : "Go online";
+  log(online ? "online — waiting for calls" : "offline");
+};
+
+function connectWs() {
+  const ws = new WebSocket(`ws://${location.host}/v1/ws?token=${encodeURIComponent(state.token)}`);
+  state.ws = ws;
+  ws.onmessage = (m) => onEvent(JSON.parse(m.data));
+  ws.onclose = () => { log("realtime disconnected, retrying…"); setTimeout(() => state.token && connectWs(), 2000); };
+}
+
+let ringtone;
+function ring(on) {
+  if (!on) { ringtone?.stop(); ringtone = null; return; }
+  const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
+  osc.frequency.value = 660; gain.gain.value = 0.05; osc.connect(gain).connect(ctx.destination); osc.start();
+  const blink = setInterval(() => { gain.gain.value = gain.gain.value ? 0 : 0.05; }, 500);
+  ringtone = { stop() { clearInterval(blink); osc.stop(); ctx.close(); } };
+}
+
+function onEvent(e) {
+  if (e.t === "hello") return log("realtime connected");
+  log("event: " + e.t + (e.reason ? " (" + e.reason + ")" : ""));
+  if (e.t === "incoming_call") {
+    state.call = { id: e.callId, type: e.callType, caller: e.caller };
+    $("inType").textContent = e.callType === "video" ? "video" : "voice";
+    $("inName").textContent = e.caller.displayName;
+    $("incoming").hidden = false; $("incoming").classList.add("ringing");
+    ring(true);
+  } else if (e.t === "call_accepted") {
+    $("callState").textContent = "Answered — connecting…";
+  } else if (e.t === "low_balance") {
+    $("callState").textContent += " · about 1 minute of coins left";
+  } else if (e.t === "call_connected") {
+    $("callState").textContent = "Connected — billing started (" + e.coinsPerMin + " coins/min for the caller)";
+    const t0 = Date.now(); clearInterval(state.timer);
+    state.timer = setInterval(() => {
+      const s = Math.floor((Date.now() - t0) / 1000);
+      $("timer").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }, 500);
+  } else if (e.t === "call_ended" && state.call?.id === e.callId) {
+    cleanup("Call ended: " + e.reason);
+  }
+}
+
+$("accept").onclick = async () => {
+  ring(false); $("incoming").hidden = true;
+  const c = state.call;
+  try {
+    const join = await api("POST", `/calls/${c.id}/accept`);
+    $("callName").textContent = c.caller.displayName; $("incall").hidden = false;
+    $("callState").textContent = "Joining…";
+    await joinRoom(join, c.type);
+    log("joined room " + join.room);
+  } catch (e) { log("accept failed: " + e.message); cleanup(); }
+};
+
+$("reject").onclick = async () => {
+  ring(false); $("incoming").hidden = true;
+  await api("POST", `/calls/${state.call.id}/reject`).catch((e) => log(e.message));
+  state.call = null;
+};
+
+$("mute").onclick = async () => {
+  const lp = state.room?.localParticipant; if (!lp) return;
+  const muted = lp.isMicrophoneEnabled;
+  await lp.setMicrophoneEnabled(!muted);
+  $("mute").textContent = muted ? "Unmute" : "Mute";
+};
+
+$("hangup").onclick = async () => {
+  if (state.call) await api("POST", `/calls/${state.call.id}/end`).catch((e) => log(e.message));
+  cleanup("You hung up");
+};
+
+function cleanup(msg) {
+  ring(false); clearInterval(state.timer);
+  state.room?.disconnect(); state.room = null; state.call = null;
+  $("incoming").hidden = true; $("incall").hidden = true; $("remote").hidden = true; $("timer").textContent = "0:00";
+  document.querySelectorAll("body > audio").forEach((a) => a.remove());
+  if (msg) log(msg);
+  if (state.token && !state.caller) refreshEarnings();
+  if (state.caller) refreshCompanions();
+}
+</script>
+</body>
+</html>

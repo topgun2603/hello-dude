@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Companion home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0A0A18;font-family:'Figtree','Segoe UI',system-ui,sans-serif;color:#FFFFFF}
+a{color:#F9A8D4}a:hover{color:#FBCFE8}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px 20px 0; position: relative; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(circle at 110% 10%, rgba(16,185,129,0.28), transparent 32%), radial-gradient(circle at -14% 55%, rgba(124,58,237,0.42), transparent 32%), #0A0A18; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; color: #FFFFFF;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 48px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 44px; height: 44px; border-radius: 22px; background: linear-gradient(135deg, #EC4899, #9333EA); display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 18px;">P</div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 19px;">Hi, Priya</div>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: #6EE7B7;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6EE7B7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          KYC verified companion
+        </div>
+      </div>
+    </div>
+    <button type="button" aria-label="Notifications" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"></path></svg>
+    </button>
+  </div>
+
+  <div style="margin-top: 20px; padding: 20px; border-radius: 28px; position: relative; overflow: hidden; background: {{cardBg}}; border: 1px solid {{cardBorder}}; box-shadow: {{cardShadow}}; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 24px;">
+          <span style="width: 10px; height: 10px; border-radius: 5px; background: {{dot}}; box-shadow: 0 0 0 5px {{dotRing}};"></span>
+          {{statusTitle}}
+        </div>
+        <div style="font-size: 13.5px; line-height: 1.4; color: #E7E3F6; max-width: 220px;">{{statusSub}}</div>
+      </div>
+      <button type="button" role="switch" aria-checked="{{onlineAttr}}" aria-label="Go online" onClick="{{toggle}}" style="width: 72px; height: 40px; flex-shrink: 0; border-radius: 20px; border: 0; padding: 4px; background: {{trackBg}}; display: flex; justify-content: {{knobSide}}; cursor: pointer;">
+        <span style="width: 32px; height: 32px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></span>
+      </button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+      <div style="padding: 10px 12px; border-radius: 16px; background: rgba(10,10,24,0.35);">
+        <div style="font-size: 12px; color: #E7E3F6;">Voice</div>
+        <div style="margin-top: 2px; font-size: 14.5px; font-weight: 700;">Accepting</div>
+      </div>
+      <div style="padding: 10px 12px; border-radius: 16px; background: rgba(10,10,24,0.35);">
+        <div style="font-size: 12px; color: #E7E3F6;">Video</div>
+        <div style="margin-top: 2px; font-size: 14.5px; font-weight: 700;">Off · turn on in settings</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 22px; display: flex; align-items: baseline; justify-content: space-between;">
+    <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 17px;">Today</div>
+    <a href="Earnings.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none;">Earnings</a>
+  </div>
+  <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+    <a href="Earnings.dc.html" style="padding: 14px 10px; border-radius: 18px; background: rgba(22,20,44,0.78); border: 1px solid rgba(255,255,255,0.08); text-decoration: none; color: #FFFFFF;">
+      <div style="font-size: 12px; color: #C9C5DD;">Earned</div>
+      <div style="margin-top: 4px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 20px; color: #6EE7B7;">₹186</div>
+    </a>
+    <div style="padding: 14px 10px; border-radius: 18px; background: rgba(22,20,44,0.78); border: 1px solid rgba(255,255,255,0.08);">
+      <div style="font-size: 12px; color: #C9C5DD;">Calls</div>
+      <div style="margin-top: 4px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 20px;">7</div>
+    </div>
+    <div style="padding: 14px 10px; border-radius: 18px; background: rgba(22,20,44,0.78); border: 1px solid rgba(255,255,255,0.08);">
+      <div style="font-size: 12px; color: #C9C5DD;">Talk time</div>
+      <div style="margin-top: 4px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 20px;">1h 2m</div>
+    </div>
+  </div>
+
+  <div style="margin-top: 22px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 17px;">Recent calls</div>
+  <div style="margin-top: 10px; border-radius: 20px; background: rgba(22,20,44,0.78); border: 1px solid rgba(255,255,255,0.08); padding: 2px 14px;">
+    <sc-for list="{{calls}}" as="c" hint-placeholder-count="4">
+      <div style="height: 58px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid {{c.divider}};">
+        <span style="width: 38px; height: 38px; border-radius: 19px; background: {{c.grad}}; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 15px; flex-shrink: 0;">{{c.initial}}</span>
+        <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+          <span style="font-size: 14.5px; font-weight: 600;">{{c.name}}</span>
+          <span style="font-size: 12.5px; color: {{c.subColor}};">{{c.sub}}</span>
+        </span>
+        <span style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 15px; color: {{c.amountColor}};">{{c.amount}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Companion" style="position: absolute; left: 0; right: 0; bottom: 0; height: 78px; box-sizing: border-box; padding: 8px 20px 14px; background: rgba(12,11,28,0.96); border-top: 1px solid rgba(255,255,255,0.08); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+      <a href="{{t.href}}" aria-current="{{t.current}}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: {{t.color}}; font-size: 12px; font-weight: 600;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{t.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>
+        {{t.label}}
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { online: true };
+  }
+  renderVals() {
+    const on = this.state.online;
+    const callDefs = [
+      { name: 'Karthik', sub: '12 min · voice', amount: '+₹36', grad: 'linear-gradient(135deg, #3B82F6, #7C3AED)' },
+      { name: 'Suresh', sub: '6 min · voice', amount: '+₹18', grad: 'linear-gradient(135deg, #F97316, #DB2777)' },
+      { name: 'Arun', sub: 'Missed · no answer', amount: '', grad: 'linear-gradient(135deg, #64748B, #334155)', missed: true },
+      { name: 'Vignesh', sub: '21 min · voice', amount: '+₹63', grad: 'linear-gradient(135deg, #10B981, #0E7490)' }
+    ];
+    const calls = callDefs.map((c, i) => ({
+      name: c.name, sub: c.sub, amount: c.amount, grad: c.grad, initial: c.name[0],
+      subColor: c.missed ? '#FDA4AF' : '#C9C5DD',
+      amountColor: '#6EE7B7',
+      divider: i === callDefs.length - 1 ? 'transparent' : 'rgba(255,255,255,0.08)'
+    }));
+    const tabDefs = [
+      { label: 'Home', href: 'CompanionHome.dc.html', icon: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
+      { label: 'Earnings', href: 'Earnings.dc.html', icon: 'M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-4v4M16 14h2' },
+      { label: 'Profile', href: '#', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-7 8-7s8 3 8 7' }
+    ];
+    const tabs = tabDefs.map((t, i) => ({
+      label: t.label, href: t.href, icon: t.icon,
+      color: i === 0 ? '#6EE7B7' : '#A8A4C4',
+      current: i === 0 ? 'page' : 'false'
+    }));
+    return {
+      calls, tabs,
+      onlineAttr: on ? 'true' : 'false',
+      toggle: () => this.setState({ online: !on }),
+      statusTitle: on ? "You're online" : "You're offline",
+      statusSub: on ? 'Tamil callers can reach you now. Go offline any time.' : 'Go online when you are ready to take calls.',
+      dot: on ? '#34D399' : '#94A3B8',
+      dotRing: on ? 'rgba(52,211,153,0.25)' : 'rgba(148,163,184,0.2)',
+      trackBg: on ? '#10B981' : 'rgba(255,255,255,0.2)',
+      knobSide: on ? 'flex-end' : 'flex-start',
+      cardBg: on ? 'linear-gradient(130deg, #047857, #0E7490 60%, #6D28D9)' : 'rgba(22,20,44,0.85)',
+      cardBorder: on ? 'rgba(110,231,183,0.4)' : 'rgba(255,255,255,0.1)',
+      cardShadow: on ? '0 16px 40px rgba(16,185,129,0.25)' : 'none'
+    };
+  }
+}
+</script>
+</body>
+</html>

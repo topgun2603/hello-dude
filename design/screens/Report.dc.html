@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Report a user</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Figtree:wght@400;500;600;700&amp;family=Caveat:wght@500;600&amp;display=swap">
+<style>
+body{margin:0;background:#0A0A18;font-family:'Figtree','Segoe UI',system-ui,sans-serif;color:#FFFFFF}
+a{color:#F9A8D4}a:hover{color:#FBCFE8}
+input::placeholder,textarea::placeholder{color:#8E8AA8}
+input:focus,textarea:focus{outline:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 20px 20px 24px; position: relative; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(circle at 50% 30%, rgba(219,39,119,0.42), transparent 42%), radial-gradient(circle at 0% 100%, rgba(124,58,237,0.5), transparent 40%), #0A0A18; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; color: #FFFFFF;">
+<div style="display: flex; align-items: center; justify-content: space-between; height: 48px;">
+    <button type="button" aria-label="Minimise call" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: #FFFFFF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: #D4D0E6;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11h14v10H5zM8 11V8a4 4 0 0 1 8 0v3"></path></svg> Private voice call</div>
+    <button type="button" aria-label="Report or block" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: #FFFFFF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg></button>
+  </div>
+  <div style="margin-top: 36px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+    <div style="position: relative; width: 110px; height: 110px; flex-shrink: 0;"><div style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, #EC4899, #9333EA); border: 3px solid rgba(255,255,255,0.85); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 44px; color: #FFFFFF;">P</div></div>
+    <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 26px;">Priya</div>
+    <div style="padding: 5px 12px; border-radius: 14px; background: rgba(255,255,255,0.1); font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 1px;">04:32</div>
+  </div><div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(5,5,15,0.66);"></div><div role="dialog" aria-modal="true" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 12px 20px 26px; border-radius: 28px 28px 0 0; background: #15132B; border-top: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column;">
+  <div style="width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.25); align-self: center; margin-bottom: 14px;"></div>
+  
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <div style="font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-weight: 800; font-size: 20px;">Report Priya</div>
+    <a href="InCall.dc.html" aria-label="Close" style="width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+  </div>
+  <div style="margin-top: 4px; font-size: 14px; color: #C9C5DD;">What happened? Only our safety team sees this.</div>
+  <div role="radiogroup" aria-label="Reason" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;"><button type="button" role="radio" aria-checked="false" style="height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer;"><span style="width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"></span>Sexual or explicit content</button><button type="button" role="radio" aria-checked="false" style="height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer;"><span style="width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"></span>Abusive or threatening language</button><button type="button" role="radio" aria-checked="true" style="height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid #FB7185; background: rgba(251,113,133,0.12); color: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer;"><span style="width: 22px; height: 22px; border-radius: 11px; border: 2px solid #FB7185; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="width: 10px; height: 10px; border-radius: 5px; background: #FB7185;"></span></span>Asking for money or contact details</button><button type="button" role="radio" aria-checked="false" style="height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer;"><span style="width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"></span>Seems under 18</button><button type="button" role="radio" aria-checked="false" style="height: 48px; padding: 0 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer;"><span style="width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"></span>Something else</button></div>
+  <label for="details" style="position: absolute; left: -9999px;">Tell us more</label>
+  <textarea id="details" placeholder="Tell us more (optional)" style="margin-top: 10px; height: 64px; box-sizing: border-box; padding: 12px 14px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.14); background: rgba(10,10,24,0.6); color: #FFFFFF; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14px; resize: none;"></textarea>
+  <div style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px;"><span style="font-size: 14.5px; font-weight: 600;">Also block Priya</span><button type="button" role="switch" aria-checked="true" aria-label="Also block Priya" style="width: 52px; height: 30px; flex-shrink: 0; border-radius: 15px; border: 0; padding: 3px; background: #FB7185; display: flex; justify-content: flex-end; cursor: pointer;"><span style="width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF;"></span></button></div>
+  <div style="margin-top: 10px; display: flex; gap: 10px; font-size: 12.5px; line-height: 1.4; color: #C9C5DD;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#93C5FD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M5 11h14v10H5zM8 11V8a4 4 0 0 1 8 0v3"></path></svg>We keep the last few minutes of this call's audio for review. It's deleted once the report is closed.</div>
+  <a href="RateCall.dc.html" style="margin-top: 14px; height: 54px; flex-shrink: 0; border-radius: 27px; background: linear-gradient(90deg, #E11D48, #BE123C); color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; font-size: 16.5px; font-weight: 700; text-decoration: none; box-shadow: 0 10px 28px rgba(225,29,72,0.35);">Report and end call</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
