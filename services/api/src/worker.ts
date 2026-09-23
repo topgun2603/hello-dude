@@ -13,6 +13,7 @@ import { dropStalePresence } from "./presence.js";
 import { disabledRecorder } from "./recording.js";
 import { runRetention } from "./retention.js";
 import { sendDailyBonusReminders, sendRateReminders } from "./reminders.js";
+import { sweepBookings } from "./bookings.js";
 import { fcmPushSender, logPushSender } from "./push.js";
 import { localEncryptedStore, parseKey } from "./storage.js";
 
@@ -62,6 +63,16 @@ async function reminders() {
   }
 }
 const remindersTimer = setInterval(reminders, REMINDERS_EVERY_MS);
+
+// Bookings need minute precision (reminders 10 min before, expiry, refunds).
+const bookingsTimer = setInterval(async () => {
+  try {
+    const b = await sweepBookings({ db, push, events });
+    if (b.expired || b.reminded || b.closed) console.log("bookings:", b);
+  } catch (err) {
+    console.error("bookings sweep failed", err);
+  }
+}, 60_000);
 async function retention() {
   try {
     const r = await runRetention({ db, store, recorder: disabledRecorder });
@@ -78,6 +89,7 @@ await engine.runWorker(stop.signal);
 clearInterval(sweeper);
 clearInterval(retentionTimer);
 clearInterval(remindersTimer);
+clearInterval(bookingsTimer);
 await db.end();
 redis.disconnect();
 console.log("worker stopped");

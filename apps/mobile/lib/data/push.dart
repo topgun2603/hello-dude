@@ -21,8 +21,9 @@ import 'session.dart';
 /// * While the app is open the WebSocket already rings the in-app screen, so
 ///   foreground `incoming_call` pushes are ignored.
 /// * Accept / Decline on the native UI arrive as [CallAction]s.
-/// * Tapping an inbox notification (data has `notificationId`) opens
-///   /notifications, once the session is signed in.
+/// * Tapping a notification opens its screen once the session is signed in:
+///   inbox notices (data has `notificationId`) -> /notifications,
+///   chat messages (`type: chat_message`) -> `/chat/<conversationId>`.
 
 /// Runs in its own isolate when a push arrives and the app isn't in front.
 @pragma('vm:entry-point')
@@ -85,7 +86,9 @@ class PushController {
   StreamSubscription<String>? _refresh;
   StreamSubscription<CallEvent?>? _callEvents;
   bool _started = false;
-  bool _openInbox = false;
+
+  /// Screen to open for a tapped notification, waiting for sign-in.
+  String? _pendingRoute;
 
   /// Accept / Decline pressed on the native incoming-call UI.
   Stream<CallAction> get actions => _actions.stream;
@@ -116,20 +119,28 @@ class PushController {
   }
 
   void _opened(RemoteMessage m) {
-    if (m.data['notificationId'] == null) return; // e.g. incoming_call
-    _openInbox = true;
+    final d = m.data;
+    final conversation = d['conversationId'];
+    if (d['type'] == 'chat_message' && conversation is String) {
+      _pendingRoute = '/chat/$conversation';
+    } else if (d['notificationId'] != null) {
+      _pendingRoute = '/notifications';
+    } else {
+      return; // e.g. incoming_call, handled by the call UI
+    }
     openPendingInbox();
   }
 
-  /// Opens the inbox for a tapped notification. Waits for sign-in (the tap can
-  /// arrive while the saved session is still being restored).
+  /// Opens the screen for a tapped notification. Waits for sign-in (the tap
+  /// can arrive while the saved session is still being restored).
   void openPendingInbox() {
-    if (!_openInbox) return;
+    final route = _pendingRoute;
+    if (route == null) return;
     if (_ref.read(sessionProvider).status != SessionStatus.signedIn) return;
-    _openInbox = false;
+    _pendingRoute = null;
     // After this frame, so the router has settled on the signed-in home first.
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _ref.read(routerProvider).push('/notifications'),
+      (_) => _ref.read(routerProvider).push(route),
     );
   }
 

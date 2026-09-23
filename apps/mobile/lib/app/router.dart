@@ -24,6 +24,7 @@ import '../features/notifications/notifications_screen.dart';
 import '../features/growth/checkin_screen.dart';
 import '../features/growth/referral_screen.dart';
 import '../features/growth/share_card_screen.dart';
+import '../features/chat/chat_screens.dart';
 import '../widgets/love_loader.dart';
 
 /// Re-runs the router's redirect whenever the session changes.
@@ -65,6 +66,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.matchedLocation;
       // Policies are readable by everyone, signed in or not.
       if (path.startsWith('/legal') && session.status != SessionStatus.loading) return null;
+      // Chat is for both roles.
+      if ((path == '/chats' || path.startsWith('/chat/')) && session.status == SessionStatus.signedIn) return null;
       switch (session.status) {
         case SessionStatus.loading:
           return path == '/splash' ? null : '/splash';
@@ -104,6 +107,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/checkin', builder: (_, _) => const CheckInScreen()),
       GoRoute(path: '/referral', builder: (_, _) => const ReferralScreen()),
       GoRoute(path: '/share', builder: (_, _) => const ShareCardScreen()),
+      GoRoute(path: '/chats', builder: (_, _) => const ChatsScreen()),
+      GoRoute(
+        path: '/chat/:id',
+        builder: (_, s) => ChatScreen(conversationId: s.pathParameters['id']!, conversation: s.extra as Conversation?),
+      ),
       GoRoute(
         path: '/legal',
         builder: (_, _) => const LegalIndexScreen(),

@@ -21,6 +21,7 @@ class PesuApi {
     legal = LegalApi(_client);
     notifications = NotificationsApi(_client);
     growth = GrowthApi(_client);
+    chat = ChatApi(_client);
   }
 
   final HttpBearerAuth _bearer;
@@ -36,6 +37,7 @@ class PesuApi {
   late final LegalApi legal;
   late final NotificationsApi notifications;
   late final GrowthApi growth;
+  late final ChatApi chat;
 
   /// Set by the session: returns a fresh access token, or null if signed out.
   Future<String?> Function()? onUnauthorized;

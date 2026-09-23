@@ -39,6 +39,7 @@ import { moderationRoutes } from "./routes/moderation.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { growthRoutes } from "./routes/growth.js";
 import { chatRoutes } from "./routes/chat.js";
+import { bookingRoutes } from "./routes/bookings.js";
 import type { LegalInfo } from "./legal/pages.js";
 
 export interface AppDeps {
@@ -131,6 +132,13 @@ export const OPERATION_IDS: Record<string, string> = {
   "GET /v1/chats/:id/messages": "getChatMessages",
   "POST /v1/chats/:id/messages": "sendChatMessage",
   "POST /v1/chats/:id/read": "markChatRead",
+  "GET /v1/companions/:id/slots": "getBookingSlots",
+  "POST /v1/bookings": "createBooking",
+  "GET /v1/bookings": "listBookings",
+  "POST /v1/bookings/:id/confirm": "confirmBooking",
+  "POST /v1/bookings/:id/decline": "declineBooking",
+  "POST /v1/bookings/:id/cancel": "cancelBooking",
+  "POST /v1/bookings/:id/start": "startBooking",
   "GET /v1/admin/moderation": "adminListModerationFlags",
   "GET /v1/admin/moderation/:id/frame": "adminGetModerationFrame",
   "POST /v1/admin/moderation/:id/resolve": "adminResolveModerationFlag",
@@ -262,6 +270,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     await v1.register(notificationRoutes);
     await v1.register(growthRoutes);
     await v1.register(chatRoutes);
+    await v1.register(bookingRoutes);
   }, { prefix: "/v1" });
   await app.register(legalHtmlRoutes);
 

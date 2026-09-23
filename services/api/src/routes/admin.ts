@@ -192,6 +192,10 @@ const SETTINGS: Record<string, { min: number; max: number; label: string }> = {
   "referral.referrer_coins": { min: 0, max: 1000, label: "Invite: coins for the inviter" },
   "referral.referee_coins": { min: 0, max: 1000, label: "Invite: coins for the new friend" },
   "referral.max_rewarded": { min: 0, max: 10_000, label: "Invite: max rewarded friends per person" },
+  "booking.window_days": { min: 1, max: 14, label: "Bookings: how many days ahead" },
+  "booking.first_slot_minute": { min: 0, max: 1410, label: "Bookings: first slot (minutes after midnight IST)" },
+  "booking.last_slot_minute": { min: 0, max: 1410, label: "Bookings: last slot (minutes after midnight IST)" },
+  "booking.confirm_hours": { min: 1, max: 72, label: "Bookings: hours a companion has to confirm" },
 };
 
 export const adminRoutes: FastifyPluginAsyncZod = async (app) => {

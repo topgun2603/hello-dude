@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../data/errors.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../chat/chat_screens.dart';
 import '../call/start_call.dart';
 import '../home/home_data.dart';
 
@@ -71,7 +72,8 @@ class FavouritesScreen extends ConsumerWidget {
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 12),
-                    Text('Favourites', style: AppText.heading(24)),
+                    Expanded(child: Text('Favourites', style: AppText.heading(24))),
+                    const ChatButton(),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -188,6 +190,11 @@ class _Row extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: 'Message ${f.displayName}',
+            onPressed: () => openChatWith(context, ref, f.id),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textSecondary),
           ),
           IconButton(
             tooltip: f.notify ? 'Stop online alerts' : 'Alert me when online',

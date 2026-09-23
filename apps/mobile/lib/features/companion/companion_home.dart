@@ -9,6 +9,7 @@ import '../../data/session.dart';
 import '../../widgets/common.dart';
 import 'companion_data.dart';
 import '../notifications/notifications_screen.dart';
+import '../chat/chat_screens.dart';
 
 const _green = Color(0xFF10B981);
 const _teal = Color(0xFF0E7490);
@@ -58,6 +59,8 @@ class CompanionHomeTab extends ConsumerWidget {
                   ],
                 ),
               ),
+              const ChatButton(),
+              const SizedBox(width: 8),
               const NotificationBell(),
             ],
           ),
