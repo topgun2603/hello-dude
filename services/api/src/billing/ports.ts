@@ -8,10 +8,14 @@ import type { Redis } from "ioredis";
 export interface RoomControl {
   /** Number of participants currently in the room (0 if it doesn't exist). */
   participantCount(room: string): Promise<number>;
+  /** Identities (user ids) currently in the room, straight from LiveKit. */
+  participantIdentities(room: string): Promise<string[]>;
   /** Closes the room, which disconnects both clients. Must not throw if already gone. */
   closeRoom(room: string): Promise<void>;
+  /** Disconnects one participant (e.g. a live viewer whose pass ran out). Must not throw if gone. */
+  removeParticipant(room: string, identity: string): Promise<void>;
   /** Short-lived token that lets `identity` join `room`. */
-  joinToken(room: string, identity: string): Promise<string>;
+  joinToken(room: string, identity: string, opts?: { canPublish?: boolean; name?: string }): Promise<string>;
 }
 
 /** Pushed to a user's open WebSocket connections (see realtime.ts). */
@@ -25,6 +29,10 @@ export type UserEvent =
   | { t: "call_ended"; callId: string; reason: string }
   /** A new inbox item (notifications.ts); the app bumps its bell badge. */
   | { t: "notification"; id: number; type: string; title: string }
+  /** Something happened in a voice room this user is in (routes/rooms.ts). */
+  | { t: "room_event"; roomId: string; event: Record<string, unknown> }
+  | { t: "live_event"; liveId: string; event: Record<string, unknown> }
+  | { t: "group_event"; groupId: string; event: Record<string, unknown> }
   /** A chat message for an open chat screen (routes/chat.ts). */
   | { t: "chat_message"; conversationId: string; message: { id: number; senderId: string; body: string; createdAt: string } };
 
@@ -61,12 +69,20 @@ export function liveKitRooms(url: string, key: string, secret: string): RoomCont
       const list = await rooms.listParticipants(room).catch(() => []);
       return list.length;
     },
+    async participantIdentities(room) {
+      const list = await rooms.listParticipants(room).catch(() => []);
+      return list.map((p) => p.identity);
+    },
     async closeRoom(room) {
       await rooms.deleteRoom(room).catch(() => {});
     },
-    async joinToken(room, identity) {
-      const t = new AccessToken(key, secret, { identity, ttl: "2h" });
-      t.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true });
+    async removeParticipant(room, identity) {
+      await rooms.removeParticipant(room, identity).catch(() => {});
+    },
+    async joinToken(room, identity, opts) {
+      const t = new AccessToken(key, secret, { identity, ttl: "2h", ...(opts?.name ? { name: opts.name } : {}) });
+      // Voice-room listeners join listen-only; everyone else can publish.
+      t.addGrant({ room, roomJoin: true, canPublish: opts?.canPublish ?? true, canSubscribe: true });
       return t.toJwt();
     },
   };

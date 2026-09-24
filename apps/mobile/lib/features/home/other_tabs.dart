@@ -8,9 +8,15 @@ import '../../data/errors.dart';
 import '../../data/languages.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../vip/vip_screen.dart';
 import '../../widgets/love_loader.dart';
+import '../history/call_history.dart' show CallHistoryBody;
+import '../history/coin_history.dart'
+    show CoinHistoryPreview, coinHistoryPreviewProvider;
+import 'coin_shop.dart';
 import 'home_data.dart';
 import 'home_screen.dart' show CoinIcon, CoinStack;
+import '../companion/profile_photo.dart' show MyAvatar, ProfilePhotoTile;
 
 class _TabPage extends StatelessWidget {
   const _TabPage({required this.title, required this.children, this.onRefresh});
@@ -49,109 +55,11 @@ class CallsTab extends ConsumerWidget {
   const CallsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final calls = ref.watch(callHistoryProvider);
-    return _TabPage(
-      title: 'Calls',
-      onRefresh: () async => ref.invalidate(callHistoryProvider),
-      children: [
-        calls.when(
-          data: (list) => list.isEmpty
-              ? Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: _card(),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.history_rounded,
-                        color: AppColors.lilac,
-                        size: 36,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'No calls yet',
-                        style: AppText.body(15, weight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Every call and every coin it used will show up here, minute by minute.',
-                        textAlign: TextAlign.center,
-                        style: AppText.body(13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(children: [for (final c in list) _CallRow(c)]),
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(color: AppColors.pink),
-            ),
-          ),
-          error: (e, _) => Text(
-            friendlyError(e),
-            style: AppText.body(14, color: AppColors.textMuted),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CallRow extends StatelessWidget {
-  const _CallRow(this.c);
-  final CallSummary c;
-
-  @override
-  Widget build(BuildContext context) {
-    final missed = c.status != CallSummaryStatusEnum.ended;
-    final mins = c.durationSeconds == null
-        ? ''
-        : ' · ${(c.durationSeconds! / 60).ceil()} min';
-    return GestureDetector(
-      onTap: () => context.push('/call-details', extra: c.id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: _card(),
-        child: Row(
-          children: [
-            Avatar(
-              name: c.other.displayName,
-              avatarId: c.other.avatarId,
-              size: 42,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    c.other.displayName,
-                    style: AppText.body(15, weight: FontWeight.w700),
-                  ),
-                  Text(
-                    '${c.type == CallSummaryTypeEnum.video ? 'Video' : 'Voice'} · ${missed ? c.status.toJson() : 'ended'}$mins',
-                    style: AppText.body(
-                      13,
-                      color: missed
-                          ? AppColors.warning
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (c.coinsCharged > 0)
-              Text(
-                '−${c.coinsCharged - c.coinsRefunded}',
-                style: AppText.body(15, weight: FontWeight.w700),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) => _TabPage(
+    title: 'Calls',
+    onRefresh: () async => ref.invalidate(callHistoryProvider),
+    children: const [CallHistoryBody()],
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -167,6 +75,7 @@ class WalletTab extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(walletProvider);
         ref.invalidate(coinPackagesProvider);
+        ref.invalidate(coinHistoryPreviewProvider);
       },
       children: [
         Container(
@@ -226,100 +135,34 @@ class WalletTab extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 22),
-        Text('Add coins', style: AppText.heading(17, weight: FontWeight.w700)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         packs.when(
-          data: (list) => GridView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              mainAxisExtent: 116,
-            ),
-            children: [for (final p in list) _PackTile(p)],
+          data: (list) => CoinShop(
+            packs: list,
+            onBuy: (_) => ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Buying coins with Google Play is switched on in the next update',
+                  ),
+                ),
+              ),
           ),
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.pink),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.pink),
+            ),
           ),
           error: (e, _) => Text(
             friendlyError(e),
             style: AppText.body(14, color: AppColors.textMuted),
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.verified_user_outlined,
-              size: 16,
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Paid securely via Google Play',
-              style: AppText.body(13, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+        const SizedBox(height: 28),
+        const CoinHistoryPreview(),
       ],
-    );
-  }
-}
-
-class _PackTile extends StatelessWidget {
-  const _PackTile(this.p);
-  final ListCoinPackages200ResponseInner p;
-
-  @override
-  Widget build(BuildContext context) {
-    final rupees = (p.pricePaise / 100).toStringAsFixed(
-      p.pricePaise % 100 == 0 ? 0 : 2,
-    );
-    return GestureDetector(
-      onTap: () => showError(
-        context,
-        'Buying coins with Google Play is switched on in the next update',
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: _card(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CoinIcon(size: 18),
-                const SizedBox(width: 6),
-                Text('${p.coins + p.bonusCoins}', style: AppText.heading(20)),
-              ],
-            ),
-            if (p.label != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0x33EC4899),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  p.label!,
-                  style: AppText.body(
-                    11.5,
-                    color: const Color(0xFFF9A8D4),
-                    weight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-            const Spacer(),
-            Text('₹$rupees', style: AppText.body(16, weight: FontWeight.w700)),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -383,7 +226,7 @@ class ProfileTab extends ConsumerWidget {
           decoration: _card(),
           child: Row(
             children: [
-              Avatar(name: p.displayName, avatarId: p.avatarId, size: 64),
+              const MyAvatar(size: 64),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -428,7 +271,9 @@ class ProfileTab extends ConsumerWidget {
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push('/become-companion'),
                 )
-              else if (p.role == ProfileRoleEnum.companion)
+              else if (p.role == ProfileRoleEnum.companion) ...[
+                const ProfilePhotoTile(),
+                const Divider(height: 1, color: AppColors.cardBorder),
                 ListTile(
                   leading: const Icon(
                     Icons.verified_user_outlined,
@@ -438,10 +283,31 @@ class ProfileTab extends ConsumerWidget {
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push('/kyc'),
                 ),
+              ],
               if (p.role == ProfileRoleEnum.caller) ...[
                 const Divider(height: 1, color: AppColors.cardBorder),
                 ListTile(
-                  leading: const Icon(Icons.card_giftcard_rounded, color: AppColors.pinkSoft),
+                  leading: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Color(0xFFF59E0B),
+                  ),
+                  title: const Text('Hello Dude! VIP'),
+                  subtitle: Text(
+                    p.vipUntil != null
+                        ? 'Active'
+                        : 'Cheaper calls, first pick, free Rose',
+                  ),
+                  trailing: p.vipUntil != null
+                      ? const VipBadge()
+                      : const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/vip'),
+                ),
+                const Divider(height: 1, color: AppColors.cardBorder),
+                ListTile(
+                  leading: const Icon(
+                    Icons.card_giftcard_rounded,
+                    color: AppColors.pinkSoft,
+                  ),
                   title: const Text('Invite friends'),
                   subtitle: const Text('You both get free coins'),
                   trailing: const Icon(Icons.chevron_right_rounded),
@@ -449,12 +315,26 @@ class ProfileTab extends ConsumerWidget {
                 ),
                 const Divider(height: 1, color: AppColors.cardBorder),
                 ListTile(
-                  leading: const Icon(Icons.local_fire_department_rounded, color: Color(0xFFF59E0B)),
+                  leading: const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: Color(0xFFF59E0B),
+                  ),
                   title: const Text('Daily bonus'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push('/checkin'),
                 ),
               ],
+              const Divider(height: 1, color: AppColors.cardBorder),
+              ListTile(
+                leading: const Icon(Icons.event_note_rounded),
+                title: Text(
+                  p.role == ProfileRoleEnum.companion
+                      ? 'Call requests'
+                      : 'My bookings',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/bookings'),
+              ),
               const Divider(height: 1, color: AppColors.cardBorder),
               ListTile(
                 leading: const Icon(Icons.favorite_border_rounded),

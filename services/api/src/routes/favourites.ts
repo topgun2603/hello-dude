@@ -10,12 +10,15 @@ import { ONLINE_SET } from "../billing/engine.js";
 import { CompanionRates } from "./companions.js";
 import { notify } from "../notifications.js";
 import type { PushSender } from "../push.js";
+import { PHOTO_V_SQL, photoUrl } from "./photos.js";
 
 const NOTIFY_COOLDOWN_S = 30 * 60;
 
 const Favourite = z.object({
-  id: z.uuid(), displayName: z.string(), avatarId: z.number().int(), languages: z.array(z.string()),
+  id: z.uuid(), displayName: z.string(), avatarId: z.number().int(), photoUrl: z.string().nullable().describe("Approved profile photo (signed URL path); null = show the avatar"),
+  languages: z.array(z.string()),
   online: z.boolean(), busy: z.boolean(), lastOnlineAt: z.date().nullable(), notify: z.boolean(),
+  audioEnabled: z.boolean(),
   videoEnabled: z.boolean(),
   rates: CompanionRates,
 }).meta({ id: "Favourite" });
@@ -62,10 +65,10 @@ export const favouriteRoutes: FastifyPluginAsyncZod = async (app) => {
     schema: { ...base, summary: "My favourite companions, free ones first", response: { 200: z.array(Favourite) } },
   }, async (req) => {
     const rows = (await db.query<{
-      id: string; display_name: string; avatar_id: number; languages: string[]; last_online_at: Date | null; notify: boolean;
-      video_enabled: boolean; audio: number | null; video: number | null;
+      id: string; display_name: string; avatar_id: number; photo_v: number | null; languages: string[]; last_online_at: Date | null; notify: boolean;
+      video_enabled: boolean; takes_audio: boolean; audio: number | null; video: number | null;
     }>(
-      `SELECT u.id, u.display_name, u.avatar_id, f.notify, p.last_online_at, p.video_enabled,
+      `SELECT u.id, u.display_name, u.avatar_id, ${PHOTO_V_SQL("u")} AS photo_v, f.notify, p.last_online_at, p.video_enabled AND p.takes_video AS video_enabled, p.takes_audio,
               COALESCE((SELECT array_agg(language_code ORDER BY language_code) FROM user_languages WHERE user_id = u.id), ARRAY[u.primary_language]) AS languages,
               (SELECT coins_per_min FROM call_rates WHERE language_code = u.primary_language AND call_type = 'audio' AND effective_from <= now() ORDER BY effective_from DESC LIMIT 1) AS audio,
               (SELECT coins_per_min FROM call_rates WHERE language_code = u.primary_language AND call_type = 'video' AND effective_from <= now() ORDER BY effective_from DESC LIMIT 1) AS video
@@ -76,10 +79,10 @@ export const favouriteRoutes: FastifyPluginAsyncZod = async (app) => {
     const busy = await busySet(redis, rows.map((r) => r.id));
     return rows
       .map((r) => ({
-        id: r.id, displayName: r.display_name, avatarId: r.avatar_id, languages: r.languages,
+        id: r.id, displayName: r.display_name, avatarId: r.avatar_id, photoUrl: photoUrl(app.deps.kycKey, r.id, r.photo_v), languages: r.languages,
         online: online.has(r.id), busy: busy.has(r.id), lastOnlineAt: r.last_online_at, notify: r.notify,
-        videoEnabled: r.video_enabled,
-        rates: { audioCoinsPerMin: r.audio, videoCoinsPerMin: r.video_enabled ? r.video : null },
+        audioEnabled: r.takes_audio, videoEnabled: r.video_enabled,
+        rates: { audioCoinsPerMin: r.takes_audio ? r.audio : null, videoCoinsPerMin: r.video_enabled ? r.video : null },
       }))
       .sort((a, b) => Number(b.online && !b.busy) - Number(a.online && !a.busy) || Number(b.online) - Number(a.online));
   });

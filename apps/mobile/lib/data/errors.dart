@@ -3,9 +3,18 @@ import 'dart:io';
 
 import 'package:pesu_api/api.dart';
 
+/// An error whose message is already written for the user (e.g. Firebase sign-in).
+class UserFacingError implements Exception {
+  const UserFacingError(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 /// A sentence the user can read, from any error the API layer throws.
 /// The server sends `{ error: { code, message } }`; its message is already friendly.
 String friendlyError(Object error) {
+  if (error is UserFacingError) return error.message;
   if (error is ApiException) {
     final inner = error.innerException;
     // The generated client wraps network failures as ApiException(400, ..., innerException).

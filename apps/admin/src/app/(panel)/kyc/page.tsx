@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Check, Eye, Video, VideoOff, X } from "lucide-react";
+import { AlertTriangle, Check, Eye, ImageIcon, Video, VideoOff, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/form-bits";
@@ -13,10 +13,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { api, type KycCase } from "@/lib/api";
+import { api, type KycCase, type PendingPhoto } from "@/lib/api";
 import { date, dateTime, languageName } from "@/lib/format";
+import { useCan } from "@/lib/access";
 
-type Tab = "submitted" | "approved" | "rejected";
+type Tab = "submitted" | "approved" | "rejected" | "photos";
 const REJECT_PRESETS = [
   "Selfie doesn't match the Aadhaar photo",
   "Selfie is too dark or blurry — please retake in good light",
@@ -27,7 +28,9 @@ const GENDER: Record<string, string> = { M: "Male", F: "Female", T: "Transgender
 
 export default function KycPage() {
   const [tab, setTab] = useState<Tab>("submitted");
-  const { data, isLoading } = useQuery({ queryKey: ["kyc", tab], queryFn: () => api<KycCase[]>(`admin/kyc?status=${tab}`) });
+  const { data, isLoading } = useQuery({
+    queryKey: ["kyc", tab], queryFn: () => api<KycCase[]>(`admin/kyc?status=${tab}`), enabled: tab !== "photos",
+  });
 
   return (
     <>
@@ -37,17 +40,19 @@ export default function KycPage() {
           <TabsTrigger value="submitted">Waiting</TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="photos"><ImageIcon /> Profile photos</TabsTrigger>
         </TabsList>
       </Tabs>
-      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {data?.length === 0 && (
+      {tab === "photos" && <PhotoQueue />}
+      {tab !== "photos" && isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {tab !== "photos" && data?.length === 0 && (
         <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
           {tab === "submitted" ? "Nobody is waiting for review 🎉" : "Nothing here yet"}
         </CardContent></Card>
       )}
       <div className="space-y-4">
         <AnimatePresence initial={false}>
-          {data?.map((c) => <CaseCard key={c.userId} c={c} />)}
+          {tab !== "photos" && data?.map((c) => <CaseCard key={c.userId} c={c} />)}
         </AnimatePresence>
       </div>
     </>
@@ -55,6 +60,7 @@ export default function KycPage() {
 }
 
 function CaseCard({ c }: { c: KycCase }) {
+  const canVideo = useCan()("companions.video");
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
@@ -108,7 +114,7 @@ function CaseCard({ c }: { c: KycCase }) {
                   <Button variant="outline" onClick={() => setRejecting(true)}><X /> Reject</Button>
                 </>
               )}
-              {c.status === "approved" && (
+              {c.status === "approved" && canVideo && (
                 <Button variant="outline" onClick={() => setVideoOpen(true)}
                   disabled={!c.videoEnabled && c.academy.passed < c.academy.total}
                   title={!c.videoEnabled && c.academy.passed < c.academy.total ? "Finish the academy first" : undefined}>
@@ -224,5 +230,101 @@ function VideoDialog({ c, open, onClose }: { c: KycCase; open: boolean; onClose:
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// --- Profile photos -----------------------------------------------------------------
+const PHOTO_REJECT_PRESETS = [
+  "Doesn't look like the person in your KYC selfie",
+  "Face isn't clearly visible — use a clear, well-lit photo of your face",
+  "No nudity, suggestive poses or contact details in photos",
+  "Group photos, celebrities and cartoons aren't allowed",
+];
+
+function PhotoQueue() {
+  const { data, isLoading } = useQuery({ queryKey: ["photos"], queryFn: () => api<PendingPhoto[]>("admin/photos") });
+  return (
+    <>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Companions&apos; own photos replace their avatar once approved. Check it&apos;s the same person as the KYC selfie, the face is clear,
+        and there&apos;s nothing suggestive or any contact details. Callers never upload photos.
+      </p>
+      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {data?.length === 0 && <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">No photos waiting 🎉</CardContent></Card>}
+      <div className="space-y-4">
+        <AnimatePresence initial={false}>
+          {data?.map((p) => <PhotoCase key={p.user.id} p={p} />)}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+}
+
+function PhotoCase({ p }: { p: PendingPhoto }) {
+  const qc = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
+  const decide = useMutation({
+    mutationFn: (decision: "approve" | "reject") =>
+      api(`admin/photos/${p.user.id}/decision`, { method: "POST", body: { decision, reason: decision === "reject" ? reason : null } }),
+    onSuccess: (_, decision) => {
+      toast.success(decision === "approve" ? `${p.user.displayName}'s photo is live` : "Rejected — they'll see your reason");
+      qc.invalidateQueries({ queryKey: ["photos"] });
+      setRejecting(false);
+      setReason("");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -24 }}>
+      <Card>
+        <CardContent className="grid gap-6 lg:grid-cols-[auto_1fr]">
+          <div className="flex gap-3">
+            <figure className="w-40 space-y-1.5">
+              <div className="aspect-[3/4] overflow-hidden rounded-xl border bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element -- signed, private URL */}
+                <img src={`/api${p.pendingUrl}`} alt="New photo" className="size-full object-cover" />
+              </div>
+              <figcaption className="text-center text-xs text-muted-foreground">New photo</figcaption>
+            </figure>
+            <Photo userId={p.user.id} doc="selfie" label="KYC selfie" has={p.hasSelfie} />
+          </div>
+          <div className="flex min-w-0 flex-col gap-3">
+            <div>
+              <h2 className="font-heading text-xl font-extrabold">{p.user.displayName}</h2>
+              <p className="text-sm text-muted-foreground">
+                Sent {dateTime(p.submittedAt)} · KYC {p.user.kycStatus ?? "not started"}{p.currentUrl ? " · replaces their current photo" : ""}
+              </p>
+            </div>
+            {rejecting && (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {PHOTO_REJECT_PRESETS.map((r) => (
+                    <button key={r} type="button" onClick={() => setReason(r)}
+                      className="rounded-full border px-3 py-1 text-xs hover:border-primary hover:text-primary">{r}</button>
+                  ))}
+                </div>
+                <Field label="Reason shown to the companion" htmlFor={`ph-${p.user.id}`}>
+                  <Textarea id={`ph-${p.user.id}`} value={reason} onChange={(e) => setReason(e.target.value)} />
+                </Field>
+              </>
+            )}
+            <div className="mt-auto flex flex-wrap gap-2">
+              {rejecting ? (
+                <>
+                  <Button variant="destructive" disabled={reason.trim().length < 3 || decide.isPending} onClick={() => decide.mutate("reject")}>Reject photo</Button>
+                  <Button variant="outline" onClick={() => setRejecting(false)}>Cancel</Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => decide.mutate("approve")} disabled={decide.isPending}><Check /> Approve</Button>
+                  <Button variant="outline" onClick={() => setRejecting(true)}><X /> Reject</Button>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

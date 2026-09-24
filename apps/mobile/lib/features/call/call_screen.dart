@@ -79,7 +79,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   Future<void> _join() async {
     _roomEvents = _room.createListener()
+      ..on<ParticipantConnectedEvent>((_) => _verifyConnected())
       ..on<TrackSubscribedEvent>((e) {
+        _verifyConnected();
         if (e.track is VideoTrack) {
           setState(() => _remoteVideo = e.track as VideoTrack);
           _startModeration();
@@ -122,26 +124,57 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     }
     if (!mounted || _phase == _Phase.ended || _moderator != null) return;
     final api = ref.read(apiProvider);
-    _moderator = VideoModerator(
-      detector: detector,
-      capture: () async {
-        final track = _remoteVideo;
-        if (track == null) return null;
-        final frame = await track.mediaStreamTrack.captureFrame();
-        return frame.asUint8List();
-      },
-      report: (jpeg, score) async {
-        final small = await compute(shrinkForUpload, jpeg);
-        await api.call(
-          () => api.calls.flagVideoFrame(
-            a.callId,
-            FlagVideoFrameRequest(frameBase64: base64Encode(small), score: score),
-          ),
-        );
-      },
-    )..addListener(() {
-        if (mounted) setState(() {});
-      })..start();
+    _moderator =
+        VideoModerator(
+            detector: detector,
+            capture: () async {
+              final track = _remoteVideo;
+              if (track == null) return null;
+              final frame = await track.mediaStreamTrack.captureFrame();
+              return frame.asUint8List();
+            },
+            report: (jpeg, score) async {
+              final small = await compute(shrinkForUpload, jpeg);
+              await api.call(
+                () => api.calls.flagVideoFrame(
+                  a.callId,
+                  FlagVideoFrameRequest(
+                    frameBase64: base64Encode(small),
+                    score: score,
+                  ),
+                ),
+              );
+            },
+          )
+          ..addListener(() {
+            if (mounted) setState(() {});
+          })
+          ..start();
+  }
+
+  /// LiveKit Cloud can't reach the API with webhooks, so the app nudges the
+  /// server when it sees the other person; the server checks with LiveKit itself
+  /// before any billing starts. Retries a few times while the call connects.
+  bool _verifying = false;
+  Future<void> _verifyConnected() async {
+    if (_verifying || _phase == _Phase.live || _phase == _Phase.ended) return;
+    _verifying = true;
+    final api = ref.read(apiProvider);
+    try {
+      for (
+        var i = 0;
+        i < 5 && mounted && _phase != _Phase.live && _phase != _Phase.ended;
+        i++
+      ) {
+        final r = await api.call(() => api.calls.verifyCallConnected(a.callId));
+        if (r.connected) break;
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    } catch (_) {
+      /* the sweep catches up */
+    } finally {
+      _verifying = false;
+    }
   }
 
   void _onServerEvent(Map<String, dynamic> e) {
@@ -328,10 +361,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             if (showVideo)
               Positioned.fill(
                 child: _moderator?.hidden == true
-                    ? _HiddenVideo(
-                        track: _remoteVideo!,
-                        onReport: _report,
-                      )
+                    ? _HiddenVideo(track: _remoteVideo!, onReport: _report)
                     : VideoTrackRenderer(
                         _remoteVideo!,
                         fit: VideoViewFit.cover,
@@ -922,7 +952,6 @@ class _ReportSheetState extends State<_ReportSheet> {
   );
 }
 
-
 /// The other person's video, blurred because the on-device check found nudity.
 class _HiddenVideo extends StatelessWidget {
   const _HiddenVideo({required this.track, required this.onReport});
@@ -935,7 +964,11 @@ class _HiddenVideo extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40, tileMode: TileMode.decal),
+          imageFilter: ImageFilter.blur(
+            sigmaX: 40,
+            sigmaY: 40,
+            tileMode: TileMode.decal,
+          ),
           child: VideoTrackRenderer(track, fit: VideoViewFit.cover),
         ),
         const ColoredBox(color: Color(0xB30A0A18)),
@@ -945,9 +978,17 @@ class _HiddenVideo extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.shield_outlined, size: 48, color: AppColors.pinkSoft),
+                const Icon(
+                  Icons.shield_outlined,
+                  size: 48,
+                  color: AppColors.pinkSoft,
+                ),
                 const SizedBox(height: 12),
-                Text('Video hidden for your safety', textAlign: TextAlign.center, style: AppText.heading(20)),
+                Text(
+                  'Video hidden for your safety',
+                  textAlign: TextAlign.center,
+                  style: AppText.heading(20),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'It may show nudity, which is not allowed. Our safety team has been sent one frame to review. You can keep talking, or report and end the call.',
@@ -956,7 +997,9 @@ class _HiddenVideo extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.danger,
+                  ),
                   onPressed: onReport,
                   icon: const Icon(Icons.flag_outlined),
                   label: const Text('Report & end call'),

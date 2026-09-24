@@ -42,7 +42,8 @@ class LegalIndexScreen extends StatelessWidget {
           child: Column(
             children: [
               for (final (i, (id, title, icon)) in legalPages.indexed) ...[
-                if (i > 0) const Divider(height: 1, color: AppColors.cardBorder),
+                if (i > 0)
+                  const Divider(height: 1, color: AppColors.cardBorder),
                 ListTile(
                   key: ValueKey('legal-$id'),
                   leading: Icon(icon, color: AppColors.pinkSoft),
@@ -81,7 +82,11 @@ class LegalPageScreen extends ConsumerWidget {
         ],
         error: (e, _) => [
           const SizedBox(height: 40),
-          Text(friendlyError(e), style: AppText.body(15), textAlign: TextAlign.center),
+          Text(
+            friendlyError(e),
+            style: AppText.body(15),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           Center(
             child: TextButton(
@@ -98,7 +103,9 @@ class LegalPageScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.4),
+                ),
               ),
               child: Text(
                 'Draft — some company details are still being filled in.',
@@ -106,7 +113,9 @@ class LegalPageScreen extends ConsumerWidget {
               ),
             ),
           // The page title is already in the header.
-          for (final b in p.blocks.skipWhile((b) => b.type == LegalBlockTypeEnum.h1))
+          for (final b in p.blocks.skipWhile(
+            (b) => b.type == LegalBlockTypeEnum.h1,
+          ))
             _Block(block: b),
         ],
       ),
@@ -173,7 +182,10 @@ class _Block extends StatelessWidget {
       case LegalBlockTypeEnum.h2:
         return Padding(
           padding: const EdgeInsets.only(top: 18, bottom: 6),
-          child: _Rich(spans: b.spans, style: AppText.heading(b.type == LegalBlockTypeEnum.h1 ? 22 : 17)),
+          child: _Rich(
+            spans: b.spans,
+            style: AppText.heading(b.type == LegalBlockTypeEnum.h1 ? 22 : 17),
+          ),
         );
       case LegalBlockTypeEnum.p:
         return Padding(
@@ -233,7 +245,10 @@ class _Block extends StatelessWidget {
                             spans: cell.spans,
                             style: i == 0
                                 ? AppText.body(15, weight: FontWeight.w700)
-                                : AppText.body(14, color: AppColors.textSecondary),
+                                : AppText.body(
+                                    14,
+                                    color: AppColors.textSecondary,
+                                  ),
                           ),
                         ),
                     ],
@@ -273,8 +288,10 @@ class _Rich extends StatelessWidget {
                 decorationColor: AppColors.pinkSoft,
               ),
               // Links to other policies open inside the app.
-              recognizer: s.href != null && legalPages.any((p) => p.$1 == s.href)
-                  ? (TapGestureRecognizer()..onTap = () => context.push('/legal/${s.href}'))
+              recognizer:
+                  s.href != null && legalPages.any((p) => p.$1 == s.href)
+                  ? (TapGestureRecognizer()
+                      ..onTap = () => context.push('/legal/${s.href}'))
                   : null,
             ),
         ],

@@ -4,7 +4,8 @@
 import { z } from "zod";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { tx, type DbClient } from "../db/pool.js";
-import { bearer, me, requireAuth } from "../auth/guard.js";
+import { bearer, me } from "../auth/guard.js";
+import { can } from "../auth/permissions.js";
 import { maskPhone } from "../auth/phone.js";
 import { ApiError, conflict, notFound } from "../errors.js";
 import { post } from "../billing/ledger.js";
@@ -51,12 +52,11 @@ const AdminPayout = z.object({
 
 export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   const { db, redis, store, payouts: provider } = app.deps;
-  const admin = requireAuth("admin");
   const base = { tags: ["admin"], security: bearer };
 
   // -------------------------------------------------------------------------
   app.get("/admin/kyc", {
-    preHandler: admin,
+    preHandler: can("kyc.review"),
     schema: {
       ...base,
       summary: "KYC review queue (oldest first) or decided cases",
@@ -89,7 +89,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get("/admin/kyc/:userId/files/:doc", {
-    preHandler: admin,
+    preHandler: can("kyc.review"),
     schema: {
       ...base,
       summary: "Decrypted KYC image for side-by-side review. Every view is audit-logged.",
@@ -110,7 +110,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/kyc/:userId/decision", {
-    preHandler: admin,
+    preHandler: can("kyc.review"),
     schema: {
       ...base,
       summary: "Approve (companion can go online) or reject with a reason the companion will see",
@@ -147,7 +147,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/companions/:userId/video", {
-    preHandler: admin,
+    preHandler: can("companions.video"),
     schema: {
       ...base,
       summary: "Unlock or lock video calls for a companion (after academy + clean record)",
@@ -165,7 +165,9 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
     }
     await tx(db, async (c) => {
       const r = await c.query(
-        `UPDATE companion_profiles SET video_enabled = $2 WHERE user_id = $1 AND kyc_status = 'approved'`,
+        // Locking video again switches voice back on, so a "video only" companion still gets calls.
+        `UPDATE companion_profiles SET video_enabled = $2, takes_audio = takes_audio OR NOT $2
+          WHERE user_id = $1 AND kyc_status = 'approved'`,
         [req.params.userId, req.body.enabled]);
       if (!r.rowCount) throw conflict("KYC_NOT_APPROVED", "Only verified companions can have video");
       await audit(c, me(req).userId, "companion.video", "user", req.params.userId, { ...req.body });
@@ -182,7 +184,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get("/admin/payouts", {
-    preHandler: admin,
+    preHandler: can("payouts.view"),
     schema: {
       ...base,
       querystring: z.object({ status: z.enum(["requested", "processing", "paid", "failed", "rejected"]).default("requested") }),
@@ -222,7 +224,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   }
 
   app.post("/admin/payouts/:id/approve", {
-    preHandler: admin,
+    preHandler: can("payouts.decide"),
     schema: {
       ...base,
       summary: "Approve and send to UPI. Failures are credited back to the companion automatically.",
@@ -269,7 +271,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/payouts/:id/reject", {
-    preHandler: admin,
+    preHandler: can("payouts.decide"),
     schema: {
       ...base,
       summary: "Reject a withdrawal; the amount goes back to the companion's balance",

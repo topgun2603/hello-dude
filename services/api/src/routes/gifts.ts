@@ -5,6 +5,7 @@ import { bearer, me, requireAuth } from "../auth/guard.js";
 import { ApiError, conflict, forbidden, notFound } from "../errors.js";
 import { post } from "../billing/ledger.js";
 import { numberSetting } from "../settings.js";
+import { spendWeeklyGift } from "../vip.js";
 
 export const Gift = z.object({
   id: z.number().int(), code: z.string(), name: z.string(), emoji: z.string(), coins: z.number().int(),
@@ -61,7 +62,10 @@ export const giftRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!ins.rowCount) return { duplicate: true as const, coinsLeft: await balance(), call };
 
       const giftRowId = ins.rows[0]!.id;
-      const left = await post(c, userId, "coins", "gift_debit", -gift.coins, `gift:${giftRowId}:debit`,
+      // VIP: this week's free Rose costs the caller nothing (the companion is still paid).
+      const free = await spendWeeklyGift(c, userId, gift.id, giftRowId);
+      if (free) await c.query(`UPDATE call_gifts SET coins = 0 WHERE id = $1`, [giftRowId]);
+      const left = free ? await balance() : await post(c, userId, "coins", "gift_debit", -gift.coins, `gift:${giftRowId}:debit`,
         { callId: req.params.id, note: `${gift.name} gift` });
       if (left === null) throw new ApiError(402, "INSUFFICIENT_BALANCE", `You need ${gift.coins} coins for a ${gift.name}`);
       if (paise > 0) {

@@ -70,14 +70,14 @@ class CompanionsApi {
     return null;
   }
 
-  /// Home screen: who is online now in a language
+  /// Who is online now: in one language (Home), or everyone when language is left out (Online tab)
   ///
   /// Note: This method returns the HTTP [Response].
   ///
   /// Parameters:
   ///
-  /// * [String] language (required):
-  Future<Response> listOnlineCompanionsWithHttpInfo(String language, { Future<void>? abortTrigger, }) async {
+  /// * [String] language:
+  Future<Response> listOnlineCompanionsWithHttpInfo({ String? language, Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/companions/online';
 
@@ -88,7 +88,9 @@ class CompanionsApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
+    if (language != null) {
       queryParams.addAll(_queryParams('', 'language', language));
+    }
 
     const contentTypes = <String>[];
 
@@ -105,13 +107,13 @@ class CompanionsApi {
     );
   }
 
-  /// Home screen: who is online now in a language
+  /// Who is online now: in one language (Home), or everyone when language is left out (Online tab)
   ///
   /// Parameters:
   ///
-  /// * [String] language (required):
-  Future<ListOnlineCompanions200Response?> listOnlineCompanions(String language, { Future<void>? abortTrigger, }) async {
-    final response = await listOnlineCompanionsWithHttpInfo(language, abortTrigger: abortTrigger,);
+  /// * [String] language:
+  Future<ListOnlineCompanions200Response?> listOnlineCompanions({ String? language, Future<void>? abortTrigger, }) async {
+    final response = await listOnlineCompanionsWithHttpInfo(language: language, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

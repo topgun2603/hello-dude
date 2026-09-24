@@ -2,15 +2,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { BadgeIndianRupee, EyeOff, Flag, HandCoins, Heart, History, House, ShieldCheck, Undo2, Users } from "lucide-react";
+import { BadgeIndianRupee, ChartNoAxesCombined, EyeOff, Flag, HandCoins, Heart, History, House, KeyRound, PartyPopper, ShieldCheck, Sparkles, Undo2, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { pageAllowed, useCan } from "@/lib/access";
 import { api, type Dashboard } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Brand, BrandMark } from "./brand";
 
-const NAV = [
+export const NAV = [
   { href: "/", label: "Dashboard", icon: House },
+  { href: "/analytics", label: "Analytics", icon: ChartNoAxesCombined },
   { href: "/companions", label: "Companions", icon: Heart },
   { href: "/callers", label: "Callers", icon: Users },
   { href: "/kyc", label: "KYC review", icon: ShieldCheck, badge: "kyc" as const },
@@ -19,13 +21,24 @@ const NAV = [
   { href: "/payouts", label: "Payouts", icon: HandCoins, badge: "payouts" as const },
   { href: "/refunds", label: "Refunds", icon: Undo2, badge: "refunds" as const },
   { href: "/pricing", label: "Pricing", icon: BadgeIndianRupee },
+  { href: "/engagement", label: "Engagement", icon: Sparkles },
+  { href: "/promotions", label: "Offers popup", icon: PartyPopper },
   { href: "/audit", label: "Audit log", icon: History },
+  { href: "/staff", label: "Staff & roles", icon: KeyRound },
 ];
+
+/** Only the sections this staff member's role can open. */
+function useNav() {
+  const can = useCan();
+  return { nav: NAV.filter((n) => pageAllowed(n.href, can)), can };
+}
 
 export function Sidebar() {
   const path = usePathname();
   const still = useReducedMotion();
-  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<Dashboard>("admin/dashboard"), refetchInterval: 30_000 });
+  const { nav, can } = useNav();
+  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<Dashboard>("admin/dashboard"), refetchInterval: 30_000,
+    enabled: can("dashboard.view") });
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#2A0F3F_0%,#1E0B30_55%,#2B0B35_100%)] text-white md:flex">
@@ -37,7 +50,7 @@ export function Sidebar() {
         <p className="mt-0.5 text-[11px] text-white/60">Talk. Vibe. Connect.</p>
       </div>
       <nav className="relative flex flex-1 flex-col gap-1 px-3" aria-label="Sections">
-        {NAV.map((item, i) => {
+        {nav.map((item, i) => {
           const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
           const Icon = item.icon;
           const badge = item.badge === "reports" ? data?.openReports : item.badge === "kyc" ? data?.pendingKyc
@@ -56,7 +69,7 @@ export function Sidebar() {
                 animate={still ? undefined : active
                   ? { rotate: [0, -14, 12, -8, 6, 0], scale: [1, 1.15, 1, 1.1, 1] }
                   : { rotate: [0, -12, 10, -6, 4, 0] }}
-                transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity, repeatDelay: NAV.length * 0.35, delay: i * 0.35 }}>
+                transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity, repeatDelay: nav.length * 0.35, delay: i * 0.35 }}>
                 <Icon className={cn("size-5 transition-transform duration-200 group-hover:scale-125", !active && "text-pink-300")} />
               </motion.span>
               <span className="relative flex-1">{item.label}</span>
@@ -78,11 +91,12 @@ export function Sidebar() {
 /** Small screens: brand + a horizontally scrolling tab row instead of the sidebar. */
 export function MobileNav() {
   const path = usePathname();
+  const { nav } = useNav();
   return (
     <header className="sticky top-0 z-20 bg-[#1E0B30] text-white md:hidden">
       <div className="px-4 pt-3"><Brand inverted /></div>
       <nav className="flex gap-1 overflow-x-auto px-3 py-2" aria-label="Sections">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}

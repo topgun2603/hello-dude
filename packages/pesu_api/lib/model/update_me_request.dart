@@ -27,6 +27,7 @@ class UpdateMeRequest {
 
   String? primaryLanguage;
 
+  /// Leave empty to keep the current languages
   List<String>? languages;
 
   @override

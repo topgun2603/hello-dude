@@ -85,3 +85,12 @@ The Dart API client in `packages/pesu_api` is generated — after API changes ru
       · lock-screen ringing needs FCM (Firebase) · real payouts need RazorpayX/Cashfree
 - [x] Stage 6 — admin panel: dashboard, pricing (versioned rates, coin packs), reports,
       callers/companions (search, suspend), audit log · KYC review + payouts come with Stage 5
+- [x] Stage 7 — MVP gaps: gifts in call, favourites, refunds, report recording port, academy,
+      account deletion, first-recharge offer · admin detail pages, table filters/export
+- [x] Safety & policy — legal pages (/legal/*), retention jobs, on-device video nudity check +
+      admin Moderation queue
+- [x] v2 — notifications inbox, daily check-in, referrals + share card, chat (safety filter),
+      scheduled calls (coin hold), VIP (admin grant; Play purchase pending), companion levels +
+      bonuses, voice rooms, admin Engagement page
+- [ ] Next — admin roles (admin/moderator/finance), fraud detection jobs
+- [ ] Needs accounts — Play Billing + UCB/Razorpay, MSG91, LiveKit Cloud, S3/R2, RazorpayX/Cashfree

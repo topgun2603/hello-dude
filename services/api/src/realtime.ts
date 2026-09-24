@@ -10,6 +10,7 @@ import websocket from "@fastify/websocket";
 import type { FastifyInstance } from "fastify";
 import type { Redis } from "ioredis";
 import type { WebSocket } from "ws";
+import { leftApp, markInApp } from "./presence.js";
 
 const PING_EVERY_MS = 25_000;
 
@@ -35,8 +36,14 @@ export async function registerRealtime(app: FastifyInstance, redis: Redis): Prom
     const mine = sockets.get(userId) ?? new Set<WebSocket>();
     sockets.set(userId, mine.add(socket));
 
+    // "In the app" for the admin panel: live while this socket answers pings.
+    const touch = () =>
+      app.deps.db.query(`UPDATE users SET last_active_at = now() WHERE id = $1`, [userId]).catch(() => {});
+    markInApp(redis, userId).catch(() => {});
+    touch();
+
     let alive = true;
-    socket.on("pong", () => { alive = true; });
+    socket.on("pong", () => { alive = true; markInApp(redis, userId).catch(() => {}); });
     const ping = setInterval(() => {
       if (!alive) return socket.terminate();
       alive = false;
@@ -46,7 +53,11 @@ export async function registerRealtime(app: FastifyInstance, redis: Redis): Prom
     socket.on("close", () => {
       clearInterval(ping);
       mine.delete(socket);
-      if (!mine.size) sockets.delete(userId);
+      if (!mine.size) {
+        sockets.delete(userId);
+        touch();
+        leftApp(redis, userId).catch(() => {});
+      }
     });
     socket.send(JSON.stringify({ t: "hello" }));
   });

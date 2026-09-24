@@ -193,8 +193,62 @@ class ApiClient {
           return AcademyLessonQuizInner.fromJson(value);
         case 'AddFavouriteRequest':
           return AddFavouriteRequest.fromJson(value);
+        case 'AdminAddStaffRequest':
+          return AdminAddStaffRequest.fromJson(value);
         case 'AdminAddUserNoteRequest':
           return AdminAddUserNoteRequest.fromJson(value);
+        case 'AdminAnalytics':
+          return AdminAnalytics.fromJson(value);
+        case 'AdminAnalyticsByHourInner':
+          return AdminAnalyticsByHourInner.fromJson(value);
+        case 'AdminAnalyticsByLanguageInner':
+          return AdminAnalyticsByLanguageInner.fromJson(value);
+        case 'AdminAnalyticsByTypeInner':
+          return AdminAnalyticsByTypeInner.fromJson(value);
+        case 'AdminAnalyticsDailyInner':
+          return AdminAnalyticsDailyInner.fromJson(value);
+        case 'AdminAnalyticsInput':
+          return AdminAnalyticsInput.fromJson(value);
+        case 'AdminAnalyticsInputByHourInner':
+          return AdminAnalyticsInputByHourInner.fromJson(value);
+        case 'AdminAnalyticsInputByLanguageInner':
+          return AdminAnalyticsInputByLanguageInner.fromJson(value);
+        case 'AdminAnalyticsInputByTypeInner':
+          return AdminAnalyticsInputByTypeInner.fromJson(value);
+        case 'AdminAnalyticsInputDailyInner':
+          return AdminAnalyticsInputDailyInner.fromJson(value);
+        case 'AdminAnalyticsInputMargin':
+          return AdminAnalyticsInputMargin.fromJson(value);
+        case 'AdminAnalyticsInputMostActiveInner':
+          return AdminAnalyticsInputMostActiveInner.fromJson(value);
+        case 'AdminAnalyticsInputMostReportedInner':
+          return AdminAnalyticsInputMostReportedInner.fromJson(value);
+        case 'AdminAnalyticsInputPrevious':
+          return AdminAnalyticsInputPrevious.fromJson(value);
+        case 'AdminAnalyticsInputRange':
+          return AdminAnalyticsInputRange.fromJson(value);
+        case 'AdminAnalyticsInputTopEarnersInner':
+          return AdminAnalyticsInputTopEarnersInner.fromJson(value);
+        case 'AdminAnalyticsInputTopRatedInner':
+          return AdminAnalyticsInputTopRatedInner.fromJson(value);
+        case 'AdminAnalyticsInputTopSpendersInner':
+          return AdminAnalyticsInputTopSpendersInner.fromJson(value);
+        case 'AdminAnalyticsMargin':
+          return AdminAnalyticsMargin.fromJson(value);
+        case 'AdminAnalyticsMostActiveInner':
+          return AdminAnalyticsMostActiveInner.fromJson(value);
+        case 'AdminAnalyticsMostReportedInner':
+          return AdminAnalyticsMostReportedInner.fromJson(value);
+        case 'AdminAnalyticsPrevious':
+          return AdminAnalyticsPrevious.fromJson(value);
+        case 'AdminAnalyticsRange':
+          return AdminAnalyticsRange.fromJson(value);
+        case 'AdminAnalyticsTopEarnersInner':
+          return AdminAnalyticsTopEarnersInner.fromJson(value);
+        case 'AdminAnalyticsTopRatedInner':
+          return AdminAnalyticsTopRatedInner.fromJson(value);
+        case 'AdminAnalyticsTopSpendersInner':
+          return AdminAnalyticsTopSpendersInner.fromJson(value);
         case 'AdminAuditLog200ResponseInner':
           return AdminAuditLog200ResponseInner.fromJson(value);
         case 'AdminCallRate':
@@ -205,12 +259,18 @@ class ApiClient {
           return AdminCoinPackage.fromJson(value);
         case 'AdminCoinPackageInput':
           return AdminCoinPackageInput.fromJson(value);
+        case 'AdminCreateBonusCampaignRequest':
+          return AdminCreateBonusCampaignRequest.fromJson(value);
         case 'AdminCreateGiftRequest':
           return AdminCreateGiftRequest.fromJson(value);
         case 'AdminCreatePackageRequest':
           return AdminCreatePackageRequest.fromJson(value);
+        case 'AdminCreatePromotionRequest':
+          return AdminCreatePromotionRequest.fromJson(value);
         case 'AdminCreateRateRequest':
           return AdminCreateRateRequest.fromJson(value);
+        case 'AdminCreateRoleRequest':
+          return AdminCreateRoleRequest.fromJson(value);
         case 'AdminDashboard200Response':
           return AdminDashboard200Response.fromJson(value);
         case 'AdminDashboard200ResponseActivityInner':
@@ -229,18 +289,26 @@ class ApiClient {
           return AdminDashboard200ResponseToday.fromJson(value);
         case 'AdminDashboard200ResponseYesterday':
           return AdminDashboard200ResponseYesterday.fromJson(value);
+        case 'AdminDecidePhotoRequest':
+          return AdminDecidePhotoRequest.fromJson(value);
         case 'AdminDecideRefundRequest':
           return AdminDecideRefundRequest.fromJson(value);
         case 'AdminGift':
           return AdminGift.fromJson(value);
         case 'AdminGiftInput':
           return AdminGiftInput.fromJson(value);
+        case 'AdminGrantVip200Response':
+          return AdminGrantVip200Response.fromJson(value);
+        case 'AdminGrantVipRequest':
+          return AdminGrantVipRequest.fromJson(value);
+        case 'AdminGroup':
+          return AdminGroup.fromJson(value);
+        case 'AdminGroupInput':
+          return AdminGroupInput.fromJson(value);
         case 'AdminKycCase':
           return AdminKycCase.fromJson(value);
         case 'AdminKycCaseAadhaar':
           return AdminKycCaseAadhaar.fromJson(value);
-        case 'AdminKycCaseAcademy':
-          return AdminKycCaseAcademy.fromJson(value);
         case 'AdminKycCaseInput':
           return AdminKycCaseInput.fromJson(value);
         case 'AdminKycCaseInputAadhaar':
@@ -253,10 +321,22 @@ class ApiClient {
           return AdminListPayouts200Response.fromJson(value);
         case 'AdminListPayouts200ResponseTotals':
           return AdminListPayouts200ResponseTotals.fromJson(value);
+        case 'AdminListRoles200Response':
+          return AdminListRoles200Response.fromJson(value);
+        case 'AdminListRoles200ResponsePermissionsInner':
+          return AdminListRoles200ResponsePermissionsInner.fromJson(value);
         case 'AdminListSettings200ResponseInner':
           return AdminListSettings200ResponseInner.fromJson(value);
         case 'AdminListUsers200Response':
           return AdminListUsers200Response.fromJson(value);
+        case 'AdminLive':
+          return AdminLive.fromJson(value);
+        case 'AdminLiveInput':
+          return AdminLiveInput.fromJson(value);
+        case 'AdminMe':
+          return AdminMe.fromJson(value);
+        case 'AdminMeInput':
+          return AdminMeInput.fromJson(value);
         case 'AdminModerationFlag':
           return AdminModerationFlag.fromJson(value);
         case 'AdminModerationFlagCall':
@@ -281,6 +361,10 @@ class ApiClient {
           return AdminPayoutInput.fromJson(value);
         case 'AdminPayoutInputCompanion':
           return AdminPayoutInputCompanion.fromJson(value);
+        case 'AdminPromotion':
+          return AdminPromotion.fromJson(value);
+        case 'AdminPromotionInput':
+          return AdminPromotionInput.fromJson(value);
         case 'AdminRefund':
           return AdminRefund.fromJson(value);
         case 'AdminRefundCall':
@@ -297,8 +381,6 @@ class ApiClient {
           return AdminRefundInputCaller.fromJson(value);
         case 'AdminRefundInputCompanion':
           return AdminRefundInputCompanion.fromJson(value);
-        case 'AdminRejectPayoutRequest':
-          return AdminRejectPayoutRequest.fromJson(value);
         case 'AdminReport':
           return AdminReport.fromJson(value);
         case 'AdminReportInput':
@@ -309,10 +391,18 @@ class ApiClient {
           return AdminReportInputReporter.fromJson(value);
         case 'AdminReportReported':
           return AdminReportReported.fromJson(value);
+        case 'AdminReportReporter':
+          return AdminReportReporter.fromJson(value);
         case 'AdminResolveModerationFlagRequest':
           return AdminResolveModerationFlagRequest.fromJson(value);
         case 'AdminResolveReportRequest':
           return AdminResolveReportRequest.fromJson(value);
+        case 'AdminRevokeVipRequest':
+          return AdminRevokeVipRequest.fromJson(value);
+        case 'AdminRole':
+          return AdminRole.fromJson(value);
+        case 'AdminRoleInput':
+          return AdminRoleInput.fromJson(value);
         case 'AdminSendCoins200Response':
           return AdminSendCoins200Response.fromJson(value);
         case 'AdminSendCoinsRequest':
@@ -321,16 +411,28 @@ class ApiClient {
           return AdminSendMessage200Response.fromJson(value);
         case 'AdminSendMessageRequest':
           return AdminSendMessageRequest.fromJson(value);
+        case 'AdminSetPromotionActiveRequest':
+          return AdminSetPromotionActiveRequest.fromJson(value);
         case 'AdminSetUserStatusRequest':
           return AdminSetUserStatusRequest.fromJson(value);
         case 'AdminSetVideoRequest':
           return AdminSetVideoRequest.fromJson(value);
+        case 'AdminStaff':
+          return AdminStaff.fromJson(value);
+        case 'AdminStaffInput':
+          return AdminStaffInput.fromJson(value);
+        case 'AdminUpdateCompanionLevelRequest':
+          return AdminUpdateCompanionLevelRequest.fromJson(value);
         case 'AdminUpdateGiftRequest':
           return AdminUpdateGiftRequest.fromJson(value);
         case 'AdminUpdatePackageRequest':
           return AdminUpdatePackageRequest.fromJson(value);
         case 'AdminUpdateSettingRequest':
           return AdminUpdateSettingRequest.fromJson(value);
+        case 'AdminUpdateStaffRequest':
+          return AdminUpdateStaffRequest.fromJson(value);
+        case 'AdminUpdateVipPlanRequest':
+          return AdminUpdateVipPlanRequest.fromJson(value);
         case 'AdminUser':
           return AdminUser.fromJson(value);
         case 'AdminUserDetail':
@@ -361,6 +463,8 @@ class ApiClient {
           return AdminUserDetailInputReportsInner.fromJson(value);
         case 'AdminUserDetailInputStats':
           return AdminUserDetailInputStats.fromJson(value);
+        case 'AdminUserDetailInputVip':
+          return AdminUserDetailInputVip.fromJson(value);
         case 'AdminUserDetailLedgerInner':
           return AdminUserDetailLedgerInner.fromJson(value);
         case 'AdminUserDetailPayoutsInner':
@@ -373,8 +477,14 @@ class ApiClient {
           return AdminUserDetailReportsInner.fromJson(value);
         case 'AdminUserDetailStats':
           return AdminUserDetailStats.fromJson(value);
+        case 'AdminUserDetailVip':
+          return AdminUserDetailVip.fromJson(value);
         case 'AdminUserInput':
           return AdminUserInput.fromJson(value);
+        case 'AnalyticsTotals':
+          return AnalyticsTotals.fromJson(value);
+        case 'AnalyticsTotalsInput':
+          return AnalyticsTotalsInput.fromJson(value);
         case 'AnswerLessonQuiz200Response':
           return AnswerLessonQuiz200Response.fromJson(value);
         case 'AnswerLessonQuizRequest':
@@ -383,6 +493,14 @@ class ApiClient {
           return ApplyAsCompanionRequest.fromJson(value);
         case 'BlockUserRequest':
           return BlockUserRequest.fromJson(value);
+        case 'BonusCampaign':
+          return BonusCampaign.fromJson(value);
+        case 'BonusCampaignInput':
+          return BonusCampaignInput.fromJson(value);
+        case 'Booking':
+          return Booking.fromJson(value);
+        case 'BookingInput':
+          return BookingInput.fromJson(value);
         case 'CallDetails':
           return CallDetails.fromJson(value);
         case 'CallDetailsGiftsInner':
@@ -395,6 +513,10 @@ class ApiClient {
           return CallDetailsInputMinutesInner.fromJson(value);
         case 'CallDetailsMinutesInner':
           return CallDetailsMinutesInner.fromJson(value);
+        case 'CallHistorySummary':
+          return CallHistorySummary.fromJson(value);
+        case 'CallHistorySummaryInput':
+          return CallHistorySummaryInput.fromJson(value);
         case 'CallSummary':
           return CallSummary.fromJson(value);
         case 'CallSummaryInput':
@@ -413,6 +535,18 @@ class ApiClient {
           return CheckInInputDaysInner.fromJson(value);
         case 'ClaimCheckIn200Response':
           return ClaimCheckIn200Response.fromJson(value);
+        case 'CoinHistoryItem':
+          return CoinHistoryItem.fromJson(value);
+        case 'CoinHistoryItemInput':
+          return CoinHistoryItemInput.fromJson(value);
+        case 'CoinHistorySummary':
+          return CoinHistorySummary.fromJson(value);
+        case 'CoinHistorySummaryInput':
+          return CoinHistorySummaryInput.fromJson(value);
+        case 'CompanionBonus':
+          return CompanionBonus.fromJson(value);
+        case 'CompanionBonusInput':
+          return CompanionBonusInput.fromJson(value);
         case 'CompanionEarnings200Response':
           return CompanionEarnings200Response.fromJson(value);
         case 'CompanionEarnings200ResponseWeekInner':
@@ -423,10 +557,16 @@ class ApiClient {
           return CompanionHome200ResponseRecentInner.fromJson(value);
         case 'CompanionHome200ResponseToday':
           return CompanionHome200ResponseToday.fromJson(value);
+        case 'CompanionLevel':
+          return CompanionLevel.fromJson(value);
+        case 'CompanionLevelInput':
+          return CompanionLevelInput.fromJson(value);
         case 'CompanionRates':
           return CompanionRates.fromJson(value);
         case 'CompanionRatesInput':
           return CompanionRatesInput.fromJson(value);
+        case 'ConfirmBookingRequest':
+          return ConfirmBookingRequest.fromJson(value);
         case 'Conversation':
           return Conversation.fromJson(value);
         case 'ConversationInput':
@@ -435,6 +575,12 @@ class ApiClient {
           return ConversationInputOther.fromJson(value);
         case 'ConversationOther':
           return ConversationOther.fromJson(value);
+        case 'CreateBooking201Response':
+          return CreateBooking201Response.fromJson(value);
+        case 'CreateBookingRequest':
+          return CreateBookingRequest.fromJson(value);
+        case 'CreateGroupRequest':
+          return CreateGroupRequest.fromJson(value);
         case 'DeleteAccount200Response':
           return DeleteAccount200Response.fromJson(value);
         case 'DeleteAccountRequest':
@@ -443,6 +589,10 @@ class ApiClient {
           return Favourite.fromJson(value);
         case 'FavouriteInput':
           return FavouriteInput.fromJson(value);
+        case 'FlagGroupFrameRequest':
+          return FlagGroupFrameRequest.fromJson(value);
+        case 'FlagLiveFrameRequest':
+          return FlagLiveFrameRequest.fromJson(value);
         case 'FlagVideoFrame201Response':
           return FlagVideoFrame201Response.fromJson(value);
         case 'FlagVideoFrame202Response':
@@ -451,26 +601,70 @@ class ApiClient {
           return FlagVideoFrameRequest.fromJson(value);
         case 'GetAcademy200Response':
           return GetAcademy200Response.fromJson(value);
+        case 'GetBookingSlots200Response':
+          return GetBookingSlots200Response.fromJson(value);
+        case 'GetBookingSlots200ResponseDaysInner':
+          return GetBookingSlots200ResponseDaysInner.fromJson(value);
+        case 'GetBookingSlots200ResponseDaysInnerSlotsInner':
+          return GetBookingSlots200ResponseDaysInnerSlotsInner.fromJson(value);
         case 'GetChatMessages200Response':
           return GetChatMessages200Response.fromJson(value);
+        case 'GetCoinHistory200Response':
+          return GetCoinHistory200Response.fromJson(value);
         case 'GetCompanion200Response':
           return GetCompanion200Response.fromJson(value);
+        case 'GetCompanionRewards200Response':
+          return GetCompanionRewards200Response.fromJson(value);
+        case 'GetCompanionRewards200ResponseAcademy':
+          return GetCompanionRewards200ResponseAcademy.fromJson(value);
+        case 'GetCurrentPromotion200Response':
+          return GetCurrentPromotion200Response.fromJson(value);
         case 'GetLegalPage200Response':
           return GetLegalPage200Response.fromJson(value);
         case 'GetReferral200Response':
           return GetReferral200Response.fromJson(value);
         case 'GetShareCard200Response':
           return GetShareCard200Response.fromJson(value);
+        case 'GetVip200Response':
+          return GetVip200Response.fromJson(value);
+        case 'GetVip200ResponseWeeklyGift':
+          return GetVip200ResponseWeeklyGift.fromJson(value);
         case 'GetWallet200Response':
           return GetWallet200Response.fromJson(value);
         case 'Gift':
           return Gift.fromJson(value);
         case 'GiftInput':
           return GiftInput.fromJson(value);
+        case 'GroupCard':
+          return GroupCard.fromJson(value);
+        case 'GroupCardHost':
+          return GroupCardHost.fromJson(value);
+        case 'GroupCardInput':
+          return GroupCardInput.fromJson(value);
+        case 'GroupCardInputHost':
+          return GroupCardInputHost.fromJson(value);
+        case 'GroupHeartbeat200Response':
+          return GroupHeartbeat200Response.fromJson(value);
+        case 'GroupHostState':
+          return GroupHostState.fromJson(value);
+        case 'GroupHostStateInput':
+          return GroupHostStateInput.fromJson(value);
+        case 'GroupJoin':
+          return GroupJoin.fromJson(value);
+        case 'GroupJoinInput':
+          return GroupJoinInput.fromJson(value);
+        case 'GroupRoom':
+          return GroupRoom.fromJson(value);
+        case 'GroupRoomInput':
+          return GroupRoomInput.fromJson(value);
+        case 'JoinGroupRequest':
+          return JoinGroupRequest.fromJson(value);
         case 'JoinInfo':
           return JoinInfo.fromJson(value);
         case 'JoinInfoInput':
           return JoinInfoInput.fromJson(value);
+        case 'JoinLiveRequest':
+          return JoinLiveRequest.fromJson(value);
         case 'KycState':
           return KycState.fromJson(value);
         case 'KycStateAadhaar':
@@ -513,28 +707,62 @@ class ApiClient {
           return LegalSpanInput.fromJson(value);
         case 'ListBlocks200ResponseInner':
           return ListBlocks200ResponseInner.fromJson(value);
+        case 'ListBookings200Response':
+          return ListBookings200Response.fromJson(value);
         case 'ListCalls200Response':
           return ListCalls200Response.fromJson(value);
         case 'ListChats200Response':
           return ListChats200Response.fromJson(value);
         case 'ListCoinPackages200ResponseInner':
           return ListCoinPackages200ResponseInner.fromJson(value);
+        case 'ListGroups200Response':
+          return ListGroups200Response.fromJson(value);
         case 'ListLanguages200ResponseInner':
           return ListLanguages200ResponseInner.fromJson(value);
         case 'ListLedger200Response':
           return ListLedger200Response.fromJson(value);
         case 'ListLegalPages200ResponseInner':
           return ListLegalPages200ResponseInner.fromJson(value);
+        case 'ListLives200Response':
+          return ListLives200Response.fromJson(value);
         case 'ListNotifications200Response':
           return ListNotifications200Response.fromJson(value);
         case 'ListOnlineCompanions200Response':
           return ListOnlineCompanions200Response.fromJson(value);
+        case 'LiveAccess':
+          return LiveAccess.fromJson(value);
+        case 'LiveAccessInput':
+          return LiveAccessInput.fromJson(value);
+        case 'LiveCard':
+          return LiveCard.fromJson(value);
+        case 'LiveCardHost':
+          return LiveCardHost.fromJson(value);
+        case 'LiveCardInput':
+          return LiveCardInput.fromJson(value);
+        case 'LiveCardInputHost':
+          return LiveCardInputHost.fromJson(value);
+        case 'LiveHostHeartbeat200Response':
+          return LiveHostHeartbeat200Response.fromJson(value);
+        case 'LiveJoin':
+          return LiveJoin.fromJson(value);
+        case 'LiveJoinInput':
+          return LiveJoinInput.fromJson(value);
+        case 'LivePricing':
+          return LivePricing.fromJson(value);
+        case 'LivePricingInput':
+          return LivePricingInput.fromJson(value);
+        case 'LogPromotionEventRequest':
+          return LogPromotionEventRequest.fromJson(value);
         case 'MarkNotificationsReadRequest':
           return MarkNotificationsReadRequest.fromJson(value);
         case 'MatchCall201Response':
           return MatchCall201Response.fromJson(value);
         case 'MatchCallRequest':
           return MatchCallRequest.fromJson(value);
+        case 'MyPhoto':
+          return MyPhoto.fromJson(value);
+        case 'MyPhotoInput':
+          return MyPhotoInput.fromJson(value);
         case 'NotificationItem':
           return NotificationItem.fromJson(value);
         case 'NotificationItemInput':
@@ -555,6 +783,14 @@ class ApiClient {
           return Payout.fromJson(value);
         case 'PayoutInput':
           return PayoutInput.fromJson(value);
+        case 'PendingPhoto':
+          return PendingPhoto.fromJson(value);
+        case 'PendingPhotoInput':
+          return PendingPhotoInput.fromJson(value);
+        case 'PendingPhotoInputUser':
+          return PendingPhotoInputUser.fromJson(value);
+        case 'PendingPhotoUser':
+          return PendingPhotoUser.fromJson(value);
         case 'Profile':
           return Profile.fromJson(value);
         case 'ProfileCompanion':
@@ -563,6 +799,12 @@ class ApiClient {
           return ProfileInput.fromJson(value);
         case 'ProfileInputCompanion':
           return ProfileInputCompanion.fromJson(value);
+        case 'Promotion':
+          return Promotion.fromJson(value);
+        case 'PromotionInput':
+          return PromotionInput.fromJson(value);
+        case 'RaiseHandRequest':
+          return RaiseHandRequest.fromJson(value);
         case 'RateCallRequest':
           return RateCallRequest.fromJson(value);
         case 'RefreshTokensRequest':
@@ -573,6 +815,8 @@ class ApiClient {
           return RefundRequestInput.fromJson(value);
         case 'RegisterDeviceRequest':
           return RegisterDeviceRequest.fromJson(value);
+        case 'ReportInGroupRequest':
+          return ReportInGroupRequest.fromJson(value);
         case 'ReportUser201Response':
           return ReportUser201Response.fromJson(value);
         case 'ReportUserRequest':
@@ -581,6 +825,28 @@ class ApiClient {
           return RequestPayoutRequest.fromJson(value);
         case 'RequestRefundRequest':
           return RequestRefundRequest.fromJson(value);
+        case 'RoomCard':
+          return RoomCard.fromJson(value);
+        case 'RoomCardHost':
+          return RoomCardHost.fromJson(value);
+        case 'RoomCardInput':
+          return RoomCardInput.fromJson(value);
+        case 'RoomCardInputHost':
+          return RoomCardInputHost.fromJson(value);
+        case 'RoomJoin':
+          return RoomJoin.fromJson(value);
+        case 'RoomJoinInput':
+          return RoomJoinInput.fromJson(value);
+        case 'RoomMember':
+          return RoomMember.fromJson(value);
+        case 'RoomMemberInput':
+          return RoomMemberInput.fromJson(value);
+        case 'RoomState':
+          return RoomState.fromJson(value);
+        case 'RoomStateInput':
+          return RoomStateInput.fromJson(value);
+        case 'RoomToken200Response':
+          return RoomToken200Response.fromJson(value);
         case 'SendChatMessageRequest':
           return SendChatMessageRequest.fromJson(value);
         case 'SendGift201Response':
@@ -591,18 +857,38 @@ class ApiClient {
           return SendOtp200Response.fromJson(value);
         case 'SendOtpRequest':
           return SendOtpRequest.fromJson(value);
+        case 'SendRoomGift201Response':
+          return SendRoomGift201Response.fromJson(value);
+        case 'SendRoomGiftRequest':
+          return SendRoomGiftRequest.fromJson(value);
+        case 'SendRoomMessageRequest':
+          return SendRoomMessageRequest.fromJson(value);
+        case 'SendRoomReactionRequest':
+          return SendRoomReactionRequest.fromJson(value);
+        case 'SetCompanionCallTypes200Response':
+          return SetCompanionCallTypes200Response.fromJson(value);
+        case 'SetCompanionCallTypesRequest':
+          return SetCompanionCallTypesRequest.fromJson(value);
         case 'SetPresence200Response':
           return SetPresence200Response.fromJson(value);
         case 'SetPresenceRequest':
           return SetPresenceRequest.fromJson(value);
+        case 'SetRoomStageRequest':
+          return SetRoomStageRequest.fromJson(value);
         case 'SetUpiRequest':
           return SetUpiRequest.fromJson(value);
+        case 'SignInWithFirebaseRequest':
+          return SignInWithFirebaseRequest.fromJson(value);
         case 'SignUp201Response':
           return SignUp201Response.fromJson(value);
         case 'SignUpRequest':
           return SignUpRequest.fromJson(value);
         case 'StartCallRequest':
           return StartCallRequest.fromJson(value);
+        case 'StartLiveRequest':
+          return StartLiveRequest.fromJson(value);
+        case 'StartRoomRequest':
+          return StartRoomRequest.fromJson(value);
         case 'TokenPair':
           return TokenPair.fromJson(value);
         case 'TokenPairInput':
@@ -613,12 +899,20 @@ class ApiClient {
           return UpdateMeRequest.fromJson(value);
         case 'UploadAadhaarRequest':
           return UploadAadhaarRequest.fromJson(value);
+        case 'UploadMyPhotoRequest':
+          return UploadMyPhotoRequest.fromJson(value);
         case 'UploadPanRequest':
           return UploadPanRequest.fromJson(value);
         case 'UploadSelfieRequest':
           return UploadSelfieRequest.fromJson(value);
+        case 'VerifyCallConnected200Response':
+          return VerifyCallConnected200Response.fromJson(value);
         case 'VerifyOtpRequest':
           return VerifyOtpRequest.fromJson(value);
+        case 'VipPlan':
+          return VipPlan.fromJson(value);
+        case 'VipPlanInput':
+          return VipPlanInput.fromJson(value);
         default:
           dynamic match;
           if (value is List && (match = _regList.firstMatch(targetType)?.group(1)) != null) {

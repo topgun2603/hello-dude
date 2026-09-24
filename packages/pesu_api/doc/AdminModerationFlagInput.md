@@ -17,6 +17,8 @@ Name | Type | Description | Notes
 **reviewer** | **String** |  | 
 **hasFrame** | **bool** | false once deleted under the retention policy | 
 **call** | [**AdminModerationFlagInputCall**](AdminModerationFlagInputCall.md) |  | 
+**liveId** | **String** |  | 
+**groupId** | **String** |  | 
 **subject** | [**AdminModerationFlagInputSubject**](AdminModerationFlagInputSubject.md) |  | 
 **detectedBy** | [**AdminReportInputReporter**](AdminReportInputReporter.md) |  | 
 

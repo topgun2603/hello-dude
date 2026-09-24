@@ -10,6 +10,11 @@ import '../../widgets/common.dart';
 import 'companion_data.dart';
 import '../notifications/notifications_screen.dart';
 import '../chat/chat_screens.dart';
+import '../rooms/rooms_screens.dart';
+import '../group/group_host.dart' show HostGroupsCard;
+import '../live/live_data.dart' show LiveBadge;
+import '../live/live_host_screen.dart' show showGoLiveSheet;
+import 'profile_photo.dart' show MyAvatar;
 
 const _green = Color(0xFF10B981);
 const _teal = Color(0xFF0E7490);
@@ -35,11 +40,7 @@ class CompanionHomeTab extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Avatar(
-                name: profile.displayName,
-                avatarId: profile.avatarId,
-                size: 44,
-              ),
+              const MyAvatar(size: 44),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -64,6 +65,26 @@ class CompanionHomeTab extends ConsumerWidget {
               const NotificationBell(),
             ],
           ),
+          const SizedBox(height: 14),
+          Material(
+            color: const Color(0x1F10B981),
+            borderRadius: BorderRadius.circular(16),
+            child: ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              leading: const Icon(
+                Icons.emoji_events_rounded,
+                color: Color(0xFFFCD34D),
+              ),
+              title: const Text('Rewards'),
+              subtitle: const Text('Your level, daily goal and bonuses'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/rewards'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const VoiceRoomsCard(host: true),
           const SizedBox(height: 18),
           home.when(
             loading: () => const Padding(
@@ -167,6 +188,38 @@ class _Approved extends ConsumerStatefulWidget {
 class _ApprovedState extends ConsumerState<_Approved> {
   bool _switching = false;
 
+  /// Optimistic copies of the call-type switches while a save is in flight.
+  bool? _audio, _video;
+  bool _savingTypes = false;
+
+  Future<void> _setTypes({required bool audio, required bool video}) async {
+    if (!audio && !video) {
+      showError(context, "Keep voice or video on, or you won't get any calls");
+      return;
+    }
+    setState(() {
+      _audio = audio;
+      _video = video;
+      _savingTypes = true;
+    });
+    final api = ref.read(apiProvider);
+    try {
+      await api.call(
+        () => api.companion.setCompanionCallTypes(
+          SetCompanionCallTypesRequest(audio: audio, video: video),
+        ),
+      );
+      ref.invalidate(companionHomeProvider);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _audio = _video = null); // back to what the server says
+        showError(context, friendlyError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _savingTypes = false);
+    }
+  }
+
   Future<void> _toggle(bool online) async {
     setState(() => _switching = true);
     try {
@@ -251,30 +304,60 @@ class _ApprovedState extends ConsumerState<_Approved> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _Mode(
-                icon: Icons.call_rounded,
-                label: 'Voice',
-                value: online ? 'Accepting' : 'Off',
-                on: online,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _Mode(
-                icon: Icons.videocam_rounded,
-                label: 'Video',
-                value: h.videoEnabled
-                    ? (online ? 'Accepting' : 'Off')
-                    : 'Locked · after training',
-                on: online && h.videoEnabled,
-              ),
-            ),
-          ],
+        const SizedBox(height: 16),
+        Text(
+          'Calls you take',
+          style: AppText.heading(15, weight: FontWeight.w700),
         ),
+        const SizedBox(height: 8),
+        Builder(
+          builder: (context) {
+            final audio = _audio ?? h.takesAudio;
+            final video = h.videoEnabled && (_video ?? h.takesVideo);
+            String state(bool on) => !on
+                ? 'Off'
+                : online
+                ? 'Accepting'
+                : 'When you go online';
+            return Row(
+              children: [
+                Expanded(
+                  child: _Mode(
+                    icon: Icons.call_rounded,
+                    label: 'Voice',
+                    value: state(audio),
+                    on: audio,
+                    live: online && audio,
+                    onChanged: _savingTypes
+                        ? null
+                        : (v) => _setTypes(audio: v, video: video),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _Mode(
+                    icon: Icons.videocam_rounded,
+                    label: 'Video',
+                    value: h.videoEnabled
+                        ? state(video)
+                        : 'Locked · after training',
+                    on: video,
+                    live: online && video,
+                    locked: !h.videoEnabled,
+                    onLockedTap: () => context.push('/academy'),
+                    onChanged: _savingTypes || !h.videoEnabled
+                        ? null
+                        : (v) => _setTypes(audio: audio, video: v),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _GoLiveCard(unlocked: h.videoEnabled),
+        const SizedBox(height: 12),
+        HostGroupsCard(unlocked: h.videoEnabled),
         const SizedBox(height: 20),
         Text('Today', style: AppText.heading(17, weight: FontWeight.w700)),
         const SizedBox(height: 10),
@@ -327,11 +410,21 @@ class _ApprovedState extends ConsumerState<_Approved> {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'Recent calls',
-          style: AppText.heading(17, weight: FontWeight.w700),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Recent calls',
+                style: AppText.heading(17, weight: FontWeight.w700),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/call-history'),
+              child: const Text('See all'),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
         if (h.recent.isEmpty)
           Text(
             'No calls yet. Go online and your first call will show up here.',
@@ -389,51 +482,94 @@ class _ApprovedState extends ConsumerState<_Approved> {
   }
 }
 
+/// One call type the companion takes, with its own switch. Video shows a lock
+/// (tap → academy) until it's unlocked.
 class _Mode extends StatelessWidget {
   const _Mode({
     required this.icon,
     required this.label,
     required this.value,
     required this.on,
+    required this.live,
+    required this.onChanged,
+    this.locked = false,
+    this.onLockedTap,
   });
   final IconData icon;
   final String label, value;
+
+  /// Switched on by the companion.
   final bool on;
 
+  /// On and online: calls of this type can ring now.
+  final bool live;
+  final bool locked;
+  final ValueChanged<bool>? onChanged;
+  final VoidCallback? onLockedTap;
+
+  static const _green = Color(0xFF6EE7B7);
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: AppColors.card,
+  Widget build(BuildContext context) => Semantics(
+    toggled: locked ? null : on,
+    button: locked,
+    label: locked
+        ? '$label calls locked. Finish the academy to unlock.'
+        : '$label calls',
+    excludeSemantics: true,
+    child: InkWell(
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.cardBorder),
-    ),
-    child: Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: on ? const Color(0xFF6EE7B7) : AppColors.textSecondary,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: AppText.body(14, weight: FontWeight.w700)),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppText.body(
-                  12,
-                  color: on ? const Color(0xFF6EE7B7) : AppColors.textSecondary,
-                ),
-              ),
-            ],
+      onTap: locked
+          ? onLockedTap
+          : (onChanged == null ? null : () => onChanged!(!on)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+        decoration: BoxDecoration(
+          color: on ? const Color(0x1A10B981) : AppColors.card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: on ? const Color(0x6610B981) : AppColors.cardBorder,
           ),
         ),
-      ],
+        child: Row(
+          children: [
+            Icon(
+              locked ? Icons.lock_outline_rounded : icon,
+              size: 20,
+              color: live ? _green : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppText.body(14, weight: FontWeight.w700)),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.body(
+                      12,
+                      color: live ? _green : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!locked)
+              Transform.scale(
+                scale: 0.8,
+                child: Switch(
+                  value: on,
+                  onChanged: onChanged,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: const Color(0xFF10B981),
+                ),
+              ),
+          ],
+        ),
+      ),
     ),
   );
 }
@@ -470,6 +606,86 @@ class _Stat extends StatelessWidget {
           ),
         ),
       ],
+    ),
+  );
+}
+
+/// Go live: stream to many viewers who pay by the pass. Needs video unlocked.
+class _GoLiveCard extends ConsumerWidget {
+  const _GoLiveCard({required this.unlocked});
+  final bool unlocked;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Semantics(
+    button: true,
+    label: unlocked ? 'Go live' : 'Go live is locked until video calls unlock',
+    excludeSemantics: true,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: unlocked
+          ? () => showGoLiveSheet(context, ref)
+          : () => context.push('/academy'),
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: unlocked
+              ? const LinearGradient(
+                  colors: [Color(0xFF9F1239), Color(0xFF7C3AED)],
+                )
+              : null,
+          color: unlocked ? null : AppColors.card,
+          border: Border.all(
+            color: unlocked ? Colors.transparent : AppColors.cardBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: unlocked ? 0.18 : 0.08),
+              ),
+              child: Icon(
+                unlocked ? Icons.videocam_rounded : Icons.lock_outline_rounded,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('Go live', style: AppText.heading(17)),
+                      if (unlocked) ...[
+                        const SizedBox(width: 8),
+                        const LiveBadge(small: true),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    unlocked
+                        ? 'Stream to many at once. Earn from every pass and gift.'
+                        : 'Unlocks with video calls — finish the academy.',
+                    style: AppText.body(
+                      12.5,
+                      color: unlocked
+                          ? Colors.white70
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+          ],
+        ),
+      ),
     ),
   );
 }

@@ -22,6 +22,13 @@ class PesuApi {
     notifications = NotificationsApi(_client);
     growth = GrowthApi(_client);
     chat = ChatApi(_client);
+    bookings = BookingsApi(_client);
+    vip = VipApi(_client);
+    rooms = RoomsApi(_client);
+    promotions = PromotionsApi(_client);
+    lives = LivesApi(_client);
+    groups = GroupsApi(_client);
+    photos = PhotosApi(_client);
   }
 
   final HttpBearerAuth _bearer;
@@ -38,6 +45,13 @@ class PesuApi {
   late final NotificationsApi notifications;
   late final GrowthApi growth;
   late final ChatApi chat;
+  late final BookingsApi bookings;
+  late final VipApi vip;
+  late final RoomsApi rooms;
+  late final PromotionsApi promotions;
+  late final LivesApi lives;
+  late final GroupsApi groups;
+  late final PhotosApi photos;
 
   /// Set by the session: returns a fresh access token, or null if signed out.
   Future<String?> Function()? onUnauthorized;
@@ -59,6 +73,20 @@ class PesuApi {
       if (fresh == null) rethrow;
       accessToken = fresh;
       return _required(await request());
+    }
+  }
+
+  /// For requests that answer "204 No Content" (save, delete, mark read…):
+  /// like [call], but an empty reply is success, not an error.
+  Future<void> send(Future<Object?> Function() request) async {
+    try {
+      await request();
+    } on ApiException catch (e) {
+      if (e.code != 401 || onUnauthorized == null) rethrow;
+      final fresh = await onUnauthorized!();
+      if (fresh == null) rethrow;
+      accessToken = fresh;
+      await request();
     }
   }
 

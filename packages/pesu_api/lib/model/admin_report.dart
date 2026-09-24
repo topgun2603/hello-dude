@@ -38,7 +38,7 @@ class AdminReport {
 
   String? callId;
 
-  AdminDashboard200ResponseActivityInnerUser reporter;
+  AdminReportReporter reporter;
 
   AdminReportReported reported;
 
@@ -154,7 +154,7 @@ class AdminReport {
         details: mapValueOfType<String>(json, r'details'),
         status: mapValueOfType<String>(json, r'status')!,
         callId: mapValueOfType<String>(json, r'callId'),
-        reporter: AdminDashboard200ResponseActivityInnerUser.fromJson(json[r'reporter'])!,
+        reporter: AdminReportReporter.fromJson(json[r'reporter'])!,
         reported: AdminReportReported.fromJson(json[r'reported'])!,
         resolutionNote: mapValueOfType<String>(json, r'resolutionNote'),
         resolvedAt: mapDateTime(json, r'resolvedAt', r''),

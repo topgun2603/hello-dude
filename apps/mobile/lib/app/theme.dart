@@ -88,6 +88,17 @@ ThemeData buildTheme() {
       surface: AppColors.background,
     ),
     textTheme: GoogleFonts.figtreeTextTheme(base.textTheme),
-    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: const Color(0xFF2A1B4E),
+      contentTextStyle: AppText.body(14.5, weight: FontWeight.w600),
+      actionTextColor: AppColors.pinkSoft,
+      elevation: 8,
+      insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0x66C084FC)),
+      ),
+    ),
   );
 }

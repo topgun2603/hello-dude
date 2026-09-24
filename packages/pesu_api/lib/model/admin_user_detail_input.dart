@@ -25,6 +25,8 @@ class AdminUserDetailInput {
     required this.createdAt,
     required this.termsAcceptedAt,
     required this.online,
+    required this.takingCalls,
+    required this.lastActiveAt,
     required this.lastSignInAt,
     required this.activeSessions,
     required this.devices,
@@ -40,6 +42,7 @@ class AdminUserDetailInput {
     this.refunds = const [],
     this.audit = const [],
     this.notes = const [],
+    required this.vip,
   });
 
   String id;
@@ -67,7 +70,14 @@ class AdminUserDetailInput {
 
   Object? termsAcceptedAt;
 
+  /// Has the app open right now (or is taking calls)
   bool online;
+
+  /// Companion switched Online and taking calls
+  bool takingCalls;
+
+  /// Last time the app was open
+  Object? lastActiveAt;
 
   Object? lastSignInAt;
 
@@ -107,6 +117,8 @@ class AdminUserDetailInput {
 
   List<AdminNoteInput> notes;
 
+  AdminUserDetailInputVip? vip;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminUserDetailInput &&
     other.id == id &&
@@ -121,6 +133,8 @@ class AdminUserDetailInput {
     other.createdAt == createdAt &&
     other.termsAcceptedAt == termsAcceptedAt &&
     other.online == online &&
+    other.takingCalls == takingCalls &&
+    other.lastActiveAt == lastActiveAt &&
     other.lastSignInAt == lastSignInAt &&
     other.activeSessions == activeSessions &&
     other.devices == devices &&
@@ -135,7 +149,8 @@ class AdminUserDetailInput {
     _deepEquality.equals(other.reports, reports) &&
     _deepEquality.equals(other.refunds, refunds) &&
     _deepEquality.equals(other.audit, audit) &&
-    _deepEquality.equals(other.notes, notes);
+    _deepEquality.equals(other.notes, notes) &&
+    other.vip == vip;
 
   @override
   int get hashCode =>
@@ -152,6 +167,8 @@ class AdminUserDetailInput {
     (createdAt == null ? 0 : createdAt!.hashCode) +
     (termsAcceptedAt == null ? 0 : termsAcceptedAt!.hashCode) +
     (online.hashCode) +
+    (takingCalls.hashCode) +
+    (lastActiveAt == null ? 0 : lastActiveAt!.hashCode) +
     (lastSignInAt == null ? 0 : lastSignInAt!.hashCode) +
     (activeSessions.hashCode) +
     (devices.hashCode) +
@@ -166,10 +183,11 @@ class AdminUserDetailInput {
     (reports.hashCode) +
     (refunds.hashCode) +
     (audit.hashCode) +
-    (notes.hashCode);
+    (notes.hashCode) +
+    (vip == null ? 0 : vip!.hashCode);
 
   @override
-  String toString() => 'AdminUserDetailInput[id=$id, displayName=$displayName, phone=$phone, gender=$gender, role=$role, status=$status, primaryLanguage=$primaryLanguage, languages=$languages, avatarId=$avatarId, createdAt=$createdAt, termsAcceptedAt=$termsAcceptedAt, online=$online, lastSignInAt=$lastSignInAt, activeSessions=$activeSessions, devices=$devices, coins=$coins, earningsPaise=$earningsPaise, stats=$stats, companion=$companion, calls=$calls, ledger=$ledger, purchases=$purchases, payouts=$payouts, reports=$reports, refunds=$refunds, audit=$audit, notes=$notes]';
+  String toString() => 'AdminUserDetailInput[id=$id, displayName=$displayName, phone=$phone, gender=$gender, role=$role, status=$status, primaryLanguage=$primaryLanguage, languages=$languages, avatarId=$avatarId, createdAt=$createdAt, termsAcceptedAt=$termsAcceptedAt, online=$online, takingCalls=$takingCalls, lastActiveAt=$lastActiveAt, lastSignInAt=$lastSignInAt, activeSessions=$activeSessions, devices=$devices, coins=$coins, earningsPaise=$earningsPaise, stats=$stats, companion=$companion, calls=$calls, ledger=$ledger, purchases=$purchases, payouts=$payouts, reports=$reports, refunds=$refunds, audit=$audit, notes=$notes, vip=$vip]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -193,6 +211,12 @@ class AdminUserDetailInput {
       json[r'termsAcceptedAt'] = null;
     }
       json[r'online'] = this.online;
+      json[r'takingCalls'] = this.takingCalls;
+    if (this.lastActiveAt != null) {
+      json[r'lastActiveAt'] = this.lastActiveAt;
+    } else {
+      json[r'lastActiveAt'] = null;
+    }
     if (this.lastSignInAt != null) {
       json[r'lastSignInAt'] = this.lastSignInAt;
     } else {
@@ -216,6 +240,11 @@ class AdminUserDetailInput {
       json[r'refunds'] = this.refunds;
       json[r'audit'] = this.audit;
       json[r'notes'] = this.notes;
+    if (this.vip != null) {
+      json[r'vip'] = this.vip;
+    } else {
+      json[r'vip'] = null;
+    }
     return json;
   }
 
@@ -252,6 +281,9 @@ class AdminUserDetailInput {
         assert(json.containsKey(r'termsAcceptedAt'), 'Required key "AdminUserDetailInput[termsAcceptedAt]" is missing from JSON.');
         assert(json.containsKey(r'online'), 'Required key "AdminUserDetailInput[online]" is missing from JSON.');
         assert(json[r'online'] != null, 'Required key "AdminUserDetailInput[online]" has a null value in JSON.');
+        assert(json.containsKey(r'takingCalls'), 'Required key "AdminUserDetailInput[takingCalls]" is missing from JSON.');
+        assert(json[r'takingCalls'] != null, 'Required key "AdminUserDetailInput[takingCalls]" has a null value in JSON.');
+        assert(json.containsKey(r'lastActiveAt'), 'Required key "AdminUserDetailInput[lastActiveAt]" is missing from JSON.');
         assert(json.containsKey(r'lastSignInAt'), 'Required key "AdminUserDetailInput[lastSignInAt]" is missing from JSON.');
         assert(json.containsKey(r'activeSessions'), 'Required key "AdminUserDetailInput[activeSessions]" is missing from JSON.');
         assert(json[r'activeSessions'] != null, 'Required key "AdminUserDetailInput[activeSessions]" has a null value in JSON.');
@@ -280,6 +312,7 @@ class AdminUserDetailInput {
         assert(json[r'audit'] != null, 'Required key "AdminUserDetailInput[audit]" has a null value in JSON.');
         assert(json.containsKey(r'notes'), 'Required key "AdminUserDetailInput[notes]" is missing from JSON.');
         assert(json[r'notes'] != null, 'Required key "AdminUserDetailInput[notes]" has a null value in JSON.');
+        assert(json.containsKey(r'vip'), 'Required key "AdminUserDetailInput[vip]" is missing from JSON.');
         return true;
       }());
 
@@ -298,6 +331,8 @@ class AdminUserDetailInput {
         createdAt: mapValueOfType<Object>(json, r'createdAt'),
         termsAcceptedAt: mapValueOfType<Object>(json, r'termsAcceptedAt'),
         online: mapValueOfType<bool>(json, r'online')!,
+        takingCalls: mapValueOfType<bool>(json, r'takingCalls')!,
+        lastActiveAt: mapValueOfType<Object>(json, r'lastActiveAt'),
         lastSignInAt: mapValueOfType<Object>(json, r'lastSignInAt'),
         activeSessions: mapValueOfType<int>(json, r'activeSessions')!,
         devices: mapValueOfType<int>(json, r'devices')!,
@@ -313,6 +348,7 @@ class AdminUserDetailInput {
         refunds: AdminUserDetailInputRefundsInner.listFromJson(json[r'refunds']),
         audit: AdminUserDetailInputAuditInner.listFromJson(json[r'audit']),
         notes: AdminNoteInput.listFromJson(json[r'notes']),
+        vip: AdminUserDetailInputVip.fromJson(json[r'vip']),
       );
     }
     return null;
@@ -372,6 +408,8 @@ class AdminUserDetailInput {
     'createdAt',
     'termsAcceptedAt',
     'online',
+    'takingCalls',
+    'lastActiveAt',
     'lastSignInAt',
     'activeSessions',
     'devices',
@@ -387,6 +425,7 @@ class AdminUserDetailInput {
     'refunds',
     'audit',
     'notes',
+    'vip',
   };
 }
 

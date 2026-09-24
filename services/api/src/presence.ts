@@ -37,3 +37,35 @@ export async function busySet(redis: Redis, ids: string[]): Promise<Set<string>>
   const v = await redis.mget(ids.map(busyKey));
   return new Set(ids.filter((_, i) => v[i] !== null));
 }
+
+// ---------------------------------------------------------------------------
+// "In the app": anyone (caller or companion) with a live WebSocket. One sorted set,
+// member = user id, score = last ping (ms). Fresh = pinged within IN_APP_TTL_S, so a
+// dead API instance's users drop out on their own; stale members are trimmed on read.
+
+export const IN_APP_TTL_S = 70;
+const IN_APP = "presence:app";
+const freshSince = () => Date.now() - IN_APP_TTL_S * 1000;
+
+export async function markInApp(redis: Redis, userId: string): Promise<void> {
+  await redis.zadd(IN_APP, Date.now(), userId);
+}
+
+export async function leftApp(redis: Redis, userId: string): Promise<void> {
+  await redis.zrem(IN_APP, userId);
+}
+
+/** Which of `ids` have the app open right now. */
+export async function inAppSet(redis: Redis, ids: string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
+  const scores = await redis.zmscore(IN_APP, ...ids);
+  const since = freshSince();
+  return new Set(ids.filter((_, i) => scores[i] !== null && Number(scores[i]) >= since));
+}
+
+/** Everyone with the app open right now. */
+export async function inAppIds(redis: Redis): Promise<string[]> {
+  const since = freshSince();
+  await redis.zremrangebyscore(IN_APP, "-inf", `(${since}`);
+  return redis.zrangebyscore(IN_APP, since, "+inf");
+}

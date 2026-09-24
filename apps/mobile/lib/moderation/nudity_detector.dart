@@ -43,7 +43,10 @@ class TfliteNudityDetector implements NudityDetector {
     if (input == null) return 0;
     final output = Uint8List(_labels.length * 4);
     await _isolate.run(input, output);
-    final probs = output.buffer.asFloat32List().map((v) => v.toDouble()).toList();
+    final probs = output.buffer
+        .asFloat32List()
+        .map((v) => v.toDouble())
+        .toList();
     return nudityScore(probs).clamp(0, 1).toDouble();
   }
 
@@ -59,7 +62,12 @@ class TfliteNudityDetector implements NudityDetector {
 Uint8List? preprocess(Uint8List jpeg) {
   final decoded = _decode(jpeg);
   if (decoded == null) return null;
-  final small = img.copyResize(decoded, width: _size, height: _size, interpolation: img.Interpolation.linear);
+  final small = img.copyResize(
+    decoded,
+    width: _size,
+    height: _size,
+    interpolation: img.Interpolation.linear,
+  );
   final floats = Float32List(_size * _size * 3);
   var i = 0;
   for (final p in small) {
@@ -83,7 +91,9 @@ img.Image? _decode(Uint8List jpeg) {
 Uint8List shrinkForUpload(Uint8List jpeg) {
   final decoded = _decode(jpeg);
   if (decoded == null) return jpeg;
-  final resized = decoded.width > 480 ? img.copyResize(decoded, width: 480) : decoded;
+  final resized = decoded.width > 480
+      ? img.copyResize(decoded, width: 480)
+      : decoded;
   return img.encodeJpg(resized, quality: 70);
 }
 
@@ -92,8 +102,10 @@ Future<NudityDetector>? _shared;
 /// One detector for the whole app session: the model loads on the first video
 /// call (~0.3 s) and stays in memory. A failed load is retried next call.
 Future<NudityDetector> sharedNudityDetector() {
-  return _shared ??= TfliteNudityDetector.load().then<NudityDetector>((d) => d).catchError((Object e) {
-    _shared = null;
-    throw e;
-  });
+  return _shared ??= TfliteNudityDetector.load()
+      .then<NudityDetector>((d) => d)
+      .catchError((Object e) {
+        _shared = null;
+        throw e;
+      });
 }

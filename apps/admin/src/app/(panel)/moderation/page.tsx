@@ -30,7 +30,7 @@ export default function ModerationPage() {
   return (
     <>
       <PageHeader title="Video moderation"
-        description="Frames the app's on-device check flagged as nudity during video calls. The caller's phone already blurred the video; decide what happens to the person on camera." />
+        description="Frames the app's on-device check flagged as nudity during video calls and lives. The video was already blurred (or the live camera paused); decide what happens to the person on camera." />
       <Tabs value={status} onValueChange={(v) => setStatus(v as ModerationStatus)} className="mb-5">
         <TabsList>
           <TabsTrigger value="open">To review</TabsTrigger>
@@ -114,8 +114,8 @@ function FlagCard({ flag: f, onDecide }: { flag: ModerationFlag; onDecide: (d: D
               {f.subject.flags > 1 && <span className="ml-1.5 rounded-full bg-rose-50 px-2 py-0.5 font-semibold normal-case text-rose-600">{f.subject.flags} flags total</span>}
             </p>
           </div>
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
-            <Video className="size-3.5" /> Video call
+          <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${f.liveId ? "bg-rose-50 text-rose-700" : f.groupId ? "bg-emerald-50 text-emerald-700" : "bg-violet-50 text-violet-700"}`}>
+            <Video className="size-3.5" /> {f.liveId ? "Live stream" : f.groupId ? "Group video" : "Video call"}
           </span>
         </div>
         <p className="text-sm text-muted-foreground">

@@ -71,15 +71,17 @@ export const bookingRoutes: FastifyPluginAsyncZod = async (app) => {
       ...base,
       summary: "Book a call with a favourite. Coins for the full duration are held now and returned if it doesn't happen.",
       body: z.object({
-        companionId: z.uuid(), startAt: z.coerce.date(), minutes: z.union([z.literal(10), z.literal(20), z.literal(30)]),
-        callType: z.enum(["audio", "video"]).default("audio"),
+        companionId: z.uuid(), startAt: z.coerce.date(),
+        minutes: z.number().int().refine((m) => (DURATIONS as readonly number[]).includes(m), "10, 20 or 30").describe("10, 20 or 30"),
+        // Optional (not .default): the Dart generator emits invalid code for enum defaults.
+        callType: z.enum(["audio", "video"]).nullish().describe("Default audio"),
       }),
       response: { 201: z.object({ booking: Booking, coins: z.number().int().describe("Wallet balance after the hold") }) },
     },
   }, async (req, reply) => {
     const callerId = me(req).userId;
     const r = await tx(db, (c) => createBooking(c, { callerId, companionId: req.body.companionId, startAt: req.body.startAt,
-      minutes: req.body.minutes, type: req.body.callType })).catch(rethrow);
+      minutes: req.body.minutes, type: req.body.callType ?? "audio" })).catch(rethrow);
     const [booking] = await load([r.id]);
     await notify(app.deps, req.body.companionId, {
       type: "booking_requested", title: `${booking!.caller.displayName} wants to call you`,

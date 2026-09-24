@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Ban, BadgeIndianRupee, CalendarDays, ChevronDown, ChevronRight, CircleCheck, CircleOff, Clock,
   Coins, Copy, Eye, FileText, Flag, Heart, History, IndianRupee, MessageSquareText, Phone, PhoneCall, Receipt, Send,
-  ShieldAlert, ShieldCheck, Smartphone, Star, StickyNote, Undo2, UserRound, UserX, Video, Wallet, WalletCards,
+  ShieldAlert, ShieldCheck, Smartphone, Star, StickyNote, Undo2, UserRound, UserX, Video, Wallet, WalletCards, Crown,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import { count, date, dateTime, languageName, REPORT_REASONS, rupees } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useCan } from "@/lib/access";
 
 const when = (iso: string) => <span className="whitespace-nowrap">{dateTime(iso)}</span>;
 const duration = (s: number | null) => (s == null ? "—" : s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`);
@@ -40,6 +41,7 @@ type Tab = "calls" | "money" | "purchases" | "payouts" | "reports" | "refunds" |
 
 /** Full profile of one caller or companion: hero, numbers, account facts, quick actions, notes and full history. */
 export function UserDetail({ id, role }: { id: string; role: "caller" | "companion" }) {
+  const can = useCan();
   const list = role === "caller" ? { href: "/callers", label: "Callers" } : { href: "/companions", label: "Companions" };
   const { data: u, error, isLoading } = useQuery({
     queryKey: ["user", id],
@@ -47,7 +49,7 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
     refetchInterval: 30_000,
   });
   const [target, setTarget] = useState<StatusTarget | null>(null);
-  const [dialog, setDialog] = useState<"coins" | "message" | null>(null);
+  const [dialog, setDialog] = useState<"coins" | "message" | "vip" | null>(null);
   const [tab, setTab] = useState<Tab>("calls");
   const historyRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -81,7 +83,8 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
     <>
       {crumbs}
       <Hero u={u} onCopyId={copyId} onStatus={(status) => setTarget({ user: u, status })}
-        onCoins={() => setDialog("coins")} onMessage={() => setDialog("message")} onNote={() => notesRef.current?.focus()} />
+        onCoins={() => setDialog("coins")} onMessage={() => setDialog("message")} onNote={() => notesRef.current?.focus()}
+        onVip={() => setDialog("vip")} />
 
       {/* Numbers */}
       <div className="mb-5 grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-6">
@@ -117,6 +120,7 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
         <Panel title="Account Information">
           <Facts rows={[
             [<Clock key="i" className="text-violet-500" />, "Last sign-in", u.lastSignInAt ? dateTime(u.lastSignInAt) : "—"],
+            [<History key="i" className="text-sky-500" />, "Last active in app", u.online ? "Now" : u.lastActiveAt ? dateTime(u.lastActiveAt) : "—"],
             [<Smartphone key="i" className="text-pink-500" />, "Devices / sessions",
               `${u.devices} device${u.devices === 1 ? "" : "s"}, ${u.activeSessions} active session${u.activeSessions === 1 ? "" : "s"}`],
             [<ShieldCheck key="i" className="text-pink-600" />, "18+ and terms accepted", u.termsAcceptedAt ? dateTime(u.termsAcceptedAt) : "—"],
@@ -150,9 +154,9 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
             <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
               {isCompanion
                 ? <QuickAction icon={<Receipt />} label="View payouts" onClick={() => openTab("payouts")} />
-                : <QuickAction icon={<Send />} label="Send coins" onClick={() => setDialog("coins")} disabled={u.status === "deleted"} />}
-              <QuickAction icon={<MessageSquareText />} label="Send message" onClick={() => setDialog("message")} disabled={u.status === "deleted"} />
-              {active
+                : <QuickAction icon={<Send />} label="Send coins" onClick={() => setDialog("coins")} disabled={u.status === "deleted" || !can("users.coins")} />}
+              <QuickAction icon={<MessageSquareText />} label="Send message" onClick={() => setDialog("message")} disabled={u.status === "deleted" || !can("users.manage")} />
+              {!can("users.manage") ? null : active
                 ? <QuickAction icon={<CircleOff />} label="Suspend user" tone="danger" onClick={() => setTarget({ user: u, status: "suspended" })} />
                 : <QuickAction icon={<CircleCheck />} label="Reactivate" tone="success" onClick={() => setTarget({ user: u, status: "active" })}
                     disabled={u.status === "deleted"} />}
@@ -172,6 +176,7 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
       <StatusDialog target={target} onClose={() => setTarget(null)} />
       <SendCoinsDialog open={dialog === "coins"} user={u} onClose={() => setDialog(null)} />
       <SendMessageDialog open={dialog === "message"} user={u} onClose={() => setDialog(null)} />
+      <VipDialog open={dialog === "vip"} user={u} onClose={() => setDialog(null)} />
     </>
   );
 }
@@ -182,10 +187,11 @@ export function UserDetail({ id, role }: { id: string; role: "caller" | "compani
 const menuPopup = "min-w-56 rounded-2xl border border-[#EFEAF6] bg-white p-1.5 text-sm shadow-[0_18px_40px_-16px_rgba(76,29,149,0.35)] outline-none origin-(--transform-origin) transition-[transform,opacity] data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0";
 const menuItem = "flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 outline-none data-[highlighted]:bg-[#FBF5FD] [&_svg]:size-4 [&_svg]:text-muted-foreground";
 
-function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote }: {
+function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote, onVip }: {
   u: AdminUserDetail; onCopyId: () => void; onStatus: (s: StatusTarget["status"]) => void;
-  onCoins: () => void; onMessage: () => void; onNote: () => void;
+  onCoins: () => void; onMessage: () => void; onNote: () => void; onVip: () => void;
 }) {
+  const can = useCan();
   const isCompanion = u.role === "companion";
   const active = u.status === "active";
   return (
@@ -216,12 +222,13 @@ function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote }: {
           <Menu.Portal>
             <Menu.Positioner sideOffset={8} align="end" className="z-50">
               <Menu.Popup className={menuPopup}>
-                {!isCompanion && <Menu.Item className={menuItem} onClick={onCoins} disabled={u.status === "deleted"}><Send /> Send coins</Menu.Item>}
-                <Menu.Item className={menuItem} onClick={onMessage} disabled={u.status === "deleted"}><MessageSquareText /> Send message</Menu.Item>
-                <Menu.Item className={menuItem} onClick={onNote}><StickyNote /> Add note</Menu.Item>
+                {!isCompanion && can("users.coins") && <Menu.Item className={menuItem} onClick={onCoins} disabled={u.status === "deleted"}><Send /> Send coins</Menu.Item>}
+                {!isCompanion && can("users.vip") && <Menu.Item className={menuItem} onClick={onVip} disabled={u.status === "deleted"}><Crown /> {u.vip ? "VIP…" : "Give VIP"}</Menu.Item>}
+                {can("users.manage") && <Menu.Item className={menuItem} onClick={onMessage} disabled={u.status === "deleted"}><MessageSquareText /> Send message</Menu.Item>}
+                {can("users.manage") && <Menu.Item className={menuItem} onClick={onNote}><StickyNote /> Add note</Menu.Item>}
                 <Menu.Item className={menuItem} onClick={onCopyId}><Copy /> Copy user ID</Menu.Item>
-                <div className="-mx-1.5 my-1.5 h-px bg-[#F1EEF7]" />
-                {active ? (
+                {can("users.manage") && <div className="-mx-1.5 my-1.5 h-px bg-[#F1EEF7]" />}
+                {!can("users.manage") ? null : active ? (
                   <>
                     <Menu.Item className={cn(menuItem, "text-destructive [&_svg]:text-destructive")} onClick={() => onStatus("suspended")}><CircleOff /> Suspend</Menu.Item>
                     <Menu.Item className={cn(menuItem, "text-destructive [&_svg]:text-destructive")} onClick={() => onStatus("banned")}><Ban /> Ban</Menu.Item>
@@ -240,13 +247,18 @@ function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote }: {
           <div className="grid size-28 place-items-center rounded-full border-[5px] border-white bg-[linear-gradient(135deg,#EC4899,#A21CAF_60%,#7C3AED)] font-heading text-5xl font-extrabold text-white shadow-[0_14px_30px_-12px_rgba(162,28,175,0.7)]">
             {u.displayName.slice(0, 1).toUpperCase()}
           </div>
-          <span title={u.online ? "Online" : "Offline"}
-            className={cn("absolute bottom-2 right-1.5 size-5 rounded-full border-[3px] border-white", u.online ? "bg-emerald-500" : "bg-slate-300")} />
+          <span title={u.takingCalls ? "Taking calls" : u.online ? "App open" : "Offline"}
+            className={cn("absolute bottom-2 right-1.5 size-5 rounded-full border-[3px] border-white", u.takingCalls ? "bg-emerald-500" : u.online ? "bg-sky-500" : "bg-slate-300")} />
         </div>
         <div className="min-w-0 flex-1 pb-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-3xl font-extrabold tracking-tight">{u.displayName}</h1>
             <Pill tone={isCompanion ? "green" : "violet"} className="capitalize">{u.role}</Pill>
+            {u.vip && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[linear-gradient(90deg,#FDE68A,#F59E0B)] px-3 py-1 text-sm font-bold text-amber-950">
+                <Crown className="size-4" /> VIP until {date(u.vip.expiresAt)}
+              </span>
+            )}
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-foreground/80">
             <span className="flex items-center gap-2 font-mono text-sm">
@@ -259,10 +271,11 @@ function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote }: {
             <span className="flex items-center gap-2"><CalendarDays className="size-4 text-muted-foreground" /> Joined {date(u.createdAt)}</span>
             <span className="flex flex-wrap items-center gap-2">
               <Pill tone={active ? "green" : "red"} icon={active ? <CircleCheck /> : <CircleOff />} className="capitalize">{u.status}</Pill>
-              <Pill tone={u.online ? "green" : "slate"} icon={<span className={cn("size-2 rounded-full", u.online ? "bg-emerald-500" : "bg-slate-400")} />}>
-                {u.online ? "Online" : "Offline"}
+              <Pill tone={u.takingCalls ? "green" : u.online ? "sky" : "slate"}
+                icon={<span className={cn("size-2 rounded-full", u.takingCalls ? "bg-emerald-500" : u.online ? "bg-sky-500" : "bg-slate-400")} />}>
+                {u.takingCalls ? "Taking calls" : u.online ? (isCompanion ? "In the app" : "Online") : "Offline"}
               </Pill>
-              {active ? (
+              {!can("users.manage") ? null : active ? (
                 <button type="button" onClick={() => onStatus("suspended")}
                   className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1.5 text-sm font-medium text-rose-600 transition hover:bg-rose-100">
                   <CircleOff className="size-4" /> Suspend
@@ -286,12 +299,12 @@ function Hero({ u, onCopyId, onStatus, onCoins, onMessage, onNote }: {
 
 const PILL = {
   green: "bg-emerald-50 text-emerald-700", red: "bg-rose-50 text-rose-600", amber: "bg-amber-50 text-amber-700",
-  violet: "bg-violet-100 text-violet-700", slate: "bg-slate-100 text-slate-600",
+  violet: "bg-violet-100 text-violet-700", slate: "bg-slate-100 text-slate-600", sky: "bg-sky-50 text-sky-700",
 } as const;
 
 function Pill({ tone, icon, className, children }: { tone: keyof typeof PILL; icon?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium [&_svg]:size-4", PILL[tone], className)}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium [&_svg]:size-4", PILL[tone], className)}>
       {icon}{children}
     </span>
   );
@@ -375,6 +388,7 @@ function QuickAction({ icon, label, onClick, href, tone = "default", disabled }:
 }
 
 function Notes({ userId, notes, textareaRef }: { userId: string; notes: AdminNote[]; textareaRef: React.RefObject<HTMLTextAreaElement | null> }) {
+  const can = useCan();
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const save = useMutation({
@@ -392,7 +406,7 @@ function Notes({ userId, notes, textareaRef }: { userId: string; notes: AdminNot
         <Textarea ref={textareaRef} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000}
           placeholder="Add admin notes about this user…" aria-label="New note"
           className="min-h-24 resize-none rounded-2xl border-[#ECE7F4] pb-14 focus-visible:border-pink-300 focus-visible:ring-pink-200/60" />
-        <button type="button" disabled={!body.trim() || save.isPending} onClick={() => save.mutate()}
+        <button type="button" disabled={!body.trim() || save.isPending || !can("users.manage")} onClick={() => save.mutate()}
           className="absolute bottom-2.5 right-2.5 h-9 rounded-xl bg-[linear-gradient(90deg,#7C3AED,#9333EA)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(124,58,237,0.9)] transition hover:brightness-110 disabled:opacity-50">
           {save.isPending ? "Saving…" : "Save Note"}
         </button>
@@ -470,6 +484,68 @@ function SendCoinsDialog({ open, user, onClose }: { open: boolean; user: AdminUs
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button disabled={!valid || send.isPending} onClick={() => send.mutate()}>{send.isPending ? "Sending…" : `Send ${valid ? n : ""} coins`}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function VipDialog({ open, user, onClose }: { open: boolean; user: AdminUserDetail; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [days, setDays] = useState("30");
+  const [reason, setReason] = useState("");
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) { setDays("30"); setReason(""); }
+  }
+  const n = Number(days);
+  const done = (msg: string) => {
+    toast.success(msg);
+    qc.invalidateQueries({ queryKey: ["user", user.id] });
+    onClose();
+  };
+  const grant = useMutation({
+    mutationFn: () => api<{ expiresAt: string }>(`admin/users/${user.id}/vip`, { method: "POST", body: { days: n, reason } }),
+    onSuccess: (r) => done(`${user.displayName} is VIP until ${date(r.expiresAt)}`),
+    onError: (e) => toast.error(e.message),
+  });
+  const revoke = useMutation({
+    mutationFn: () => api(`admin/users/${user.id}/vip/revoke`, { method: "POST", body: { reason } }),
+    onSuccess: () => done(`VIP ended for ${user.displayName}`),
+    onError: (e) => toast.error(e.message),
+  });
+  const valid = Number.isInteger(n) && n >= 1 && n <= 366 && reason.trim().length >= 3;
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{user.vip ? `VIP for ${user.displayName}` : `Give ${user.displayName} VIP`}</DialogTitle>
+          <DialogDescription>
+            {user.vip
+              ? `VIP until ${date(user.vip.expiresAt)} (${user.vip.source === "play" ? "bought on Google Play" : "given by an admin"}). Add days, or end it.`
+              : "Cheaper calls (the discount in Money settings), first pick in instant match, a gold badge and a free Rose each week."}
+          </DialogDescription>
+        </DialogHeader>
+        <Field label="Days" htmlFor="vip-days" hint="1 to 366 — added after any VIP they already have">
+          <div className="flex flex-wrap gap-2">
+            <Input id="vip-days" type="number" min={1} max={366} value={days} onChange={(e) => setDays(e.target.value)} className="w-28" />
+            {[7, 30, 90].map((v) => (
+              <Button key={v} type="button" size="sm" variant={n === v ? "default" : "outline"} onClick={() => setDays(String(v))}>{v} days</Button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Reason (saved in the audit log)" htmlFor="vip-reason">
+          <Textarea id="vip-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Compensation for a bad call experience" />
+        </Field>
+        <DialogFooter>
+          {user.vip && (
+            <Button variant="destructive" className="mr-auto" disabled={reason.trim().length < 3 || revoke.isPending} onClick={() => revoke.mutate()}>
+              End VIP now
+            </Button>
+          )}
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={!valid || grant.isPending} onClick={() => grant.mutate()}>{grant.isPending ? "Saving…" : `Give ${valid ? n : ""} days`}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

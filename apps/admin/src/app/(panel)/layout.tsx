@@ -1,5 +1,6 @@
 import { MobileNav, Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/top-bar";
+import { AccessGate } from "@/components/access-gate";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +12,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         <MobileNav />
         <main className="relative px-4 py-5 md:px-8">
           <TopBar />
-          {children}
+          <AccessGate>{children}</AccessGate>
         </main>
         <footer className="relative flex flex-wrap items-center justify-between gap-2 border-t px-4 py-4 text-xs text-muted-foreground md:px-8">
           <span>© {new Date().getFullYear()} Hello Dude! Admin</span>

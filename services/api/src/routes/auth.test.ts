@@ -41,12 +41,18 @@ describe("OTP sign-up and sign-in", () => {
 
   it("accepts null for optional fields, as the generated Dart client sends them", async () => {
     const { profile } = await signUp(h, "9876543210", { displayName: null, avatarId: null });
-    expect(profile).toMatchObject({ displayName: "New friend", avatarId: 1 });
+    expect(profile).toMatchObject({ displayName: "New friend", avatarId: 2 }); // male -> male avatar
   });
 
   it("uses a friendly default name when none is given", async () => {
     const { profile } = await signUp(h, "9876543210");
-    expect(profile).toMatchObject({ displayName: "New friend", avatarId: 1 });
+    expect(profile).toMatchObject({ displayName: "New friend", avatarId: 2 });
+  });
+
+  it("picks the illustrated avatar for the gender: 1 female, 2 male, 3 other", async () => {
+    const female = await signUp(h, "9876500001", { gender: "female" });
+    const other = await signUp(h, "9876500002", { gender: "other" });
+    expect([female.profile, other.profile]).toMatchObject([{ avatarId: 1 }, { avatarId: 3 }]);
   });
 
   it("existing number: OTP signs straight in", async () => {

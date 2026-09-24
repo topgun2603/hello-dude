@@ -21,7 +21,7 @@ Name | Type | Description | Notes
 **upi** | **String** |  | 
 **rejectReason** | **String** |  | 
 **videoEnabled** | **bool** |  | 
-**academy** | [**AdminKycCaseAcademy**](AdminKycCaseAcademy.md) |  | 
+**academy** | [**GetCompanionRewards200ResponseAcademy**](GetCompanionRewards200ResponseAcademy.md) |  | 
 **documents** | **List<String>** |  | [default to const []]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

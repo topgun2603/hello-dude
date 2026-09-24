@@ -11,11 +11,13 @@ Name | Type | Description | Notes
 **id** | **String** |  | 
 **displayName** | **String** |  | 
 **avatarId** | **int** |  | 
+**photoUrl** | **String** | Approved profile photo (signed URL path); null = show the avatar | 
 **languages** | **List<String>** |  | [default to const []]
 **online** | **bool** |  | 
 **busy** | **bool** |  | 
 **lastOnlineAt** | **Object** |  | 
 **notify** | **bool** |  | 
+**audioEnabled** | **bool** |  | 
 **videoEnabled** | **bool** |  | 
 **rates** | [**CompanionRatesInput**](CompanionRatesInput.md) |  | 
 

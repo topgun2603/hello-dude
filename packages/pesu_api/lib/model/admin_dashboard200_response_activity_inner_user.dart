@@ -16,6 +16,7 @@ class AdminDashboard200ResponseActivityInnerUser {
     required this.id,
     required this.displayName,
     required this.role,
+    required this.avatarId,
   });
 
   String id;
@@ -24,27 +25,34 @@ class AdminDashboard200ResponseActivityInnerUser {
 
   String role;
 
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int avatarId;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminDashboard200ResponseActivityInnerUser &&
     other.id == id &&
     other.displayName == displayName &&
-    other.role == role;
+    other.role == role &&
+    other.avatarId == avatarId;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (id.hashCode) +
     (displayName.hashCode) +
-    (role.hashCode);
+    (role.hashCode) +
+    (avatarId.hashCode);
 
   @override
-  String toString() => 'AdminDashboard200ResponseActivityInnerUser[id=$id, displayName=$displayName, role=$role]';
+  String toString() => 'AdminDashboard200ResponseActivityInnerUser[id=$id, displayName=$displayName, role=$role, avatarId=$avatarId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'id'] = this.id;
       json[r'displayName'] = this.displayName;
       json[r'role'] = this.role;
+      json[r'avatarId'] = this.avatarId;
     return json;
   }
 
@@ -65,6 +73,8 @@ class AdminDashboard200ResponseActivityInnerUser {
         assert(json[r'displayName'] != null, 'Required key "AdminDashboard200ResponseActivityInnerUser[displayName]" has a null value in JSON.');
         assert(json.containsKey(r'role'), 'Required key "AdminDashboard200ResponseActivityInnerUser[role]" is missing from JSON.');
         assert(json[r'role'] != null, 'Required key "AdminDashboard200ResponseActivityInnerUser[role]" has a null value in JSON.');
+        assert(json.containsKey(r'avatarId'), 'Required key "AdminDashboard200ResponseActivityInnerUser[avatarId]" is missing from JSON.');
+        assert(json[r'avatarId'] != null, 'Required key "AdminDashboard200ResponseActivityInnerUser[avatarId]" has a null value in JSON.');
         return true;
       }());
 
@@ -72,6 +82,7 @@ class AdminDashboard200ResponseActivityInnerUser {
         id: mapValueOfType<String>(json, r'id')!,
         displayName: mapValueOfType<String>(json, r'displayName')!,
         role: mapValueOfType<String>(json, r'role')!,
+        avatarId: mapValueOfType<int>(json, r'avatarId')!,
       );
     }
     return null;
@@ -122,6 +133,7 @@ class AdminDashboard200ResponseActivityInnerUser {
     'id',
     'displayName',
     'role',
+    'avatarId',
   };
 }
 

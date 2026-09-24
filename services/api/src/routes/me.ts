@@ -35,7 +35,7 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
         displayName: z.string().trim().min(1).max(30).nullish(),
         avatarId: z.number().int().min(1).max(50).nullish(),
         primaryLanguage: LanguageCode.nullish(),
-        languages: z.array(LanguageCode).min(1).max(8).nullish(),
+        languages: z.array(LanguageCode).max(8).nullish().describe("Leave empty to keep the current languages"),
       }),
       response: { 200: Profile },
     },
@@ -45,7 +45,8 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
     await tx(db, async (c) => {
       const current = await loadProfile(c, userId);
       const primary = b.primaryLanguage ?? current.primaryLanguage;
-      const languages = [...new Set(b.languages ?? current.languages)];
+      // Generated clients send [] for "not changing"; only a non-empty list replaces them.
+      const languages = [...new Set(b.languages?.length ? b.languages : current.languages)];
       if (!languages.includes(primary)) languages.push(primary);
       await assertLanguagesActive(c, languages);
       // Companions are matched by primary language; changing it re-prices their calls,

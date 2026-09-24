@@ -43,7 +43,7 @@ class _RateScreenState extends ConsumerState<RateScreen> {
     setState(() => _sending = true);
     final api = ref.read(apiProvider);
     try {
-      await api.call(
+      await api.send(
         () => api.calls.rateCall(
           widget.args.callId,
           RateCallRequest(stars: _stars),

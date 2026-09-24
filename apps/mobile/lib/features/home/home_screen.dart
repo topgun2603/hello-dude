@@ -15,12 +15,18 @@ import 'package:go_router/go_router.dart';
 import '../favourites/favourites_screen.dart';
 import 'home_data.dart';
 import 'offer_banner.dart';
+import '../live/live_data.dart' show LiveNowRow;
+import '../group/group_data.dart' show GroupVideoCard;
 import '../notifications/notifications_screen.dart';
+import '../rooms/rooms_screens.dart';
 
 /// Design: Home.dc.html — coin chip, greeting, Instant match, Online now.
 class HomeTab extends ConsumerStatefulWidget {
-  const HomeTab({super.key, required this.onOpenWallet});
+  const HomeTab({super.key, required this.onOpenWallet, this.onSeeAllOnline});
   final VoidCallback onOpenWallet;
+
+  /// Opens the Online tab (search, filters, sort).
+  final VoidCallback? onSeeAllOnline;
 
   @override
   ConsumerState<HomeTab> createState() => _HomeTabState();
@@ -102,7 +108,12 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                 ),
                 const SizedBox(height: 18),
                 const OfferBanner(),
+                const LiveNowRow(),
                 _InstantMatchCard(language: lang),
+                const SizedBox(height: 14),
+                const GroupVideoCard(),
+                const SizedBox(height: 14),
+                const VoiceRoomsCard(),
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -126,13 +137,18 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                       style: AppText.heading(17, weight: FontWeight.w700),
                     ),
                     const Spacer(),
-                    if (companions.valueOrNull?.isNotEmpty ?? false)
-                      Text(
-                        '${companions.value!.length} online',
-                        style: AppText.body(
-                          14,
-                          color: const Color(0xFFF9A8D4),
-                          weight: FontWeight.w600,
+                    if (widget.onSeeAllOnline != null)
+                      TextButton(
+                        onPressed: widget.onSeeAllOnline,
+                        child: Text(
+                          (companions.valueOrNull?.isNotEmpty ?? false)
+                              ? '${companions.value!.length} online · See all'
+                              : 'See all',
+                          style: AppText.body(
+                            14,
+                            color: const Color(0xFFF9A8D4),
+                            weight: FontWeight.w600,
+                          ),
                         ),
                       ),
                   ],
@@ -143,10 +159,21 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                       ? _EmptyState(language: lang.english)
                       : Column(
                           children: [
-                            for (final c in list)
+                            // A short preview; the Online tab has everyone.
+                            for (final c in list.take(3))
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
-                                child: _CompanionRow(c),
+                                child: CompanionRow(c),
+                              ),
+                            if (list.length > 3 &&
+                                widget.onSeeAllOnline != null)
+                              OutlinedButton.icon(
+                                onPressed: widget.onSeeAllOnline,
+                                icon: const Icon(
+                                  Icons.people_alt_outlined,
+                                  size: 18,
+                                ),
+                                label: Text('See all ${list.length} online'),
                               ),
                           ],
                         ),
@@ -510,8 +537,8 @@ class _InstantMatchCard extends ConsumerWidget {
   );
 }
 
-class _CompanionRow extends ConsumerWidget {
-  const _CompanionRow(this.c);
+class CompanionRow extends ConsumerWidget {
+  const CompanionRow(this.c, {super.key});
   final OnlineCompanion c;
 
   @override
@@ -537,6 +564,7 @@ class _CompanionRow extends ConsumerWidget {
           Avatar(
             name: c.displayName,
             avatarId: c.avatarId,
+            photoUrl: c.photoUrl,
             statusColor: busy ? AppColors.warning : AppColors.success,
           ),
           const SizedBox(width: 12),
@@ -574,7 +602,15 @@ class _CompanionRow extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  busy ? 'In a call' : languageNames(c.languages),
+                  busy
+                      ? 'In a call'
+                      : [
+                          languageNames(c.languages),
+                          if (c.rates.audioCoinsPerMin != null)
+                            '${c.rates.audioCoinsPerMin} coins/min',
+                        ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppText.body(
                     13,
                     color: busy
@@ -594,8 +630,8 @@ class _CompanionRow extends ConsumerWidget {
             context,
             Icons.call_rounded,
             'Voice call ${c.displayName}',
-            gradient: !busy,
-            onTap: busy ? null : () => call(false),
+            gradient: !busy && c.audioEnabled,
+            onTap: busy || !c.audioEnabled ? null : () => call(false),
           ),
           const SizedBox(width: 8),
           _roundCall(

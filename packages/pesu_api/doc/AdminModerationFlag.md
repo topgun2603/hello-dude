@@ -17,8 +17,10 @@ Name | Type | Description | Notes
 **reviewer** | **String** |  | 
 **hasFrame** | **bool** | false once deleted under the retention policy | 
 **call** | [**AdminModerationFlagCall**](AdminModerationFlagCall.md) |  | 
+**liveId** | **String** |  | 
+**groupId** | **String** |  | 
 **subject** | [**AdminModerationFlagSubject**](AdminModerationFlagSubject.md) |  | 
-**detectedBy** | [**AdminDashboard200ResponseActivityInnerUser**](AdminDashboard200ResponseActivityInnerUser.md) |  | 
+**detectedBy** | [**AdminReportReporter**](AdminReportReporter.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

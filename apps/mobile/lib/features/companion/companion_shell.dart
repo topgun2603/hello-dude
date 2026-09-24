@@ -14,6 +14,8 @@ import 'companion_data.dart';
 import 'companion_home.dart';
 import 'earnings_screen.dart';
 import 'incoming_screen.dart';
+import '../promotions/promo_sheet.dart';
+import 'package:pesu_api/api.dart' show PromotionCtaActionEnum;
 
 /// Signed-in shell for companions (green accents, per the design).
 class CompanionShell extends ConsumerStatefulWidget {
@@ -51,9 +53,49 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
     _pushActions = push.actions.listen(_onPushAction);
     // Accepted while the app was closed: the tap launched the app.
     push.acceptedWhileClosed().then((a) {
-      if (a != null) _onPushAction(a);
+      if (a != null) {
+        _onPushAction(a);
+      } else if (mounted) {
+        // Opened normally (not by accepting a call): the admin's offer sheet, if any.
+        _showOffer();
+      }
     });
+    _lifecycle = AppLifecycleListener(
+      onHide: () => _hiddenAt = DateTime.now(),
+      onShow: () {
+        final away = _hiddenAt == null
+            ? Duration.zero
+            : DateTime.now().difference(_hiddenAt!);
+        _hiddenAt = null;
+        if (away >= const Duration(minutes: 10) &&
+            _ringing == null &&
+            (ModalRoute.of(context)?.isCurrent ?? false)) {
+          _showOffer();
+        }
+      },
+    );
   }
+
+  late final AppLifecycleListener _lifecycle;
+  DateTime? _hiddenAt;
+
+  Future<void> _showOffer() => showAppOpenPromotion(
+    context,
+    ref,
+    onAction: (a) {
+      if (!mounted) return;
+      switch (a) {
+        case PromotionCtaActionEnum.wallet:
+          setState(() => _tab = 1); // Earnings
+        case PromotionCtaActionEnum.rewards:
+          context.push('/rewards');
+        case PromotionCtaActionEnum.rooms:
+          context.push('/rooms');
+        default:
+          break; // caller-only destinations
+      }
+    },
+  );
 
   StreamSubscription<CallAction>? _pushActions;
 
@@ -74,7 +116,7 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
       case CallActionKind.decline:
         final api = ref.read(apiProvider);
         try {
-          await api.call(() => api.calls.rejectCall(a.callId));
+          await api.send(() => api.calls.rejectCall(a.callId));
         } catch (_) {
           /* already over */
         }
@@ -83,6 +125,7 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _events?.cancel();
     _pushActions?.cancel();
     super.dispose();

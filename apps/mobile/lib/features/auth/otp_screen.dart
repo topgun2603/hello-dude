@@ -8,6 +8,7 @@ import 'package:pesu_api/api.dart';
 
 import '../../app/theme.dart';
 import '../../data/errors.dart';
+import '../../data/phone_auth.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../../widgets/love_loader.dart';
@@ -33,6 +34,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   void initState() {
     super.initState();
     _startTimer();
+    if (useDevOtp) return;
+    // Android may read the SMS by itself, before or after this screen opens.
+    final early = ref.read(phoneAuthProvider)?.autoIdToken;
+    if (early != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _finish(() => Future.value(early)),
+      );
+    }
+    ref.listenManual(phoneAuthProvider, (prev, next) {
+      final token = next?.autoIdToken;
+      if (token != null && token != prev?.autoIdToken) {
+        _finish(() => Future.value(token));
+      }
+    });
   }
 
   void _startTimer() {
@@ -56,14 +71,29 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   Future<void> _verify() async {
     if (_code.text.length != 6 || _verifying) return;
-    setState(() => _verifying = true);
-    final api = ref.read(apiProvider);
-    try {
-      final result = await api.call(
-        () => api.auth.verifyOtp(
-          VerifyOtpRequest(phone: _phone, code: _code.text),
+    final code = _code.text;
+    if (useDevOtp) {
+      final api = ref.read(apiProvider);
+      return _complete(
+        () => api.call(
+          () => api.auth.verifyOtp(VerifyOtpRequest(phone: _phone, code: code)),
         ),
       );
+    }
+    return _finish(() => ref.read(phoneAuthProvider.notifier).verifyCode(code));
+  }
+
+  /// Firebase path: get the ID token, then swap it for our own session.
+  Future<void> _finish(Future<String> Function() idToken) => _complete(
+    () async => ref.read(phoneAuthProvider.notifier).exchange(await idToken()),
+  );
+
+  /// Signs in an existing account, or moves a new number on to sign-up.
+  Future<void> _complete(Future<OtpVerifyResult> Function() check) async {
+    if (_verifying) return;
+    setState(() => _verifying = true);
+    try {
+      final result = await check();
       if (result.status == OtpVerifyResultStatusEnum.signedIn) {
         // Router sends a signed-in user to Home, under the loader.
         if (!mounted) return;
@@ -76,6 +106,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               .signIn(result.tokens!, result.profile!),
         );
         ref.read(signupDraftProvider.notifier).reset();
+        ref.read(phoneAuthProvider.notifier).reset();
       } else {
         final draft = ref.read(signupDraftProvider);
         ref
@@ -98,7 +129,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Future<void> _resend() async {
     final api = ref.read(apiProvider);
     try {
-      await api.auth.sendOtp(SendOtpRequest(phone: _phone));
+      if (useDevOtp) {
+        await api.auth.sendOtp(SendOtpRequest(phone: _phone));
+      } else {
+        await ref.read(phoneAuthProvider.notifier).send(_phone);
+      }
       _startTimer();
       if (mounted) {
         ScaffoldMessenger.of(

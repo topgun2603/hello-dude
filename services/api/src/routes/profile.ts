@@ -19,6 +19,7 @@ export const Profile = z.object({
     kycStatus: z.enum(["pending", "approved", "rejected"]),
     videoEnabled: z.boolean(),
   }).nullable(),
+  vipUntil: z.date().nullable().describe("VIP active until this time; null if not VIP"),
 }).meta({ id: "Profile" });
 export type Profile = z.infer<typeof Profile>;
 
@@ -32,11 +33,13 @@ export async function loadProfile(db: Db | DbClient, userId: string): Promise<Pr
   const row = (await db.query<{
     id: string; display_name: string; avatar_id: number; gender: Profile["gender"]; role: Profile["role"];
     primary_language: string; phone: string; languages: string[] | null;
-    kyc_status: "pending" | "approved" | "rejected" | null; video_enabled: boolean | null;
+    kyc_status: "pending" | "approved" | "rejected" | null; video_enabled: boolean | null; vip_until: Date | null;
   }>(
     `SELECT u.id, u.display_name, u.avatar_id, u.gender, u.role, u.primary_language, u.phone,
             (SELECT array_agg(language_code ORDER BY language_code) FROM user_languages WHERE user_id = u.id) AS languages,
-            p.kyc_status, p.video_enabled
+            p.kyc_status, p.video_enabled,
+            (SELECT max(expires_at) FROM vip_subscriptions v
+              WHERE v.user_id = u.id AND v.cancelled_at IS NULL AND v.starts_at <= now() AND v.expires_at > now()) AS vip_until
        FROM users u LEFT JOIN companion_profiles p ON p.user_id = u.id
       WHERE u.id = $1 AND u.status <> 'deleted'`,
     [userId],
@@ -52,6 +55,7 @@ export async function loadProfile(db: Db | DbClient, userId: string): Promise<Pr
     languages: row.languages ?? [row.primary_language],
     phone: maskPhone(row.phone),
     companion: row.kyc_status ? { kycStatus: row.kyc_status, videoEnabled: row.video_enabled ?? false } : null,
+    vipUntil: row.vip_until,
   };
 }
 

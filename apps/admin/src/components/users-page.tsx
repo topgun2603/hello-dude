@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Coin } from "@/components/coin";
+import { UserAvatar } from "@/components/user-avatar";
 import { DataTable, type Features, type TableFilter } from "@/components/data-table";
 import { Dropdown } from "@/components/dropdown";
 import { Field } from "@/components/form-bits";
@@ -28,11 +29,6 @@ type Target = StatusTarget;
 // ---------------------------------------------------------------------------
 // Small cells
 
-const AVATAR_TINTS = [
-  "bg-pink-100 text-pink-600", "bg-sky-100 text-sky-600", "bg-orange-100 text-orange-600",
-  "bg-violet-100 text-violet-600", "bg-emerald-100 text-emerald-600", "bg-amber-100 text-amber-700",
-];
-const tintFor = (id: string) => AVATAR_TINTS[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_TINTS.length]!;
 /** Short, copyable reference for support conversations (first 6 of the id). */
 const shortId = (id: string) => id.replace(/-/g, "").slice(0, 6).toUpperCase();
 
@@ -86,9 +82,7 @@ export function UsersPage({ role }: { role: "caller" | "companion" }) {
       const u = row.original;
       return (
         <Link href={`${base}/${u.id}`} className="group flex items-center gap-3">
-          <span className={cn("grid size-11 shrink-0 place-items-center rounded-full font-heading text-lg font-bold", tintFor(u.id))}>
-            {u.displayName.trim().charAt(0).toUpperCase() || "?"}
-          </span>
+<UserAvatar id={u.id} name={u.displayName} avatarId={u.avatarId} />
           <span className="min-w-0">
             <span className="block truncate font-semibold group-hover:text-primary">{u.displayName}</span>
             <span className="block text-xs text-muted-foreground">ID: {shortId(u.id)}</span>
@@ -96,14 +90,16 @@ export function UsersPage({ role }: { role: "caller" | "companion" }) {
         </Link>
       );
     } }),
-    col.accessor((u) => (u.online ? "Online" : "Offline"), { id: "online", header: "Presence", cell: ({ row, getValue }) => (
+    col.accessor((u) => (u.takingCalls ? "Taking calls" : u.online ? "In the app" : "Offline"), { id: "online", header: "Presence", cell: ({ row, getValue }) => (
       <span className="block">
         <span className="flex items-center gap-2 text-sm">
-          <span className={cn("size-2 rounded-full", getValue() === "Online" ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "bg-slate-400")} />
+          <span className={cn("size-2 rounded-full",
+            getValue() === "Taking calls" ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+              : getValue() === "In the app" ? "bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.18)]" : "bg-slate-400")} />
           {getValue()}
         </span>
         <span className="block pl-4 text-xs text-muted-foreground">
-          {getValue() === "Online" ? "Available now" : row.original.lastSeenAt ? `Last seen ${ago(row.original.lastSeenAt)}` : "Not seen yet"}
+          {row.original.takingCalls ? "Can get calls now" : row.original.online ? "App open now" : row.original.lastSeenAt ? `Last seen ${ago(row.original.lastSeenAt)}` : "Not seen yet"}
         </span>
       </span>
     ) }),

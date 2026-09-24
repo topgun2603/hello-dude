@@ -8,6 +8,7 @@ import 'package:pesu_api/api.dart';
 import '../../app/config.dart';
 import '../../app/theme.dart';
 import '../../data/errors.dart';
+import '../../data/phone_auth.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 import 'signup_draft.dart';
@@ -40,7 +41,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     setState(() => _sending = true);
     final api = ref.read(apiProvider);
     try {
-      await api.auth.sendOtp(SendOtpRequest(phone: _phone.text));
+      if (useDevOtp) {
+        await api.auth.sendOtp(SendOtpRequest(phone: _phone.text));
+      } else {
+        ref.read(phoneAuthProvider.notifier).reset();
+        await ref.read(phoneAuthProvider.notifier).send(_phone.text);
+      }
       ref
           .read(signupDraftProvider.notifier)
           .update(SignupDraft(phone: _phone.text, gender: _gender));

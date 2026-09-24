@@ -3,6 +3,7 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { tx } from "../db/pool.js";
 import { ApiError } from "../errors.js";
 import { normalizeIndianMobile } from "../auth/phone.js";
+import { phoneVerifierNotConfigured } from "../auth/firebase-auth.js";
 import type { Role } from "../auth/tokens.js";
 import { ensureWallets } from "../billing/ledger.js";
 import { normaliseCode } from "../growth.js";
@@ -20,9 +21,36 @@ const Phone = z.string().min(10).max(20).transform((v, ctx) => {
 });
 
 const DEFAULT_DISPLAY_NAME = "New friend";
+/** Illustrated avatars: 1 female, 2 male, 3 transgender (see migration 0019). */
+export const avatarForGender = (g: "male" | "female" | "other") => (g === "female" ? 1 : g === "male" ? 2 : 3);
+
+// One flat object (not a oneOf) so generated clients stay simple.
+const OtpVerifyResult = z.object({
+  status: z.enum(["signed_in", "needs_signup"]),
+  tokens: TokenPair.optional().describe("Set when status = signed_in"),
+  profile: Profile.optional().describe("Set when status = signed_in"),
+  signupToken: z.string().optional().describe("Set when status = needs_signup"),
+}).meta({ id: "OtpVerifyResult" });
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   const { db, otp, tokens } = app.deps;
+  const phoneAuth = app.deps.phoneAuth ?? phoneVerifierNotConfigured;
+
+  /** After the number is proven (OTP or Firebase): sign in, or start sign-up. */
+  async function signInOrSignup(phone: string) {
+    const user = (await db.query<{ id: string; role: Role; status: string }>(
+      `SELECT id, role, status FROM users WHERE phone = $1`, [phone],
+    )).rows[0];
+    if (!user || user.status === "deleted") {
+      return { status: "needs_signup" as const, signupToken: await tokens.signupToken(phone) };
+    }
+    if (user.status !== "active") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account has been suspended");
+    return {
+      status: "signed_in" as const,
+      tokens: await tokens.issue(user.id, user.role),
+      profile: await loadProfile(db, user.id),
+    };
+  }
 
   app.post("/auth/otp/send", {
     schema: {
@@ -38,31 +66,27 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       tags: ["auth"],
       summary: "Verify the code. Existing users get tokens; new numbers get a signup token.",
       body: z.object({ phone: Phone, code: z.string().regex(/^\d{6}$/) }),
-      response: {
-        // One flat object (not a oneOf) so generated clients stay simple.
-        200: z.object({
-          status: z.enum(["signed_in", "needs_signup"]),
-          tokens: TokenPair.optional().describe("Set when status = signed_in"),
-          profile: Profile.optional().describe("Set when status = signed_in"),
-          signupToken: z.string().optional().describe("Set when status = needs_signup"),
-        }).meta({ id: "OtpVerifyResult" }),
-      },
+      response: { 200: OtpVerifyResult },
     },
   }, async (req) => {
     const { phone, code } = req.body;
     await otp.verify(phone, code);
-    const user = (await db.query<{ id: string; role: Role; status: string }>(
-      `SELECT id, role, status FROM users WHERE phone = $1`, [phone],
-    )).rows[0];
-    if (!user || user.status === "deleted") {
-      return { status: "needs_signup" as const, signupToken: await tokens.signupToken(phone) };
-    }
-    if (user.status !== "active") throw new ApiError(403, "ACCOUNT_BLOCKED", "This account has been suspended");
-    return {
-      status: "signed_in" as const,
-      tokens: await tokens.issue(user.id, user.role),
-      profile: await loadProfile(db, user.id),
-    };
+    return signInOrSignup(phone);
+  });
+
+  app.post("/auth/firebase", {
+    schema: {
+      tags: ["auth"],
+      summary: "Mobile app sign-in: the app verified the number with Firebase Auth and sends its ID token. "
+        + "Indian (+91) mobiles only. Same result as otp/verify.",
+      body: z.object({ idToken: z.string().min(20).max(8192) }),
+      response: { 200: OtpVerifyResult },
+    },
+  }, async (req) => {
+    const verified = await phoneAuth.verifyIdToken(req.body.idToken);
+    const phone = normalizeIndianMobile(verified);
+    if (!phone) throw new ApiError(400, "PHONE_NOT_SUPPORTED", "Only Indian mobile numbers can use the app");
+    return signInOrSignup(phone);
   });
 
   app.post("/auth/signup", {
@@ -96,7 +120,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       const id = (await c.query<{ id: string }>(
         `INSERT INTO users (phone, gender, display_name, avatar_id, primary_language, terms_accepted_at)
          VALUES ($1, $2, $3, $4, $5, now()) RETURNING id`,
-        [phone, gender, displayName ?? DEFAULT_DISPLAY_NAME, avatarId ?? 1, language],
+        [phone, gender, displayName ?? DEFAULT_DISPLAY_NAME, avatarId ?? avatarForGender(gender), language],
       )).rows[0]!.id;
       await c.query(`INSERT INTO user_languages (user_id, language_code) VALUES ($1, $2)`, [id, language]);
       await ensureWallets(c, id);

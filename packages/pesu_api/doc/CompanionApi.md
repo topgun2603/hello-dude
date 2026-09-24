@@ -14,8 +14,10 @@ Method | HTTP request | Description
 [**companionEarnings**](CompanionApi.md#companionearnings) | **GET** /v1/companion/earnings | Balance, last 7 days and withdrawals
 [**companionHome**](CompanionApi.md#companionhome) | **GET** /v1/companion/home | Companion home: status and today's numbers (India time)
 [**getAcademy**](CompanionApi.md#getacademy) | **GET** /v1/companion/academy | Lessons, in order, with my progress (quiz answers are not included)
+[**getCompanionRewards**](CompanionApi.md#getcompanionrewards) | **GET** /v1/companion/rewards | Rewards screen: level, today's goal, online streak and bonuses
 [**getKyc**](CompanionApi.md#getkyc) | **GET** /v1/companion/kyc | Verification progress
 [**requestPayout**](CompanionApi.md#requestpayout) | **POST** /v1/companion/payouts | Withdraw to UPI. The amount leaves the balance now; a failed payout is credited back.
+[**setCompanionCallTypes**](CompanionApi.md#setcompanioncalltypes) | **PUT** /v1/companion/call-types | Choose which calls to take: voice, video or both (video only once it's unlocked)
 [**setPresence**](CompanionApi.md#setpresence) | **POST** /v1/companion/presence | Go online / offline. While online, call again every 60 s as a heartbeat.
 [**setUpi**](CompanionApi.md#setupi) | **PUT** /v1/companion/upi | Step 3b / later: UPI ID for withdrawals
 [**submitKyc**](CompanionApi.md#submitkyc) | **POST** /v1/companion/kyc/submit | Send everything for review
@@ -249,6 +251,49 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getCompanionRewards**
+> GetCompanionRewards200Response getCompanionRewards()
+
+Rewards screen: level, today's goal, online streak and bonuses
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+
+try {
+    final result = api_instance.getCompanionRewards();
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->getCompanionRewards: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**GetCompanionRewards200Response**](GetCompanionRewards200Response.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getKyc**
 > KycState getKyc()
 
@@ -327,6 +372,53 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**Payout**](Payout.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **setCompanionCallTypes**
+> SetCompanionCallTypes200Response setCompanionCallTypes(setCompanionCallTypesRequest)
+
+Choose which calls to take: voice, video or both (video only once it's unlocked)
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+final setCompanionCallTypesRequest = SetCompanionCallTypesRequest(); // SetCompanionCallTypesRequest | 
+
+try {
+    final result = api_instance.setCompanionCallTypes(setCompanionCallTypesRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->setCompanionCallTypes: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **setCompanionCallTypesRequest** | [**SetCompanionCallTypesRequest**](SetCompanionCallTypesRequest.md)|  | 
+
+### Return type
+
+[**SetCompanionCallTypes200Response**](SetCompanionCallTypes200Response.md)
 
 ### Authorization
 

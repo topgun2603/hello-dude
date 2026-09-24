@@ -9,6 +9,7 @@ import { CallError, type CallType, type StartedCall } from "../billing/engine.js
 import { findOnlineCompanions } from "./companions.js";
 import { LanguageCode } from "./profile.js";
 import { RefundRequest } from "./refunds.js";
+import { activeVip } from "../vip.js";
 
 const CallTypeZ = z.enum(["audio", "video"]);
 const CallIdParams = z.object({ id: z.uuid() });
@@ -148,23 +149,44 @@ export const callRoutes: FastifyPluginAsyncZod = async (app) => {
     return joinInfo(started);
   });
 
+  app.post("/calls/:id/verify-connected", {
+    preHandler: requireAuth("caller", "companion"),
+    schema: {
+      tags: ["calls"],
+      security: bearer,
+      summary: "The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so",
+      params: z.object({ id: z.uuid() }),
+      response: { 200: z.object({ connected: z.boolean() }) },
+    },
+  }, async (req) => {
+    const { userId } = me(req);
+    const call = (await db.query<{ caller_id: string; companion_id: string }>(
+      `SELECT caller_id, companion_id FROM calls WHERE id = $1`, [req.params.id])).rows[0];
+    if (!call) throw notFound("CALL_NOT_FOUND");
+    if (call.caller_id !== userId && call.companion_id !== userId) throw new ApiError(403, "NOT_YOUR_CALL", "This isn't your call");
+    return { connected: await engine.connectIfBothPresent(req.params.id) };
+  });
+
   app.post("/calls/match", {
     preHandler: requireAuth("caller"),
     schema: {
       tags: ["calls"],
       security: bearer,
-      summary: "Instant match: ring a free online companion who speaks the language",
-      body: z.object({ language: LanguageCode, type: CallTypeZ }),
+      summary: "Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)",
+      body: z.object({ language: LanguageCode.nullish(), type: CallTypeZ }),
       response: { 201: JoinInfo.extend({ companion: Party }) },
     },
   }, async (req, reply) => {
     const { userId } = me(req);
     const { language, type } = req.body;
-    const free = (await findOnlineCompanions(app.deps, userId, language, { video: type === "video" }))
+    const free = (await findOnlineCompanions(app.deps, userId, language ?? null, { video: type === "video" }))
       .filter((c) => !c.busy);
     // Spread calls across the best-rated half instead of always ringing the top companion.
+    // VIP: first pick — the best-rated free companion is tried first.
+    const vip = await activeVip(app.deps.db, userId);
     const pool = free.slice(0, Math.max(3, Math.ceil(free.length / 2)));
-    for (const c of pool.sort(() => Math.random() - 0.5)) {
+    const order = vip ? pool : pool.sort(() => Math.random() - 0.5);
+    for (const c of order) {
       try {
         const started = await engine.startCall(userId, c.id, type);
         await notifyCompanion(app.deps, req.log, userId, c.id, started.callId, type);
@@ -228,28 +250,62 @@ export const callRoutes: FastifyPluginAsyncZod = async (app) => {
     return toSummary(await loadCall(call.id, userId), userId);
   });
 
+  const CallHistorySummary = z.object({
+    calls: z.number().int(),
+    connected: z.number().int(),
+    missed: z.number().int().describe("Not answered, declined or failed"),
+    talkSeconds: z.number().int(),
+    coinsSpent: z.number().int().describe("Caller: coins charged minus refunds"),
+    paiseEarned: z.number().int().describe("Companion: earnings after reversals"),
+  }).meta({ id: "CallHistorySummary" });
+
   app.get("/calls", {
     preHandler: requireAuth(),
     schema: {
       tags: ["calls"],
       security: bearer,
-      summary: "Call history, newest first. Page with `before` = createdAt of the last call seen.",
+      summary: "Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.",
       querystring: z.object({
         before: z.coerce.date().optional(),
         limit: z.coerce.number().int().min(1).max(50).default(20),
+        type: CallTypeZ.optional().describe("Only voice (audio) or video calls"),
+        outcome: z.enum(["connected", "missed"]).optional().describe("connected = both joined; missed = not answered, declined or failed"),
+        from: z.coerce.date().optional().describe("Calls made at or after this time"),
+        to: z.coerce.date().optional().describe("Calls made before this time"),
       }),
-      response: { 200: z.object({ calls: z.array(CallSummary), nextBefore: z.date().nullable() }) },
+      response: { 200: z.object({ calls: z.array(CallSummary), nextBefore: z.date().nullable(), summary: CallHistorySummary }) },
     },
   }, async (req) => {
     const { userId } = me(req);
-    const { before, limit } = req.query;
-    const rows = (await db.query<CallRow>(
-      `${CALL_SELECT} AND ($2::timestamptz IS NULL OR c.created_at < $2) ORDER BY c.created_at DESC LIMIT $3`,
-      [userId, before ?? null, limit],
-    )).rows;
+    const { before, limit, type, outcome, from, to } = req.query;
+    // $2 type, $3 outcome, $4 from, $5 to — shared by the page and the totals.
+    const filters = `
+      AND ($2::call_type IS NULL OR c.type = $2)
+      AND ($3::text IS NULL OR ($3 = 'connected') = (c.started_at IS NOT NULL))
+      AND ($3::text IS NULL OR $3 = 'connected' OR c.status IN ('missed', 'rejected', 'failed', 'ended'))
+      AND ($4::timestamptz IS NULL OR c.created_at >= $4)
+      AND ($5::timestamptz IS NULL OR c.created_at < $5)`;
+    const args = [userId, type ?? null, outcome ?? null, from ?? null, to ?? null];
+    const [rows, totals] = await Promise.all([
+      db.query<CallRow>(
+        `${CALL_SELECT} ${filters} AND ($6::timestamptz IS NULL OR c.created_at < $6) ORDER BY c.created_at DESC LIMIT $7`,
+        [...args, before ?? null, limit]),
+      db.query<{ calls: number; connected: number; missed: number; secs: number; coins: number; paise: number }>(
+        `SELECT count(*)::int AS calls,
+                count(*) FILTER (WHERE c.started_at IS NOT NULL)::int AS connected,
+                count(*) FILTER (WHERE c.started_at IS NULL AND c.status <> 'ringing' AND c.status <> 'active')::int AS missed,
+                COALESCE(sum(EXTRACT(EPOCH FROM (c.ended_at - c.started_at))) FILTER (WHERE c.started_at IS NOT NULL AND c.ended_at IS NOT NULL), 0)::int AS secs,
+                COALESCE(sum(CASE WHEN c.caller_id = $1 THEN c.coins_charged
+                  - COALESCE((SELECT sum(amount) FROM ledger_entries WHERE call_id = c.id AND type = 'refund'), 0) ELSE 0 END), 0)::int AS coins,
+                COALESCE(sum(CASE WHEN c.companion_id = $1 THEN c.paise_credited
+                  + COALESCE((SELECT sum(amount) FROM ledger_entries WHERE call_id = c.id AND type = 'refund_reversal'), 0) ELSE 0 END), 0)::bigint AS paise
+           FROM calls c WHERE (c.caller_id = $1 OR c.companion_id = $1) ${filters}`, args),
+    ]);
+    const t = totals.rows[0]!;
     return {
-      calls: rows.map((r) => toSummary(r, userId)),
-      nextBefore: rows.length === limit ? rows[rows.length - 1]!.created_at : null,
+      calls: rows.rows.map((r) => toSummary(r, userId)),
+      nextBefore: rows.rows.length === limit ? rows.rows[rows.rows.length - 1]!.created_at : null,
+      summary: { calls: t.calls, connected: t.connected, missed: t.missed, talkSeconds: t.secs, coinsSpent: t.coins, paiseEarned: Number(t.paise) },
     };
   });
 

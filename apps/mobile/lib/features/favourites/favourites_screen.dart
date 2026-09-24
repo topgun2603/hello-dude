@@ -25,14 +25,14 @@ Future<void> setFavourite(
 }) async {
   final api = ref.read(apiProvider);
   if (fav) {
-    await api.call(
+    await api.send(
       () => api.favourites.addFavourite(
         companionId,
         AddFavouriteRequest(notify: notify),
       ),
     );
   } else {
-    await api.call(() => api.favourites.removeFavourite(companionId));
+    await api.send(() => api.favourites.removeFavourite(companionId));
   }
   ref.invalidate(favouritesProvider);
   ref.invalidate(onlineCompanionsProvider);
@@ -72,7 +72,9 @@ class FavouritesScreen extends ConsumerWidget {
                       onPressed: () => context.pop(),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(child: Text('Favourites', style: AppText.heading(24))),
+                    Expanded(
+                      child: Text('Favourites', style: AppText.heading(24)),
+                    ),
                     const ChatButton(),
                   ],
                 ),
@@ -146,6 +148,8 @@ class _Row extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final free = f.online && !f.busy;
+    // A companion who only takes video calls gets a video call from this button.
+    final video = !f.audioEnabled && f.videoEnabled;
     final status = f.busy
         ? 'In a call'
         : f.online
@@ -164,6 +168,7 @@ class _Row extends ConsumerWidget {
           Avatar(
             name: f.displayName,
             avatarId: f.avatarId,
+            photoUrl: f.photoUrl,
             statusColor: f.busy
                 ? AppColors.warning
                 : f.online
@@ -191,10 +196,32 @@ class _Row extends ConsumerWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Message ${f.displayName}',
-            onPressed: () => openChatWith(context, ref, f.id),
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textSecondary),
+          PopupMenuButton<String>(
+            tooltip: 'More for ${f.displayName}',
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: AppColors.textSecondary,
+            ),
+            color: const Color(0xFF1E1B3A),
+            onSelected: (v) => v == 'book'
+                ? context.push('/schedule/${f.id}')
+                : openChatWith(context, ref, f.id),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'message',
+                child: ListTile(
+                  leading: Icon(Icons.chat_bubble_outline_rounded),
+                  title: Text('Message'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'book',
+                child: ListTile(
+                  leading: Icon(Icons.event_available_rounded),
+                  title: Text('Book a time'),
+                ),
+              ),
+            ],
           ),
           IconButton(
             tooltip: f.notify ? 'Stop online alerts' : 'Alert me when online',
@@ -214,7 +241,7 @@ class _Row extends ConsumerWidget {
           Semantics(
             button: true,
             enabled: free,
-            label: 'Voice call ${f.displayName}',
+            label: '${video ? 'Video' : 'Voice'} call ${f.displayName}',
             child: GestureDetector(
               onTap: !free
                   ? null
@@ -222,15 +249,17 @@ class _Row extends ConsumerWidget {
                       context,
                       ref,
                       language: f.languages.firstOrNull ?? 'ta',
-                      video: false,
+                      video: video,
                       companion: OnlineCompanion(
                         id: f.id,
                         displayName: f.displayName,
                         avatarId: f.avatarId,
+                        photoUrl: f.photoUrl,
                         primaryLanguage: f.languages.firstOrNull ?? 'ta',
                         languages: f.languages,
                         rating: null,
                         ratingCount: 0,
+                        audioEnabled: f.audioEnabled,
                         videoEnabled: f.videoEnabled,
                         busy: f.busy,
                         isFavourite: true,
@@ -253,7 +282,7 @@ class _Row extends ConsumerWidget {
                   color: free ? null : Colors.white.withValues(alpha: 0.08),
                 ),
                 child: Icon(
-                  Icons.call_rounded,
+                  video ? Icons.videocam_rounded : Icons.call_rounded,
                   size: 19,
                   color: free ? Colors.white : AppColors.hint,
                 ),

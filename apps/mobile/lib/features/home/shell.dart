@@ -10,8 +10,11 @@ import '../../app/theme.dart';
 import '../../widgets/common.dart';
 import 'home_data.dart';
 import 'home_screen.dart';
+import 'online_tab.dart';
 import 'other_tabs.dart';
 import '../growth/checkin_screen.dart';
+import '../promotions/promo_sheet.dart';
+import 'package:pesu_api/api.dart' show PromotionCtaActionEnum;
 
 /// Signed-in shell with the bottom navigation from the Home design.
 class MainShell extends ConsumerStatefulWidget {
@@ -28,10 +31,28 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    // Daily bonus popup, once per app session, if today's isn't claimed yet.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // On open: the admin's offer sheet (if any), then the daily bonus popup
+    // (once per app session, if today's isn't claimed yet).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await _showOffer();
       if (mounted) offerDailyBonus(context, ref);
     });
+    // Coming back after a while counts as opening the app again.
+    _lifecycle = AppLifecycleListener(
+      onHide: () => _hiddenAt = DateTime.now(),
+      onShow: () {
+        final away = _hiddenAt == null
+            ? Duration.zero
+            : DateTime.now().difference(_hiddenAt!);
+        _hiddenAt = null;
+        // Only on the tabs themselves, never over a call or another screen.
+        if (away >= reopenAfter &&
+            (ModalRoute.of(context)?.isCurrent ?? false)) {
+          _showOffer();
+        }
+      },
+    );
     _events = ref
         .read(realtimeProvider)
         .events
@@ -55,14 +76,48 @@ class _MainShellState extends ConsumerState<MainShell> {
         });
   }
 
+  late final AppLifecycleListener _lifecycle;
+  DateTime? _hiddenAt;
+
+  /// How long the app must be in the background before the offer shows again.
+  static const reopenAfter = Duration(minutes: 10);
+
+  Future<void> _showOffer() => showAppOpenPromotion(
+    context,
+    ref,
+    onAction: (a) {
+      if (!mounted) return;
+      switch (a) {
+        case PromotionCtaActionEnum.wallet:
+          setState(() => _tab = 3);
+        case PromotionCtaActionEnum.online:
+          setState(() => _tab = 1);
+        case PromotionCtaActionEnum.vip:
+          context.push('/vip');
+        case PromotionCtaActionEnum.checkin:
+          context.push('/checkin');
+        case PromotionCtaActionEnum.referral:
+          context.push('/referral');
+        case PromotionCtaActionEnum.rooms:
+          context.push('/rooms');
+        case PromotionCtaActionEnum.rewards:
+          context.push('/rewards');
+        default:
+          break;
+      }
+    },
+  );
+
   @override
   void dispose() {
+    _lifecycle.dispose();
     _events?.cancel();
     super.dispose();
   }
 
   static const _tabs = [
     (Icons.home_rounded, 'Home'),
+    (Icons.people_alt_rounded, 'Online'),
     (Icons.schedule_rounded, 'Calls'),
     (Icons.account_balance_wallet_outlined, 'Wallet'),
     (Icons.person_outline_rounded, 'Profile'),
@@ -74,7 +129,11 @@ class _MainShellState extends ConsumerState<MainShell> {
       realtimeProvider,
     ); // keeps the live connection open while signed in
     final pages = [
-      HomeTab(onOpenWallet: () => setState(() => _tab = 2)),
+      HomeTab(
+        onOpenWallet: () => setState(() => _tab = 3),
+        onSeeAllOnline: () => setState(() => _tab = 1),
+      ),
+      OnlineTab(active: _tab == 1),
       const CallsTab(),
       const WalletTab(),
       const ProfileTab(),

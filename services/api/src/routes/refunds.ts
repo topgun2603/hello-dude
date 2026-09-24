@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { tx, type DbClient } from "../db/pool.js";
 import { bearer, me, requireAuth } from "../auth/guard.js";
+import { can } from "../auth/permissions.js";
 import { ApiError, conflict, forbidden, notFound } from "../errors.js";
 import { post } from "../billing/ledger.js";
 import { numberSetting } from "../settings.js";
@@ -75,11 +76,10 @@ export const refundRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   // -------------------------------------------------------------------------
-  const admin = requireAuth("admin");
   const base = { tags: ["admin"], security: bearer };
 
   app.get("/admin/refunds", {
-    preHandler: admin,
+    preHandler: can("refunds.review"),
     schema: {
       ...base,
       querystring: z.object({ status: z.enum(["requested", "approved", "rejected"]).default("requested") }),
@@ -103,7 +103,7 @@ export const refundRoutes: FastifyPluginAsyncZod = async (app) => {
     })));
 
   app.post("/admin/refunds/:id/decide", {
-    preHandler: admin,
+    preHandler: can("refunds.review"),
     schema: {
       ...base,
       summary: "Approve (all or part of the coins) or reject a refund request",

@@ -190,6 +190,11 @@ enum NotificationItemInputTypeEnum {
   kycDecided._(r'kyc_decided'),
   chatMessage._(r'chat_message'),
   roomLive._(r'room_live'),
+  liveStarted._(r'live_started'),
+  groupOpen._(r'group_open'),
+  groupReminder._(r'group_reminder'),
+  groupCancelled._(r'group_cancelled'),
+  photoDecided._(r'photo_decided'),
   vip._(r'vip'),
   bonusEarned._(r'bonus_earned'),
   ;
@@ -268,6 +273,11 @@ class NotificationItemInputTypeEnumTypeTransformer {
         case r'kyc_decided': return NotificationItemInputTypeEnum.kycDecided;
         case r'chat_message': return NotificationItemInputTypeEnum.chatMessage;
         case r'room_live': return NotificationItemInputTypeEnum.roomLive;
+        case r'live_started': return NotificationItemInputTypeEnum.liveStarted;
+        case r'group_open': return NotificationItemInputTypeEnum.groupOpen;
+        case r'group_reminder': return NotificationItemInputTypeEnum.groupReminder;
+        case r'group_cancelled': return NotificationItemInputTypeEnum.groupCancelled;
+        case r'photo_decided': return NotificationItemInputTypeEnum.photoDecided;
         case r'vip': return NotificationItemInputTypeEnum.vip;
         case r'bonus_earned': return NotificationItemInputTypeEnum.bonusEarned;
         default:

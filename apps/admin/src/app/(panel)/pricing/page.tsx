@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
-  BadgeIndianRupee, Check, Clock, Coins, Flame, Gift, History, IdCard, Pencil, Percent, Plus, RotateCcw, SlidersHorizontal, Star,
+  BadgeIndianRupee, CalendarDays, Check, Clock, Coins, Crown, Cpu, Eye, Video, UserMinus, UserCheck, Radio, Receipt, Repeat, Store, Target, Timer, TimerOff, Flame, Gift, Hourglass, Moon, Sunrise, History, IdCard, Pencil, Percent, Plus, RotateCcw, SlidersHorizontal, Star,
   UserPlus, UsersRound, Wallet,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -103,7 +103,7 @@ export default function PricingPage() {
               className="h-10 flex-none gap-2 rounded-xl px-4 text-sm font-semibold text-foreground/70 data-active:bg-[linear-gradient(90deg,#EC4899,#DB2777)] data-active:text-white data-active:shadow-[0_8px_18px_-10px_rgba(219,39,119,0.9)] hover:text-foreground data-active:hover:text-white">
               <Icon className="size-4" /> {label}
               {count != null && (
-                <span className="rounded-full bg-black/5 px-1.5 text-xs font-bold group-data-active:bg-white/25 [[data-active]_&]:bg-white/25">{count}</span>
+                <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-bold group-data-active:bg-white/25 [[data-active]_&]:bg-white/25">{count}</span>
               )}
             </TabsTrigger>
           ))}
@@ -445,12 +445,46 @@ const SETTING_ICON: Record<string, { icon: React.ElementType; tint: string }> = 
   "referral.referrer_coins": { icon: Gift, tint: "bg-fuchsia-50 text-fuchsia-600" },
   "referral.referee_coins": { icon: UserPlus, tint: "bg-violet-50 text-violet-600" },
   "referral.max_rewarded": { icon: UsersRound, tint: "bg-sky-50 text-sky-600" },
+  "booking.window_days": { icon: CalendarDays, tint: "bg-sky-50 text-sky-600" },
+  "booking.first_slot_minute": { icon: Sunrise, tint: "bg-amber-50 text-amber-600" },
+  "booking.last_slot_minute": { icon: Moon, tint: "bg-indigo-50 text-indigo-600" },
+  "booking.confirm_hours": { icon: Hourglass, tint: "bg-violet-50 text-violet-600" },
+  "vip.discount_pct": { icon: Crown, tint: "bg-amber-50 text-amber-600" },
+  "companion.daily_goal_paise": { icon: Target, tint: "bg-emerald-50 text-emerald-600" },
+  "companion.streak_min_minutes": { icon: Timer, tint: "bg-teal-50 text-teal-600" },
+  "live.preview_seconds": { icon: Eye, tint: "bg-rose-50 text-rose-500" },
+  "live.coins_per_min": { icon: Coins, tint: "bg-pink-50 text-pink-500" },
+  "live.empty_end_minutes": { icon: TimerOff, tint: "bg-slate-100 text-slate-600" },
+  "live.max_minutes": { icon: Timer, tint: "bg-rose-50 text-rose-500" },
+  "live.max_per_day": { icon: Repeat, tint: "bg-fuchsia-50 text-fuchsia-600" },
+  "live.previews_per_day": { icon: Eye, tint: "bg-violet-50 text-violet-600" },
+  "analytics.livekit_paise_per_viewer_minute": { icon: Cpu, tint: "bg-slate-100 text-slate-600" },
+  "group.coins_per_min": { icon: Video, tint: "bg-indigo-50 text-indigo-600" },
+  "group.companion_share_bps": { icon: Percent, tint: "bg-indigo-50 text-indigo-600" },
+  "group.min_members": { icon: UserCheck, tint: "bg-blue-50 text-blue-600" },
+  "group.max_members": { icon: UsersRound, tint: "bg-blue-50 text-blue-600" },
+  "group.end_below": { icon: UserMinus, tint: "bg-blue-50 text-blue-600" },
+  "group.lobby_timeout_minutes": { icon: Hourglass, tint: "bg-sky-50 text-sky-600" },
+  "group.max_minutes": { icon: Timer, tint: "bg-sky-50 text-sky-600" },
+  "group.no_show_minutes": { icon: TimerOff, tint: "bg-sky-50 text-sky-600" },
+  "live.companion_share_bps": { icon: Radio, tint: "bg-red-50 text-red-500" },
+  "live.max_viewers": { icon: UsersRound, tint: "bg-rose-50 text-rose-600" },
+  "analytics.gst_pct": { icon: Receipt, tint: "bg-slate-100 text-slate-600" },
+  "analytics.store_fee_pct": { icon: Store, tint: "bg-slate-100 text-slate-600" },
+  "analytics.target_margin_pct": { icon: Target, tint: "bg-emerald-50 text-emerald-600" },
 };
 
 /** Settings stored and edited as whole numbers (coins, counts). */
 const whole = (unit: string) => ({ unit, toView: (v: number) => v, fromView: (v: number) => Math.round(v), step: 1 });
 
-const SETTING_VIEW: Record<string, { unit: string; toView: (v: number) => number; fromView: (v: number) => number; step: number }> = {
+/** Minutes after midnight <-> "HH:MM" for time-of-day settings (all times are IST). */
+const toClock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const fromClock = (v: string) => { const [h, m] = v.split(":").map(Number); return (h ?? 0) * 60 + (m ?? 0); };
+const clock12 = (m: number) => `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
+/** A time of day, edited with a time picker in 30-minute steps. */
+const timeOfDay = { unit: "IST", toView: (v: number) => v, fromView: (v: number) => v, step: 1800, time: true };
+
+const SETTING_VIEW: Record<string, { unit: string; toView: (v: number) => number; fromView: (v: number) => number; step: number; time?: boolean }> = {
   "gift.companion_share_bps": { unit: "%", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 1 },
   "payout.tds_bps": { unit: "%", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 0.1 },
   "coin.value_paise": { unit: "₹", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 0.01 },
@@ -462,6 +496,33 @@ const SETTING_VIEW: Record<string, { unit: string; toView: (v: number) => number
   "referral.referrer_coins": whole("coins"),
   "referral.referee_coins": whole("coins"),
   "referral.max_rewarded": whole("friends"),
+  "booking.window_days": whole("days"),
+  "booking.first_slot_minute": timeOfDay,
+  "booking.last_slot_minute": timeOfDay,
+  "booking.confirm_hours": whole("hours"),
+  "vip.discount_pct": whole("%"),
+  "companion.daily_goal_paise": { unit: "₹", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 1 },
+  "companion.streak_min_minutes": whole("minutes"),
+  "live.preview_seconds": whole("seconds"),
+  "live.coins_per_min": whole("coins"),
+  "live.empty_end_minutes": whole("minutes"),
+  "live.max_minutes": whole("minutes"),
+  "live.max_per_day": whole("lives"),
+  "live.previews_per_day": whole("previews"),
+  "analytics.livekit_paise_per_viewer_minute": whole("paise"),
+  "group.coins_per_min": whole("coins"),
+  "group.companion_share_bps": { unit: "%", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 1 },
+  "group.min_members": whole("members"),
+  "group.max_members": whole("members"),
+  "group.end_below": whole("members"),
+  "group.lobby_timeout_minutes": whole("minutes"),
+  "group.max_minutes": whole("minutes"),
+  "group.no_show_minutes": whole("minutes"),
+  "live.companion_share_bps": { unit: "%", toView: (v) => v / 100, fromView: (v) => Math.round(v * 100), step: 1 },
+  "live.max_viewers": whole("people"),
+  "analytics.gst_pct": whole("%"),
+  "analytics.store_fee_pct": whole("%"),
+  "analytics.target_margin_pct": whole("%"),
 };
 
 function SettingsCard() {
@@ -483,8 +544,9 @@ function SettingRow({ s }: { s: AdminSetting }) {
   const view = SETTING_VIEW[s.key] ?? { unit: "", toView: (v: number) => v, fromView: (v: number) => v, step: 1 };
   const look = SETTING_ICON[s.key] ?? { icon: SlidersHorizontal, tint: "bg-muted text-muted-foreground" };
   const Icon = look.icon;
-  const [value, setValue] = useState(String(view.toView(s.value)));
-  const stored = view.fromView(Number(value));
+  const isTime = !!view.time;
+  const [value, setValue] = useState(isTime ? toClock(s.value) : String(view.toView(s.value)));
+  const stored = isTime ? fromClock(value) : view.fromView(Number(value));
   const changed = stored !== s.value;
   const inRange = value !== "" && stored >= s.min && stored <= s.max;
   const save = useMutation({
@@ -496,13 +558,14 @@ function SettingRow({ s }: { s: AdminSetting }) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
       <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", look.tint)}><Icon className="size-5" /></span>
       <label htmlFor={`set-${s.key}`} className="min-w-0 flex-1 text-[15px] font-medium">
-        {s.label.replace(/ \((paise|basis points|coins)\)$/, "")}
+        {s.label.replace(/ \(basis points of coin value\)$/, " (share of coin value)").replace(/ \((paise|basis points|coins|minutes after midnight IST|%|minutes|seconds|people|lives|previews)\)$/, "")}
         <span className={cn("block text-xs font-normal", inRange || !changed ? "text-muted-foreground" : "text-destructive")}>
-          Allowed: {view.toView(s.min)}–{view.toView(s.max)} {view.unit}
+          Allowed: {isTime ? `${clock12(s.min)}–${clock12(s.max)}` : `${view.toView(s.min)}–${view.toView(s.max)}`} {view.unit}
         </span>
       </label>
       <div className="flex items-center gap-2">
-        <Input id={`set-${s.key}`} type="number" step={view.step} className="h-10 w-28 rounded-xl font-semibold tabular-nums" value={value}
+        <Input id={`set-${s.key}`} type={isTime ? "time" : "number"} step={view.step} value={value}
+          className={cn("h-10 rounded-xl font-semibold tabular-nums", isTime ? "w-36" : "w-28")}
           aria-invalid={!inRange} onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && changed && inRange && save.mutate()} />
         <span className="w-12 text-sm text-muted-foreground">{view.unit}</span>

@@ -9,6 +9,8 @@ import { createHarness, type Harness } from "./fixtures.js";
 import { memoryStore } from "../src/storage.js";
 import { simulatedPayouts } from "../src/payouts/provider.js";
 import type { Recorder } from "../src/recording.js";
+import type { PhoneVerifier } from "../src/auth/firebase-auth.js";
+import { ApiError } from "../src/errors.js";
 import { makeTestSigner, type TestSigner } from "./aadhaar-fixture.js";
 import { randomBytes } from "node:crypto";
 
@@ -35,6 +37,14 @@ export class RecordingPush implements PushSender {
   readonly notices: { tokens: string[]; notice: Notice }[] = [];
   async notify(tokens: string[], notice: Notice) { this.notices.push({ tokens, notice }); }
 }
+
+/** Stands in for Firebase: the ID token "firebase:<phone>" verifies as that phone. */
+export const fakeFirebase: PhoneVerifier = {
+  async verifyIdToken(idToken) {
+    if (!idToken.startsWith("firebase:")) throw new ApiError(401, "FIREBASE_TOKEN_INVALID", "Sign-in expired, verify your number again");
+    return idToken.slice("firebase:".length);
+  },
+};
 
 /** Accepts JSON bodies whose Authorization header is WEBHOOK_AUTH. */
 export const fakeWebhooks: WebhookVerifier = {
@@ -65,6 +75,7 @@ export async function createAppHarness(): Promise<AppHarness> {
   const app = await buildApp({
     db: h.db, redis: h.redis, engine: h.engine, rooms: h.rooms, events: h.events, tokens, push,
     otp: new OtpService(h.redis, otpCodes, TEST_JWT_SECRET),
+    phoneAuth: fakeFirebase,
     webhooks: fakeWebhooks,
     store, kycKey: randomBytes(32), uidaiCerts: [uidai.certPem], payouts: simulatedPayouts(), recorder,
     liveKitUrl: "wss://livekit.test",

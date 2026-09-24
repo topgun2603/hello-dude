@@ -3,6 +3,7 @@ import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db/pool.js";
 import { devOtpSender, msg91OtpSender, OtpService } from "./auth/otp.js";
+import { firebasePhoneVerifier } from "./auth/firebase-auth.js";
 import { TokenService } from "./auth/tokens.js";
 import { BillingEngine } from "./billing/engine.js";
 import { liveKitRooms, liveKitWebhooks, redisUserEvents } from "./billing/ports.js";
@@ -17,7 +18,7 @@ const db = createPool(cfg.DATABASE_URL);
 const redis = new Redis(cfg.REDIS_URL);
 const rooms = liveKitRooms(cfg.LIVEKIT_URL, cfg.LIVEKIT_KEY, cfg.LIVEKIT_SECRET);
 const events = redisUserEvents(redis);
-const engine = new BillingEngine({ db, redis, rooms, events });
+const engine = new BillingEngine({ db, redis, rooms, events, pollRooms: cfg.LIVEKIT_POLL });
 
 const isDev = cfg.OTP_PROVIDER === "dev";
 const kycKey = parseKey(cfg.KYC_ENCRYPTION_KEY);
@@ -38,6 +39,8 @@ const app = await buildApp({
   otp: new OtpService(redis, otpSender, cfg.JWT_SECRET, isDev ? cfg.DEV_OTP_CODE : undefined),
   tokens: new TokenService(db, cfg.JWT_SECRET),
   push,
+  // Mobile app sign-in (Firebase Auth phone). Without the key the app falls back to the dev OTP.
+  phoneAuth: cfg.FIREBASE_SERVICE_ACCOUNT_PATH ? firebasePhoneVerifier(cfg.FIREBASE_SERVICE_ACCOUNT_PATH) : undefined,
   webhooks: liveKitWebhooks(cfg.LIVEKIT_KEY, cfg.LIVEKIT_SECRET),
   store: localEncryptedStore(cfg.KYC_STORAGE_DIR, kycKey),
   kycKey,

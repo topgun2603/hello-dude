@@ -14,6 +14,10 @@ import { disabledRecorder } from "./recording.js";
 import { runRetention } from "./retention.js";
 import { sendDailyBonusReminders, sendRateReminders } from "./reminders.js";
 import { sweepBookings } from "./bookings.js";
+import { payBonuses } from "./rewards.js";
+import { sweepRooms } from "./routes/rooms.js";
+import { sweepLives } from "./routes/lives.js";
+import { sweepGroups } from "./routes/groups.js";
 import { fcmPushSender, logPushSender } from "./push.js";
 import { localEncryptedStore, parseKey } from "./storage.js";
 
@@ -24,10 +28,12 @@ const REMINDERS_EVERY_MS = 5 * 60_000;
 const cfg = loadConfig();
 const db = createPool(cfg.DATABASE_URL);
 const redis = new Redis(cfg.REDIS_URL);
+const rooms = liveKitRooms(cfg.LIVEKIT_URL, cfg.LIVEKIT_KEY, cfg.LIVEKIT_SECRET);
 const engine = new BillingEngine({
   db, redis,
-  rooms: liveKitRooms(cfg.LIVEKIT_URL, cfg.LIVEKIT_KEY, cfg.LIVEKIT_SECRET),
+  rooms,
   events: redisUserEvents(redis),
+  pollRooms: cfg.LIVEKIT_POLL,
 });
 
 const stop = new AbortController();
@@ -38,6 +44,8 @@ const sweeper = setInterval(async () => {
     const dropped = await dropStalePresence(redis);
     if (dropped) console.log(`presence: ${dropped} companion(s) went offline (no heartbeat)`);
     await engine.sweep();
+    const r = await sweepRooms({ db, events: redisUserEvents(redis), rooms });
+    if (r.left || r.ended) console.log("voice rooms:", r);
   } catch (err) {
     console.error("sweep failed", err);
   }
@@ -64,11 +72,33 @@ async function reminders() {
 }
 const remindersTimer = setInterval(reminders, REMINDERS_EVERY_MS);
 
+// Lives: previews and passes run out by the second; check every 10 s.
+const livesTimer = setInterval(async () => {
+  try {
+    const r = await sweepLives({ db, events: redisUserEvents(redis), rooms, push });
+    if (r.ended || r.removed) console.log("lives:", r);
+  } catch (err) {
+    console.error("lives sweep failed", err);
+  }
+}, 10_000);
+
+// Group video: per-minute charges, lobbies, reminders, ending thin groups.
+const groupsTimer = setInterval(async () => {
+  try {
+    const r = await sweepGroups({ db, events: redisUserEvents(redis), rooms, push });
+    if (r.ended || r.removed) console.log("groups:", r);
+  } catch (err) {
+    console.error("groups sweep failed", err);
+  }
+}, 10_000);
+
 // Bookings need minute precision (reminders 10 min before, expiry, refunds).
 const bookingsTimer = setInterval(async () => {
   try {
     const b = await sweepBookings({ db, push, events });
     if (b.expired || b.reminded || b.closed) console.log("bookings:", b);
+    const bonuses = await payBonuses({ db, push, events });
+    if (bonuses) console.log(`bonuses: paid ${bonuses}`);
   } catch (err) {
     console.error("bookings sweep failed", err);
   }
@@ -90,6 +120,8 @@ clearInterval(sweeper);
 clearInterval(retentionTimer);
 clearInterval(remindersTimer);
 clearInterval(bookingsTimer);
+clearInterval(livesTimer);
+clearInterval(groupsTimer);
 await db.end();
 redis.disconnect();
 console.log("worker stopped");

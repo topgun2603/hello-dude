@@ -10,7 +10,7 @@ All URIs are relative to *http://localhost*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getCompanion**](CompanionsApi.md#getcompanion) | **GET** /v1/companions/{id} | One companion with current rates (for Call buttons outside the home list, e.g. chat)
-[**listOnlineCompanions**](CompanionsApi.md#listonlinecompanions) | **GET** /v1/companions/online | Home screen: who is online now in a language
+[**listOnlineCompanions**](CompanionsApi.md#listonlinecompanions) | **GET** /v1/companions/online | Who is online now: in one language (Home), or everyone when language is left out (Online tab)
 
 
 # **getCompanion**
@@ -63,7 +63,7 @@ Name | Type | Description  | Notes
 # **listOnlineCompanions**
 > ListOnlineCompanions200Response listOnlineCompanions(language)
 
-Home screen: who is online now in a language
+Who is online now: in one language (Home), or everyone when language is left out (Online tab)
 
 ### Example
 ```dart
@@ -90,7 +90,7 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **language** | **String**|  | 
+ **language** | **String**|  | [optional] 
 
 ### Return type
 

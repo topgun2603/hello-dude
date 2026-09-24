@@ -103,7 +103,7 @@ class _IncomingScreenState extends ConsumerState<IncomingScreen> {
     _buzz?.cancel();
     final api = ref.read(apiProvider);
     try {
-      await api.call(() => api.calls.rejectCall(a.callId));
+      await api.send(() => api.calls.rejectCall(a.callId));
     } catch (_) {
       /* already over */
     }

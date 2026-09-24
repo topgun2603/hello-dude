@@ -22,6 +22,7 @@ class Profile {
     this.languages = const [],
     required this.phone,
     required this.companion,
+    required this.vipUntil,
   });
 
   String id;
@@ -45,6 +46,9 @@ class Profile {
 
   ProfileCompanion? companion;
 
+  /// VIP active until this time; null if not VIP
+  DateTime? vipUntil;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is Profile &&
     other.id == id &&
@@ -55,7 +59,8 @@ class Profile {
     other.primaryLanguage == primaryLanguage &&
     _deepEquality.equals(other.languages, languages) &&
     other.phone == phone &&
-    other.companion == companion;
+    other.companion == companion &&
+    other.vipUntil == vipUntil;
 
   @override
   int get hashCode =>
@@ -68,10 +73,11 @@ class Profile {
     (primaryLanguage.hashCode) +
     (languages.hashCode) +
     (phone.hashCode) +
-    (companion == null ? 0 : companion!.hashCode);
+    (companion == null ? 0 : companion!.hashCode) +
+    (vipUntil == null ? 0 : vipUntil!.hashCode);
 
   @override
-  String toString() => 'Profile[id=$id, displayName=$displayName, avatarId=$avatarId, gender=$gender, role=$role, primaryLanguage=$primaryLanguage, languages=$languages, phone=$phone, companion=$companion]';
+  String toString() => 'Profile[id=$id, displayName=$displayName, avatarId=$avatarId, gender=$gender, role=$role, primaryLanguage=$primaryLanguage, languages=$languages, phone=$phone, companion=$companion, vipUntil=$vipUntil]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -87,6 +93,11 @@ class Profile {
       json[r'companion'] = this.companion;
     } else {
       json[r'companion'] = null;
+    }
+    if (this.vipUntil != null) {
+      json[r'vipUntil'] = this.vipUntil!.toUtc().toIso8601String();
+    } else {
+      json[r'vipUntil'] = null;
     }
     return json;
   }
@@ -119,6 +130,7 @@ class Profile {
         assert(json.containsKey(r'phone'), 'Required key "Profile[phone]" is missing from JSON.');
         assert(json[r'phone'] != null, 'Required key "Profile[phone]" has a null value in JSON.');
         assert(json.containsKey(r'companion'), 'Required key "Profile[companion]" is missing from JSON.');
+        assert(json.containsKey(r'vipUntil'), 'Required key "Profile[vipUntil]" is missing from JSON.');
         return true;
       }());
 
@@ -134,6 +146,7 @@ class Profile {
             : const [],
         phone: mapValueOfType<String>(json, r'phone')!,
         companion: ProfileCompanion.fromJson(json[r'companion']),
+        vipUntil: mapDateTime(json, r'vipUntil', r''),
       );
     }
     return null;
@@ -190,6 +203,7 @@ class Profile {
     'languages',
     'phone',
     'companion',
+    'vipUntil',
   };
 }
 

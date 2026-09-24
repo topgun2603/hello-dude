@@ -356,7 +356,7 @@ export function DataTable<T extends RowData>({
             {filteredCount !== data.length && <span className="text-muted-foreground/70"> (filtered from {data.length})</span>}
           </span>
         </div>
-        <nav className="flex items-center gap-1" aria-label="Pagination">
+        <nav className="flex items-center gap-1.5" aria-label="Pagination">
           <Button variant="outline" size="icon-sm" className="rounded-full" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} aria-label="First page">
             <ChevronsLeft />
           </Button>

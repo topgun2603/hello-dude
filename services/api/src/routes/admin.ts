@@ -5,14 +5,19 @@
 import { z } from "zod";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { tx, type DbClient } from "../db/pool.js";
-import { bearer, me, requireAuth } from "../auth/guard.js";
+import { bearer, me } from "../auth/guard.js";
+import { can } from "../auth/permissions.js";
 import { maskPhone } from "../auth/phone.js";
 import { ApiError, conflict, notFound } from "../errors.js";
 import { post } from "../billing/ledger.js";
 import { notify } from "../notifications.js";
+import { activeVip } from "../vip.js";
+import { VipPlan } from "./vip.js";
 import { ONLINE_SET } from "../billing/engine.js";
-import { goOffline } from "../presence.js";
+import { goOffline, inAppIds, inAppSet } from "../presence.js";
 import { LanguageCode } from "./profile.js";
+import { endLivesOf } from "./lives.js";
+import { endGroupsOf } from "./groups.js";
 
 const IST_TODAY = `date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`;
 
@@ -58,8 +63,10 @@ const AdminUser = z.object({
   calls: z.number().int(),
   reportsAgainst: z.number().int(),
   kycStatus: z.enum(["pending", "approved", "rejected"]).nullable(),
-  online: z.boolean(),
-  lastSeenAt: z.date().nullable().describe("Latest of: last online (companions), last sign-in or token refresh, last call"),
+  online: z.boolean().describe("Has the app open right now (or is taking calls)"),
+  takingCalls: z.boolean().describe("Companion switched Online and taking calls"),
+  lastSeenAt: z.date().nullable().describe("Latest of: app open, last online (companions), last sign-in, last call"),
+  avatarId: z.number().int().describe("1 female, 2 male, 3 transgender illustrations; other ids are letter circles"),
 }).meta({ id: "AdminUser" });
 
 const Party = z.object({ id: z.uuid(), displayName: z.string() });
@@ -80,7 +87,9 @@ const AdminUserDetail = z.object({
   avatarId: z.number().int(),
   createdAt: z.date(),
   termsAcceptedAt: z.date().nullable(),
-  online: z.boolean(),
+  online: z.boolean().describe("Has the app open right now (or is taking calls)"),
+  takingCalls: z.boolean().describe("Companion switched Online and taking calls"),
+  lastActiveAt: z.date().nullable().describe("Last time the app was open"),
   lastSignInAt: z.date().nullable(),
   activeSessions: z.number().int(),
   devices: z.number().int(),
@@ -137,6 +146,7 @@ const AdminUserDetail = z.object({
     id: z.number().int(), createdAt: z.date(), actor: z.string(), action: z.string(), details: z.record(z.string(), z.unknown()),
   })),
   notes: z.array(AdminNote),
+  vip: z.object({ expiresAt: z.date(), source: z.string() }).nullable(),
 }).meta({ id: "AdminUserDetail" });
 
 const Report = z.object({
@@ -162,7 +172,9 @@ const ModerationFlag = z.object({
   reviewedAt: z.date().nullable(),
   reviewer: z.string().nullable(),
   hasFrame: z.boolean().describe("false once deleted under the retention policy"),
-  call: z.object({ id: z.uuid(), type: z.enum(["audio", "video"]) }),
+  call: z.object({ id: z.uuid(), type: z.enum(["audio", "video"]) }).nullable(),
+  liveId: z.uuid().nullable(),
+  groupId: z.uuid().nullable(),
   subject: z.object({ id: z.uuid(), displayName: z.string(), role: z.string(), status: z.string(), flags: z.number().int() })
     .describe("The person whose video was flagged"),
   detectedBy: z.object({ id: z.uuid(), displayName: z.string(), role: z.string() }),
@@ -178,6 +190,26 @@ const SETTINGS: Record<string, { min: number; max: number; label: string }> = {
   "gift.companion_share_bps": { min: 0, max: 8000, label: "Companion share of gifts (basis points)" },
   "coin.value_paise": { min: 10, max: 500, label: "Value of one coin for gift payouts (paise)" },
   "offer.first_recharge_hours": { min: 1, max: 168, label: "First-recharge offer window (hours after sign-up)" },
+  "analytics.gst_pct": { min: 0, max: 40, label: "Analytics: GST included in pack prices (%)" },
+  "analytics.store_fee_pct": { min: 0, max: 40, label: "Analytics: average store / payment fee (%)" },
+  "analytics.target_margin_pct": { min: 0, max: 100, label: "Analytics: target margin on net revenue (%)" },
+  "live.preview_seconds": { min: 0, max: 120, label: "Live: free preview per viewer (seconds)" },
+  "live.coins_per_min": { min: 1, max: 1000, label: "Live: price per viewer per minute (coins)" },
+  "live.companion_share_bps": { min: 0, max: 8000, label: "Live: companion share of each paid minute (basis points of coin value)" },
+  "live.empty_end_minutes": { min: 2, max: 120, label: "Live: end a live after this long with nobody watching (minutes)" },
+  "live.max_minutes": { min: 10, max: 720, label: "Live: longest a live can run (minutes)" },
+  "live.max_per_day": { min: 1, max: 50, label: "Live: lives per companion per day" },
+  "live.previews_per_day": { min: 0, max: 500, label: "Live: free previews per viewer per day" },
+  "analytics.livekit_paise_per_viewer_minute": { min: 0, max: 1000, label: "Analytics: LiveKit cost per viewer-minute (paise)" },
+  "live.max_viewers": { min: 1, max: 5000, label: "Live: most viewers at once" },
+  "group.coins_per_min": { min: 1, max: 1000, label: "Group video: price per member per minute (coins)" },
+  "group.companion_share_bps": { min: 0, max: 8000, label: "Group video: companion share of each member-minute (basis points of coin value)" },
+  "group.min_members": { min: 2, max: 10, label: "Group video: members needed to start" },
+  "group.max_members": { min: 2, max: 16, label: "Group video: most members" },
+  "group.end_below": { min: 1, max: 10, label: "Group video: end when fewer members than this remain" },
+  "group.lobby_timeout_minutes": { min: 2, max: 60, label: "Group video: close a lobby that doesn't fill after (minutes)" },
+  "group.max_minutes": { min: 10, max: 360, label: "Group video: longest a group can run (minutes)" },
+  "group.no_show_minutes": { min: 5, max: 60, label: "Group video: cancel a scheduled group if the host hasn't opened it after (minutes)" },
   "refund.window_days": { min: 1, max: 30, label: "Days a caller can ask for a refund" },
   "payout.min_paise": { min: 1000, max: 1_000_000, label: "Minimum withdrawal (paise)" },
   "payout.tds_bps": { min: 0, max: 3000, label: "TDS on withdrawals (basis points)" },
@@ -196,24 +228,28 @@ const SETTINGS: Record<string, { min: number; max: number; label: string }> = {
   "booking.first_slot_minute": { min: 0, max: 1410, label: "Bookings: first slot (minutes after midnight IST)" },
   "booking.last_slot_minute": { min: 0, max: 1410, label: "Bookings: last slot (minutes after midnight IST)" },
   "booking.confirm_hours": { min: 1, max: 72, label: "Bookings: hours a companion has to confirm" },
+  "vip.discount_pct": { min: 0, max: 50, label: "VIP: discount on call minutes (%)" },
+  "companion.daily_goal_paise": { min: 0, max: 10_000_000, label: "Companions: daily earning goal (paise)" },
+  "companion.streak_min_minutes": { min: 1, max: 1440, label: "Companions: minutes online for a streak day" },
 };
 
 export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   const { db, redis, engine, recorder, store } = app.deps;
-  const admin = requireAuth("admin");
   const base = { tags: ["admin"], security: bearer };
 
   // -------------------------------------------------------------------------
   const ActivityKind = z.enum(["call", "signup", "kyc_submitted", "kyc_approved", "payout", "report"]);
   app.get("/admin/dashboard", {
-    preHandler: admin,
+    preHandler: can("dashboard.view"),
     schema: {
       ...base,
       summary: "Live numbers and today's totals (India time)",
       response: {
         200: z.object({
           live: z.object({ voiceCalls: z.number().int(), videoCalls: z.number().int(), ringing: z.number().int(),
-            companionsOnline: z.number().int() }),
+            companionsOnline: z.number().int().describe("Companions taking calls"),
+            callersOnline: z.number().int().describe("Callers with the app open"),
+            companionsInApp: z.number().int().describe("Companions with the app open (taking calls or not)") }),
           today: z.object({ connectedCalls: z.number().int(), minutesBilled: z.number().int(), coinsSpent: z.number().int(),
             companionEarningsPaise: z.number().int(), purchasesPaise: z.number().int(), newUsers: z.number().int(),
             newCallers: z.number().int(), newCompanions: z.number().int() }),
@@ -233,7 +269,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
           activity: z.array(z.object({
             kind: ActivityKind,
             at: z.date(),
-            user: z.object({ id: z.uuid(), displayName: z.string(), role: z.string() }),
+            user: z.object({ id: z.uuid(), displayName: z.string(), role: z.string(), avatarId: z.number().int() }),
             otherName: z.string().nullable().describe("call: the caller; report: the reported user"),
             callType: z.enum(["audio", "video"]).nullable(),
             minutes: z.number().int().nullable(),
@@ -245,6 +281,12 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   }, async () => {
     const online = await redis.smembers(ONLINE_SET);
+    const inApp = await inAppIds(redis);
+    const inAppByRole = inApp.length
+      ? (await db.query<{ callers: number; companions: number }>(
+          `SELECT count(*) FILTER (WHERE role = 'caller')::int AS callers, count(*) FILTER (WHERE role = 'companion')::int AS companions
+             FROM users WHERE id = ANY($1::uuid[]) AND status = 'active'`, [inApp])).rows[0]!
+      : { callers: 0, companions: 0 };
     const coinsSpent = (from: string, to: string) =>
       `(SELECT COALESCE(-sum(amount), 0) FROM ledger_entries WHERE type = 'call_debit' AND created_at >= ${from} AND created_at < ${to})::bigint
          - (SELECT COALESCE(sum(amount), 0) FROM ledger_entries l JOIN wallets w ON w.id = l.wallet_id
@@ -294,11 +336,11 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
                 (SELECT count(*) FROM refund_requests WHERE status = 'requested')::int AS refunds,
                 (SELECT count(*) FROM moderation_flags WHERE status = 'open')::int AS moderation`),
       db.query<{ reason: string; n: number }>(`SELECT reason, count(*)::int AS n FROM reports WHERE status = 'open' GROUP BY reason`),
-      db.query<{ kind: z.infer<typeof ActivityKind>; at: Date; user_id: string; display_name: string; role: string;
+      db.query<{ kind: z.infer<typeof ActivityKind>; at: Date; user_id: string; display_name: string; role: string; avatar_id: number;
                  other_name: string | null; call_type: "audio" | "video" | null; minutes: number | null; coins: number | null;
                  paise: number | null }>(
         // Each branch is capped at 8 so the union stays small however busy the day was.
-        `SELECT e.*, u.display_name, u.role::text AS role FROM (
+        `SELECT e.*, u.display_name, u.role::text AS role, u.avatar_id FROM (
            (SELECT 'call' AS kind, c.ended_at AS at, c.companion_id AS user_id, cu.display_name AS other_name,
                    c.type::text AS call_type, c.minutes_charged AS minutes, c.coins_charged AS coins, NULL::bigint AS paise
               FROM calls c JOIN users cu ON cu.id = c.caller_id
@@ -323,7 +365,8 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     ]);
     const l = live.rows[0]!, t = today.rows[0]!, c = counts.rows[0]!;
     return {
-      live: { voiceCalls: l.voice, videoCalls: l.video, ringing: l.ringing, companionsOnline: online.length },
+      live: { voiceCalls: l.voice, videoCalls: l.video, ringing: l.ringing, companionsOnline: online.length,
+        callersOnline: inAppByRole.callers, companionsInApp: inAppByRole.companions },
       today: { connectedCalls: t.connected, minutesBilled: t.minutes, coinsSpent: t.coins, companionEarningsPaise: t.paise,
         purchasesPaise: t.purchases, newUsers: t.new_users, newCallers: t.new_callers, newCompanions: t.new_companions },
       yesterday: { connectedCalls: t.y_connected, coinsSpent: t.y_coins, newUsers: t.y_new_users },
@@ -338,7 +381,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       openRefunds: c.refunds,
       openModeration: c.moderation,
       activity: activity.rows.map((e) => ({
-        kind: e.kind, at: e.at, user: { id: e.user_id, displayName: e.display_name, role: e.role }, otherName: e.other_name,
+        kind: e.kind, at: e.at, user: { id: e.user_id, displayName: e.display_name, role: e.role, avatarId: e.avatar_id }, otherName: e.other_name,
         callType: e.call_type, minutes: e.minutes, coins: e.coins, paise: e.paise,
       })),
     };
@@ -346,7 +389,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // -------------------------------------------------------------------------
   app.get("/admin/rates", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: { ...base, summary: "All call rates: current, scheduled and past", response: { 200: z.array(CallRate) } },
   }, async () => {
     const rows = (await db.query<{ id: number; language_code: string; call_type: "audio" | "video"; coins_per_min: number;
@@ -366,7 +409,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/rates", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       summary: "Add a rate version. Calls already running keep their old rate.",
@@ -415,7 +458,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get("/admin/coin-packages", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: { ...base, response: { 200: z.array(CoinPackage) } },
   }, async () => (await db.query(`SELECT * FROM coin_packages ORDER BY sort_order, coins`)).rows.map(toPackage));
 
@@ -429,7 +472,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.put("/admin/coin-packages/:id", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       summary: "Edit a coin pack. The Google Play product price must be changed to match in Play Console.",
@@ -454,7 +497,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/coin-packages", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       summary: "Add a coin pack. Create the Google Play product with the same SKU first.",
@@ -479,7 +522,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // -------------------------------------------------------------------------
   app.get("/admin/reports", {
-    preHandler: admin,
+    preHandler: can("reports.review"),
     schema: {
       ...base,
       querystring: z.object({
@@ -523,12 +566,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       `SELECT id FROM calls WHERE status IN ('ringing', 'active') AND (caller_id = $1 OR companion_id = $1)`, [userId],
     );
     for (const call of live.rows) await engine.endCall(call.id, "admin");
+    await endLivesOf({ db, events: app.deps.events, rooms: app.deps.rooms, push: app.deps.push }, userId, "admin");
+    await endGroupsOf({ db, events: app.deps.events, rooms: app.deps.rooms, push: app.deps.push }, userId, "admin");
   }
 
   // -------------------------------------------------------------------------
   // Video moderation: frames the app flagged as nudity (routes/moderation.ts).
   app.get("/admin/moderation", {
-    preHandler: admin,
+    preHandler: can("moderation.review"),
     schema: {
       ...base,
       summary: "Video frames flagged for nudity by the app, oldest open first",
@@ -539,16 +584,18 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       response: { 200: z.array(ModerationFlag) },
     },
   }, async (req) => (await db.query<{ id: string; created_at: Date; score: number; status: string; note: string | null;
-    reviewed_at: Date | null; reviewer: string | null; has_frame: boolean; call_id: string; call_type: "audio" | "video";
+    reviewed_at: Date | null; reviewer: string | null; has_frame: boolean; call_id: string | null; call_type: "audio" | "video" | null;
+    live_id: string | null;
+    group_id: string | null;
     subject_id: string; subject_name: string; subject_role: string; subject_status: string; subject_flags: number;
     detector_id: string; detector_name: string; detector_role: string }>(
     `SELECT m.id, m.created_at, m.score, m.status, m.note, m.reviewed_at, rv.display_name AS reviewer,
-            m.storage_key IS NOT NULL AS has_frame, c.id AS call_id, c.type AS call_type,
+            m.storage_key IS NOT NULL AS has_frame, c.id AS call_id, c.type AS call_type, m.live_id, m.group_id,
             s.id AS subject_id, s.display_name AS subject_name, s.role AS subject_role, s.status AS subject_status,
             (SELECT count(*) FROM moderation_flags x WHERE x.subject_id = s.id)::int AS subject_flags,
             d.id AS detector_id, d.display_name AS detector_name, d.role AS detector_role
        FROM moderation_flags m
-       JOIN calls c ON c.id = m.call_id
+       LEFT JOIN calls c ON c.id = m.call_id
        JOIN users s ON s.id = m.subject_id
        JOIN users d ON d.id = m.detected_by
        LEFT JOIN users rv ON rv.id = m.reviewed_by
@@ -556,13 +603,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       ORDER BY m.created_at ${req.query.status === "open" ? "ASC" : "DESC"} LIMIT $2`, [req.query.status, req.query.limit],
   )).rows.map((m) => ({
     id: m.id, createdAt: m.created_at, score: m.score, status: m.status as "open" | "dismissed" | "actioned", note: m.note,
-    reviewedAt: m.reviewed_at, reviewer: m.reviewer, hasFrame: m.has_frame, call: { id: m.call_id, type: m.call_type },
+    reviewedAt: m.reviewed_at, reviewer: m.reviewer, hasFrame: m.has_frame,
+    call: m.call_id ? { id: m.call_id, type: m.call_type! } : null, liveId: m.live_id, groupId: m.group_id,
     subject: { id: m.subject_id, displayName: m.subject_name, role: m.subject_role, status: m.subject_status, flags: m.subject_flags },
     detectedBy: { id: m.detector_id, displayName: m.detector_name, role: m.detector_role },
   })));
 
   app.get("/admin/moderation/:id/frame", {
-    preHandler: admin,
+    preHandler: can("moderation.review"),
     schema: {
       ...base,
       summary: "The flagged frame (decrypted). Every view is audit-logged.",
@@ -579,7 +627,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/moderation/:id/resolve", {
-    preHandler: admin,
+    preHandler: can("moderation.review"),
     schema: {
       ...base,
       summary: "Dismiss a flagged frame (false alarm), or act on it by suspending or banning the person on video",
@@ -607,7 +655,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/reports/:id/resolve", {
-    preHandler: admin,
+    preHandler: can("reports.review"),
     schema: {
       ...base,
       summary: "Dismiss a report, or act on it by suspending the reported user",
@@ -649,14 +697,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // -------------------------------------------------------------------------
   app.get("/admin/gifts", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: { ...base, response: { 200: z.array(AdminGift) } },
   }, async () => (await db.query(`SELECT * FROM gifts ORDER BY sort_order, coins`)).rows.map((g) => ({
     id: g.id, code: g.code, name: g.name, emoji: g.emoji, coins: g.coins, isActive: g.is_active, sortOrder: g.sort_order,
   })));
 
   app.put("/admin/gifts/:id", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       params: z.object({ id: z.coerce.number().int() }),
@@ -676,7 +724,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   }));
 
   app.post("/admin/gifts", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       summary: "Add a gift. Its code is made from the name and never changes (the app and ledger refer to it).",
@@ -702,7 +750,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get("/admin/settings", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       response: { 200: z.array(z.object({ key: z.string(), label: z.string(), value: z.number(), min: z.number(), max: z.number() })) },
@@ -713,7 +761,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.put("/admin/settings/:key", {
-    preHandler: admin,
+    preHandler: can("pricing.manage"),
     schema: {
       ...base,
       params: z.object({ key: z.string() }),
@@ -735,7 +783,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // -------------------------------------------------------------------------
   app.get("/admin/users", {
-    preHandler: admin,
+    preHandler: can("users.view"),
     schema: {
       ...base,
       summary: "Search callers or companions by name or the last digits of their number",
@@ -757,14 +805,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     const [rows, total] = await Promise.all([
       db.query<{ id: string; display_name: string; phone: string; role: z.infer<typeof AdminUser>["role"];
         status: z.infer<typeof AdminUser>["status"]; primary_language: string; created_at: Date; coins: number; earnings: number;
-        calls: number; reports: number; kyc_status: "pending" | "approved" | "rejected" | null; last_seen: Date | null }>(
-        `SELECT u.id, u.display_name, u.phone, u.role, u.status, u.primary_language, u.created_at,
+        calls: number; reports: number; kyc_status: "pending" | "approved" | "rejected" | null; last_seen: Date | null; avatar_id: number }>(
+        `SELECT u.id, u.display_name, u.phone, u.role, u.status, u.primary_language, u.created_at, u.avatar_id,
                 COALESCE((SELECT balance FROM wallets WHERE user_id = u.id AND kind = 'coins'), 0) AS coins,
                 COALESCE((SELECT balance FROM wallets WHERE user_id = u.id AND kind = 'earnings'), 0) AS earnings,
                 (SELECT count(*) FROM calls c WHERE c.started_at IS NOT NULL AND (c.caller_id = u.id OR c.companion_id = u.id))::int AS calls,
                 (SELECT count(*) FROM reports r WHERE r.reported_id = u.id)::int AS reports,
                 p.kyc_status,
-                GREATEST(p.last_online_at,
+                GREATEST(p.last_online_at, u.last_active_at,
                          (SELECT max(created_at) FROM sessions s WHERE s.user_id = u.id),
                          (SELECT max(COALESCE(c.ended_at, c.started_at)) FROM calls c
                            WHERE c.caller_id = u.id OR c.companion_id = u.id)) AS last_seen
@@ -773,20 +821,22 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
         [...params, limit, offset]),
       db.query<{ n: number }>(`SELECT count(*)::int AS n FROM users u WHERE ${where}`, params),
     ]);
-    const online = new Set(await redis.smembers(ONLINE_SET));
+    const taking = new Set(await redis.smembers(ONLINE_SET));
+    const inApp = await inAppSet(redis, rows.rows.map((u) => u.id));
     return {
       total: total.rows[0]!.n,
       users: rows.rows.map((u) => ({
         id: u.id, displayName: u.display_name, phone: maskPhone(u.phone), role: u.role, status: u.status,
         primaryLanguage: u.primary_language, createdAt: u.created_at, coins: u.coins, earningsPaise: u.earnings,
-        calls: u.calls, reportsAgainst: u.reports, kycStatus: u.kyc_status, online: online.has(u.id),
-        lastSeenAt: u.last_seen,
+        calls: u.calls, reportsAgainst: u.reports, kycStatus: u.kyc_status,
+        online: inApp.has(u.id) || taking.has(u.id), takingCalls: taking.has(u.id),
+        lastSeenAt: inApp.has(u.id) ? new Date() : u.last_seen, avatarId: u.avatar_id,
       })),
     };
   });
 
   app.get("/admin/users/:id", {
-    preHandler: admin,
+    preHandler: can("users.view"),
     schema: {
       ...base,
       summary: "Everything about one caller or companion: profile, wallets, calls, money and safety history",
@@ -799,10 +849,10 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       status: z.infer<typeof AdminUser>["status"]; primary_language: string; avatar_id: number; created_at: Date;
       terms_accepted_at: Date | null; kyc_status: "pending" | "approved" | "rejected" | null; kyc_verified_at: Date | null;
       video_enabled: boolean | null; bio: string | null; upi_id: string | null; rating_sum: number | null; rating_count: number | null;
-      last_online_at: Date | null }>(
+      last_online_at: Date | null; last_active_at: Date | null }>(
       `SELECT u.id, u.display_name, u.phone, u.gender::text AS gender, u.role, u.status, u.primary_language, u.avatar_id,
               u.created_at, u.terms_accepted_at, p.kyc_status, p.kyc_verified_at, p.video_enabled, p.bio, p.upi_id,
-              p.rating_sum, p.rating_count, p.last_online_at
+              p.rating_sum, p.rating_count, p.last_online_at, u.last_active_at
          FROM users u LEFT JOIN companion_profiles p ON p.user_id = u.id WHERE u.id = $1`, [id])).rows[0];
     if (!u) throw notFound("USER_NOT_FOUND");
 
@@ -883,12 +933,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     ]);
     const s = stats[0]!;
     const e = extra[0]!;
-    const online = await redis.sismember(ONLINE_SET, id);
+    const taking = (await redis.sismember(ONLINE_SET, id)) === 1;
+    const inApp = (await inAppSet(redis, [id])).has(id);
     const maskUpi = (v: string) => v.replace(/^(.{2}).*(@.*)$/, "$1••••$2");
     return {
       id: u.id, displayName: u.display_name, phone: maskPhone(u.phone), gender: u.gender, role: u.role, status: u.status,
       primaryLanguage: u.primary_language, languages: languages.map((l) => l.code), avatarId: u.avatar_id,
-      createdAt: u.created_at, termsAcceptedAt: u.terms_accepted_at, online: online === 1,
+      createdAt: u.created_at, termsAcceptedAt: u.terms_accepted_at, online: inApp || taking, takingCalls: taking,
+      lastActiveAt: inApp ? new Date() : u.last_active_at,
       lastSignInAt: e.last_sign_in, activeSessions: e.active_sessions, devices: e.devices,
       coins: wallets.find((w) => w.kind === "coins")?.balance ?? 0,
       earningsPaise: wallets.find((w) => w.kind === "earnings")?.balance ?? 0,
@@ -923,6 +975,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
         coinsEligible: f.coins_eligible, coinsRefunded: f.coins_refunded, byUser: f.by_user })),
       audit: auditRows.map((a) => ({ id: a.id, createdAt: a.created_at, actor: a.actor, action: a.action, details: a.details })),
       notes: notes.map((n) => ({ id: n.id, createdAt: n.created_at, author: n.author, body: n.body })),
+      vip: await activeVip(db, id),
     };
   });
 
@@ -936,7 +989,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   }
 
   app.post("/admin/users/:id/notes", {
-    preHandler: admin,
+    preHandler: can("users.manage"),
     schema: {
       ...base,
       summary: "Add a private admin note to a caller or companion",
@@ -958,7 +1011,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/users/:id/coins", {
-    preHandler: admin,
+    preHandler: can("users.coins"),
     schema: {
       ...base,
       summary: "Give a caller free coins (goodwill / compensation). Written to the ledger and the audit log",
@@ -987,8 +1040,84 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     return { coins: balance };
   });
 
+  app.post("/admin/users/:id/vip", {
+    preHandler: can("users.vip"),
+    schema: {
+      ...base,
+      summary: "Give a caller VIP for some days (extends an active VIP). Audited; the caller is notified.",
+      params: z.object({ id: z.uuid() }),
+      body: z.object({ days: z.number().int().min(1).max(366), reason: z.string().trim().min(3).max(500) }),
+      response: { 200: z.object({ expiresAt: z.date() }) },
+    },
+  }, async (req) => {
+    const { days, reason } = req.body;
+    const expiresAt = await tx(db, async (c) => {
+      const u = await targetUser(c, req.params.id);
+      if (u.role !== "caller") throw new ApiError(400, "NOT_A_CALLER", "VIP is for callers");
+      const current = await activeVip(c, req.params.id);
+      const from = current ? current.expiresAt : new Date();
+      const until = new Date(from.getTime() + days * 86_400_000);
+      await c.query(
+        `INSERT INTO vip_subscriptions (user_id, source, starts_at, expires_at, granted_by, note) VALUES ($1, 'admin', now(), $2, $3, $4)`,
+        [req.params.id, until, me(req).userId, reason]);
+      await audit(c, me(req).userId, "user.vip_grant", "user", req.params.id, { days, reason, expiresAt: until.toISOString() });
+      return until;
+    });
+    await notify(app.deps, req.params.id, {
+      type: "vip", title: "You're VIP 👑", body: `Enjoy cheaper calls, first pick and a free Rose every week, until ${expiresAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}.`,
+    });
+    return { expiresAt };
+  });
+
+  app.post("/admin/users/:id/vip/revoke", {
+    preHandler: can("users.vip"),
+    schema: {
+      ...base,
+      summary: "End someone's VIP now (e.g. a mistaken grant). Play subscriptions must also be refunded in Play Console.",
+      params: z.object({ id: z.uuid() }),
+      body: z.object({ reason: z.string().trim().min(3).max(500) }),
+      response: { 204: z.null() },
+    },
+  }, async (req, reply) => {
+    await tx(db, async (c) => {
+      await targetUser(c, req.params.id);
+      const r = await c.query(`UPDATE vip_subscriptions SET cancelled_at = now() WHERE user_id = $1 AND cancelled_at IS NULL AND expires_at > now()`,
+        [req.params.id]);
+      if (!r.rowCount) throw new ApiError(409, "NOT_VIP", "This person isn't VIP");
+      await audit(c, me(req).userId, "user.vip_revoke", "user", req.params.id, { reason: req.body.reason });
+    });
+    return reply.status(204).send(null);
+  });
+
+  app.get("/admin/vip-plans", {
+    preHandler: can("engagement.manage"),
+    schema: { ...base, summary: "VIP plans (prices must match the Play Console products)", response: { 200: z.array(VipPlan) } },
+  }, async () => (await db.query<{ id: number; play_sku: string; months: number; price_paise: number; label: string | null; is_active: boolean; sort_order: number }>(
+    `SELECT * FROM vip_plans ORDER BY sort_order, months`)).rows.map((p) => ({
+    id: p.id, sku: p.play_sku, months: p.months, pricePaise: p.price_paise, label: p.label, isActive: p.is_active, sortOrder: p.sort_order,
+  })));
+
+  app.put("/admin/vip-plans/:id", {
+    preHandler: can("engagement.manage"),
+    schema: {
+      ...base,
+      summary: "Change a VIP plan's price, badge or visibility",
+      params: z.object({ id: z.coerce.number().int() }),
+      body: z.object({ pricePaise: z.number().int().min(100).max(10_000_000), label: z.string().trim().max(24).nullish(), isActive: z.boolean() }),
+      response: { 200: VipPlan },
+    },
+  }, async (req) => tx(db, async (c) => {
+    const before = (await c.query(`SELECT * FROM vip_plans WHERE id = $1 FOR UPDATE`, [req.params.id])).rows[0];
+    if (!before) throw notFound("PLAN_NOT_FOUND");
+    const p = (await c.query<{ id: number; play_sku: string; months: number; price_paise: number; label: string | null; is_active: boolean; sort_order: number }>(
+      `UPDATE vip_plans SET price_paise = $2, label = $3, is_active = $4 WHERE id = $1 RETURNING *`,
+      [req.params.id, req.body.pricePaise, req.body.label || null, req.body.isActive])).rows[0]!;
+    await audit(c, me(req).userId, "vip_plan.update", "vip_plan", p.id, { before: { pricePaise: before.price_paise, label: before.label, isActive: before.is_active }, after: req.body });
+    return { id: p.id, sku: p.play_sku, months: p.months, pricePaise: p.price_paise, label: p.label, isActive: p.is_active, sortOrder: p.sort_order };
+  }));
+
   app.post("/admin/users/:id/message", {
-    preHandler: admin,
+    preHandler: can("users.manage"),
     schema: {
       ...base,
       summary: "Send a push notification to one caller or companion",
@@ -1008,7 +1137,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.post("/admin/users/:id/status", {
-    preHandler: admin,
+    preHandler: can("users.manage"),
     schema: {
       ...base,
       summary: "Suspend, ban or reactivate an account",
@@ -1033,7 +1162,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // -------------------------------------------------------------------------
   app.get("/admin/audit", {
-    preHandler: admin,
+    preHandler: can("audit.view"),
     schema: {
       ...base,
       summary: "Latest admin actions",

@@ -236,7 +236,7 @@ class CallsApi {
     return null;
   }
 
-  /// Call history, newest first. Page with `before` = createdAt of the last call seen.
+  /// Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -245,7 +245,19 @@ class CallsApi {
   /// * [Object] before:
   ///
   /// * [int] limit:
-  Future<Response> listCallsWithHttpInfo({ Object? before, int? limit, Future<void>? abortTrigger, }) async {
+  ///
+  /// * [String] type:
+  ///   Only voice (audio) or video calls
+  ///
+  /// * [String] outcome:
+  ///   connected = both joined; missed = not answered, declined or failed
+  ///
+  /// * [Object] from:
+  ///   Calls made at or after this time
+  ///
+  /// * [Object] to:
+  ///   Calls made before this time
+  Future<Response> listCallsWithHttpInfo({ Object? before, int? limit, String? type, String? outcome, Object? from, Object? to, Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/calls';
 
@@ -261,6 +273,18 @@ class CallsApi {
     }
     if (limit != null) {
       queryParams.addAll(_queryParams('', 'limit', limit));
+    }
+    if (type != null) {
+      queryParams.addAll(_queryParams('', 'type', type));
+    }
+    if (outcome != null) {
+      queryParams.addAll(_queryParams('', 'outcome', outcome));
+    }
+    if (from != null) {
+      queryParams.addAll(_queryParams('', 'from', from));
+    }
+    if (to != null) {
+      queryParams.addAll(_queryParams('', 'to', to));
     }
 
     const contentTypes = <String>[];
@@ -278,15 +302,27 @@ class CallsApi {
     );
   }
 
-  /// Call history, newest first. Page with `before` = createdAt of the last call seen.
+  /// Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
   ///
   /// Parameters:
   ///
   /// * [Object] before:
   ///
   /// * [int] limit:
-  Future<ListCalls200Response?> listCalls({ Object? before, int? limit, Future<void>? abortTrigger, }) async {
-    final response = await listCallsWithHttpInfo(before: before, limit: limit, abortTrigger: abortTrigger,);
+  ///
+  /// * [String] type:
+  ///   Only voice (audio) or video calls
+  ///
+  /// * [String] outcome:
+  ///   connected = both joined; missed = not answered, declined or failed
+  ///
+  /// * [Object] from:
+  ///   Calls made at or after this time
+  ///
+  /// * [Object] to:
+  ///   Calls made before this time
+  Future<ListCalls200Response?> listCalls({ Object? before, int? limit, String? type, String? outcome, Object? from, Object? to, Future<void>? abortTrigger, }) async {
+    final response = await listCallsWithHttpInfo(before: before, limit: limit, type: type, outcome: outcome, from: from, to: to, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -348,7 +384,7 @@ class CallsApi {
     return null;
   }
 
-  /// Instant match: ring a free online companion who speaks the language
+  /// Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -381,7 +417,7 @@ class CallsApi {
     );
   }
 
-  /// Instant match: ring a free online companion who speaks the language
+  /// Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)
   ///
   /// Parameters:
   ///
@@ -672,6 +708,60 @@ class CallsApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'JoinInfo',) as JoinInfo;
+    
+    }
+    return null;
+  }
+
+  /// The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> verifyCallConnectedWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/calls/{id}/verify-connected'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<VerifyCallConnected200Response?> verifyCallConnected(String id, { Future<void>? abortTrigger, }) async {
+    final response = await verifyCallConnectedWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'VerifyCallConnected200Response',) as VerifyCallConnected200Response;
     
     }
     return null;

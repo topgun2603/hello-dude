@@ -170,6 +170,59 @@ class AuthApi {
     return null;
   }
 
+  /// Mobile app sign-in: the app verified the number with Firebase Auth and sends its ID token. Indian (+91) mobiles only. Same result as otp/verify.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [SignInWithFirebaseRequest] signInWithFirebaseRequest (required):
+  Future<Response> signInWithFirebaseWithHttpInfo(SignInWithFirebaseRequest signInWithFirebaseRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/auth/firebase';
+
+    // ignore: prefer_final_locals
+    Object? postBody = signInWithFirebaseRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Mobile app sign-in: the app verified the number with Firebase Auth and sends its ID token. Indian (+91) mobiles only. Same result as otp/verify.
+  ///
+  /// Parameters:
+  ///
+  /// * [SignInWithFirebaseRequest] signInWithFirebaseRequest (required):
+  Future<OtpVerifyResult?> signInWithFirebase(SignInWithFirebaseRequest signInWithFirebaseRequest, { Future<void>? abortTrigger, }) async {
+    final response = await signInWithFirebaseWithHttpInfo(signInWithFirebaseRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'OtpVerifyResult',) as OtpVerifyResult;
+    
+    }
+    return null;
+  }
+
   /// Create the account after OTP (Main + Language screens)
   ///
   /// Note: This method returns the HTTP [Response].

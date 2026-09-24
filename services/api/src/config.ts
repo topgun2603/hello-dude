@@ -10,6 +10,8 @@ const Env = z.object({
   LIVEKIT_URL: z.string().url(),
   LIVEKIT_KEY: z.string().min(1),
   LIVEKIT_SECRET: z.string().min(1),
+  // true with LiveKit Cloud when its webhooks can't reach this API (see engine.pollRooms).
+  LIVEKIT_POLL: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
 
   // 'dev' accepts DEV_OTP_CODE for every number and sends nothing. Refused in production.
   OTP_PROVIDER: z.enum(["dev", "msg91"]).default("dev"),

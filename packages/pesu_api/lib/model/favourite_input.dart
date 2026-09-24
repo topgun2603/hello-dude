@@ -16,11 +16,13 @@ class FavouriteInput {
     required this.id,
     required this.displayName,
     required this.avatarId,
+    required this.photoUrl,
     this.languages = const [],
     required this.online,
     required this.busy,
     required this.lastOnlineAt,
     required this.notify,
+    required this.audioEnabled,
     required this.videoEnabled,
     required this.rates,
   });
@@ -33,6 +35,9 @@ class FavouriteInput {
   /// Maximum value: 9007199254740991
   int avatarId;
 
+  /// Approved profile photo (signed URL path); null = show the avatar
+  String? photoUrl;
+
   List<String> languages;
 
   bool online;
@@ -43,6 +48,8 @@ class FavouriteInput {
 
   bool notify;
 
+  bool audioEnabled;
+
   bool videoEnabled;
 
   CompanionRatesInput rates;
@@ -52,11 +59,13 @@ class FavouriteInput {
     other.id == id &&
     other.displayName == displayName &&
     other.avatarId == avatarId &&
+    other.photoUrl == photoUrl &&
     _deepEquality.equals(other.languages, languages) &&
     other.online == online &&
     other.busy == busy &&
     other.lastOnlineAt == lastOnlineAt &&
     other.notify == notify &&
+    other.audioEnabled == audioEnabled &&
     other.videoEnabled == videoEnabled &&
     other.rates == rates;
 
@@ -66,22 +75,29 @@ class FavouriteInput {
     (id.hashCode) +
     (displayName.hashCode) +
     (avatarId.hashCode) +
+    (photoUrl == null ? 0 : photoUrl!.hashCode) +
     (languages.hashCode) +
     (online.hashCode) +
     (busy.hashCode) +
     (lastOnlineAt == null ? 0 : lastOnlineAt!.hashCode) +
     (notify.hashCode) +
+    (audioEnabled.hashCode) +
     (videoEnabled.hashCode) +
     (rates.hashCode);
 
   @override
-  String toString() => 'FavouriteInput[id=$id, displayName=$displayName, avatarId=$avatarId, languages=$languages, online=$online, busy=$busy, lastOnlineAt=$lastOnlineAt, notify=$notify, videoEnabled=$videoEnabled, rates=$rates]';
+  String toString() => 'FavouriteInput[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, languages=$languages, online=$online, busy=$busy, lastOnlineAt=$lastOnlineAt, notify=$notify, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, rates=$rates]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'id'] = this.id;
       json[r'displayName'] = this.displayName;
       json[r'avatarId'] = this.avatarId;
+    if (this.photoUrl != null) {
+      json[r'photoUrl'] = this.photoUrl;
+    } else {
+      json[r'photoUrl'] = null;
+    }
       json[r'languages'] = this.languages;
       json[r'online'] = this.online;
       json[r'busy'] = this.busy;
@@ -91,6 +107,7 @@ class FavouriteInput {
       json[r'lastOnlineAt'] = null;
     }
       json[r'notify'] = this.notify;
+      json[r'audioEnabled'] = this.audioEnabled;
       json[r'videoEnabled'] = this.videoEnabled;
       json[r'rates'] = this.rates;
     return json;
@@ -113,6 +130,7 @@ class FavouriteInput {
         assert(json[r'displayName'] != null, 'Required key "FavouriteInput[displayName]" has a null value in JSON.');
         assert(json.containsKey(r'avatarId'), 'Required key "FavouriteInput[avatarId]" is missing from JSON.');
         assert(json[r'avatarId'] != null, 'Required key "FavouriteInput[avatarId]" has a null value in JSON.');
+        assert(json.containsKey(r'photoUrl'), 'Required key "FavouriteInput[photoUrl]" is missing from JSON.');
         assert(json.containsKey(r'languages'), 'Required key "FavouriteInput[languages]" is missing from JSON.');
         assert(json[r'languages'] != null, 'Required key "FavouriteInput[languages]" has a null value in JSON.');
         assert(json.containsKey(r'online'), 'Required key "FavouriteInput[online]" is missing from JSON.');
@@ -122,6 +140,8 @@ class FavouriteInput {
         assert(json.containsKey(r'lastOnlineAt'), 'Required key "FavouriteInput[lastOnlineAt]" is missing from JSON.');
         assert(json.containsKey(r'notify'), 'Required key "FavouriteInput[notify]" is missing from JSON.');
         assert(json[r'notify'] != null, 'Required key "FavouriteInput[notify]" has a null value in JSON.');
+        assert(json.containsKey(r'audioEnabled'), 'Required key "FavouriteInput[audioEnabled]" is missing from JSON.');
+        assert(json[r'audioEnabled'] != null, 'Required key "FavouriteInput[audioEnabled]" has a null value in JSON.');
         assert(json.containsKey(r'videoEnabled'), 'Required key "FavouriteInput[videoEnabled]" is missing from JSON.');
         assert(json[r'videoEnabled'] != null, 'Required key "FavouriteInput[videoEnabled]" has a null value in JSON.');
         assert(json.containsKey(r'rates'), 'Required key "FavouriteInput[rates]" is missing from JSON.');
@@ -133,6 +153,7 @@ class FavouriteInput {
         id: mapValueOfType<String>(json, r'id')!,
         displayName: mapValueOfType<String>(json, r'displayName')!,
         avatarId: mapValueOfType<int>(json, r'avatarId')!,
+        photoUrl: mapValueOfType<String>(json, r'photoUrl'),
         languages: json[r'languages'] is Iterable
             ? (json[r'languages'] as Iterable).cast<String>().toList(growable: false)
             : const [],
@@ -140,6 +161,7 @@ class FavouriteInput {
         busy: mapValueOfType<bool>(json, r'busy')!,
         lastOnlineAt: mapValueOfType<Object>(json, r'lastOnlineAt'),
         notify: mapValueOfType<bool>(json, r'notify')!,
+        audioEnabled: mapValueOfType<bool>(json, r'audioEnabled')!,
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
         rates: CompanionRatesInput.fromJson(json[r'rates'])!,
       );
@@ -192,11 +214,13 @@ class FavouriteInput {
     'id',
     'displayName',
     'avatarId',
+    'photoUrl',
     'languages',
     'online',
     'busy',
     'lastOnlineAt',
     'notify',
+    'audioEnabled',
     'videoEnabled',
     'rates',
   };

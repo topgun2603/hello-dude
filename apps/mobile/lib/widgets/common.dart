@@ -339,7 +339,18 @@ class GradientText extends StatelessWidget {
   );
 }
 
-/// Avatar-based privacy: a gradient circle with the first letter, no photos.
+/// Illustrated avatars chosen from the user's gender at sign-up
+/// (1 female, 2 male, 3 transgender; masters in design/brand/avatars/).
+const avatarImages = {
+  1: 'assets/images/avatars/female.jpg',
+  2: 'assets/images/avatars/male.jpg',
+  3: 'assets/images/avatars/transgender.jpg',
+};
+
+/// An illustrated avatar for ids 1–3, otherwise a gradient circle with the
+/// first letter. Companions may have an admin-approved [photoUrl] (a signed
+/// path from the API); it shows instead, falling back to the avatar if it can't
+/// load. Callers are always avatar-only.
 class Avatar extends StatelessWidget {
   const Avatar({
     super.key,
@@ -347,11 +358,17 @@ class Avatar extends StatelessWidget {
     required this.avatarId,
     this.size = 46,
     this.statusColor,
+    this.photoUrl,
   });
   final String name;
   final int avatarId;
   final double size;
   final Color? statusColor;
+  final String? photoUrl;
+
+  /// Absolute URL for a photo path the API returned.
+  static String photoSrc(String path) =>
+      path.startsWith('http') ? path : '${AppConfig.apiBaseUrl}$path';
 
   static const _gradients = [
     [Color(0xFFEC4899), Color(0xFF9333EA)],
@@ -365,26 +382,31 @@ class Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = _gradients[(avatarId - 1).abs() % _gradients.length];
+    final image = avatarImages[avatarId];
+    final fallback = _fallback(image, g);
+    final photo = photoUrl;
     return SizedBox(
       width: size,
       height: size,
       child: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: g,
+          if (photo != null)
+            ClipOval(
+              child: Image.network(
+                photoSrc(photo),
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                excludeFromSemantics: true,
+                // Expired link or offline: show the avatar, never a broken image.
+                errorBuilder: (_, _, _) => fallback,
+                frameBuilder: (_, child, frame, sync) =>
+                    frame == null && !sync ? fallback : child,
               ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-              style: AppText.heading(size * 0.39),
-            ),
-          ),
+            )
+          else
+            fallback,
           if (statusColor != null)
             Positioned(
               right: 0,
@@ -403,12 +425,71 @@ class Avatar extends StatelessWidget {
       ),
     );
   }
+
+  Widget _fallback(String? image, List<Color> g) => SizedBox(
+    width: size,
+    height: size,
+    child: Stack(
+      children: [
+        if (image != null)
+          ClipOval(
+            child: Image.asset(
+              image,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
+              excludeFromSemantics: true,
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: g,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+              style: AppText.heading(size * 0.39),
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
+/// Error toast: a deep rose card with an icon (softer than plain red).
 void showError(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.danger),
+      SnackBar(
+        backgroundColor: const Color(0xFF4C1130),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x99FB7185)),
+        ),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Color(0xFFFDA4AF),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: AppText.body(14.5, weight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
 }

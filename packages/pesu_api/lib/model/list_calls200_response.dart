@@ -15,25 +15,30 @@ class ListCalls200Response {
   ListCalls200Response({
     this.calls = const [],
     required this.nextBefore,
+    required this.summary,
   });
 
   List<CallSummary> calls;
 
   DateTime? nextBefore;
 
+  CallHistorySummary summary;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is ListCalls200Response &&
     _deepEquality.equals(other.calls, calls) &&
-    other.nextBefore == nextBefore;
+    other.nextBefore == nextBefore &&
+    other.summary == summary;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (calls.hashCode) +
-    (nextBefore == null ? 0 : nextBefore!.hashCode);
+    (nextBefore == null ? 0 : nextBefore!.hashCode) +
+    (summary.hashCode);
 
   @override
-  String toString() => 'ListCalls200Response[calls=$calls, nextBefore=$nextBefore]';
+  String toString() => 'ListCalls200Response[calls=$calls, nextBefore=$nextBefore, summary=$summary]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -43,6 +48,7 @@ class ListCalls200Response {
     } else {
       json[r'nextBefore'] = null;
     }
+      json[r'summary'] = this.summary;
     return json;
   }
 
@@ -60,12 +66,15 @@ class ListCalls200Response {
         assert(json.containsKey(r'calls'), 'Required key "ListCalls200Response[calls]" is missing from JSON.');
         assert(json[r'calls'] != null, 'Required key "ListCalls200Response[calls]" has a null value in JSON.');
         assert(json.containsKey(r'nextBefore'), 'Required key "ListCalls200Response[nextBefore]" is missing from JSON.');
+        assert(json.containsKey(r'summary'), 'Required key "ListCalls200Response[summary]" is missing from JSON.');
+        assert(json[r'summary'] != null, 'Required key "ListCalls200Response[summary]" has a null value in JSON.');
         return true;
       }());
 
       return ListCalls200Response(
         calls: CallSummary.listFromJson(json[r'calls']),
         nextBefore: mapDateTime(json, r'nextBefore', r''),
+        summary: CallHistorySummary.fromJson(json[r'summary'])!,
       );
     }
     return null;
@@ -115,6 +124,7 @@ class ListCalls200Response {
   static const requiredKeys = <String>{
     'calls',
     'nextBefore',
+    'summary',
   };
 }
 

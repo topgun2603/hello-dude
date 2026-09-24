@@ -52,12 +52,13 @@ interface ProfileRow {
   kyc_status: "pending" | "approved" | "rejected"; kyc_submitted_at: Date | null; kyc_reject_reason: string | null;
   aadhaar_name: string | null; aadhaar_last4: string | null; aadhaar_dob: string | null;
   selfie_blinks: number | null; pan_last4: string | null; upi_id: string | null; video_enabled: boolean;
+  takes_audio: boolean; takes_video: boolean;
 }
 
 async function profileRow(c: { query: DbClient["query"] }, userId: string, lock = false): Promise<ProfileRow> {
   const row = (await c.query<ProfileRow>(
     `SELECT kyc_status, kyc_submitted_at, kyc_reject_reason, aadhaar_name, aadhaar_last4, to_char(aadhaar_dob, 'YYYY-MM-DD') AS aadhaar_dob,
-            selfie_blinks, pan_last4, upi_id, video_enabled
+            selfie_blinks, pan_last4, upi_id, video_enabled, takes_audio, takes_video
        FROM companion_profiles WHERE user_id = $1 ${lock ? "FOR UPDATE" : ""}`, [userId],
   )).rows[0];
   if (!row) throw forbidden("NOT_A_COMPANION");
@@ -268,7 +269,9 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       response: {
         200: z.object({
           kycStatus: KycState.shape.status,
-          videoEnabled: z.boolean(),
+          videoEnabled: z.boolean().describe("Video is unlocked (KYC + academy + clean record)"),
+          takesAudio: z.boolean().describe("The companion's own switch: takes voice calls"),
+          takesVideo: z.boolean().describe("The companion's own switch: takes video calls (only counts when unlocked)"),
           online: z.boolean(),
           today: z.object({ earnedPaise: z.number().int(), calls: z.number().int(), talkSeconds: z.number().int() }),
           recent: z.array(z.object({
@@ -300,6 +303,8 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
     return {
       kycStatus: kycState(p).status,
       videoEnabled: p.video_enabled,
+      takesAudio: p.takes_audio,
+      takesVideo: p.takes_video,
       online: await isOnline(redis, userId),
       today: { earnedPaise: s.paise, calls: s.calls, talkSeconds: s.secs },
       recent: recent.rows.map((r) => ({
@@ -307,6 +312,30 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
         startedAt: r.started_at, durationSeconds: r.secs, earnedPaise: r.paise,
       })),
     };
+  });
+
+  app.put("/companion/call-types", {
+    preHandler: companion,
+    schema: {
+      ...base,
+      summary: "Choose which calls to take: voice, video or both (video only once it's unlocked)",
+      body: z.object({ audio: z.boolean(), video: z.boolean() })
+        .refine((b) => b.audio || b.video, { message: "Take at least one kind of call" }),
+      response: { 200: z.object({ takesAudio: z.boolean(), takesVideo: z.boolean() }) },
+    },
+  }, async (req) => {
+    const { userId } = me(req);
+    const p = await profileRow(db, userId);
+    if (req.body.video && !p.video_enabled) {
+      throw new ApiError(409, "VIDEO_LOCKED", "Video calls unlock after KYC approval and the academy lessons");
+    }
+    // Voice-only while video is locked keeps the video switch as it was (default on),
+    // so video starts working the moment it's unlocked unless they turned it off.
+    const takesVideo = p.video_enabled ? req.body.video : p.takes_video;
+    const r = (await db.query<{ takes_audio: boolean; takes_video: boolean }>(
+      `UPDATE companion_profiles SET takes_audio = $2, takes_video = $3 WHERE user_id = $1 RETURNING takes_audio, takes_video`,
+      [userId, req.body.audio, takesVideo])).rows[0]!;
+    return { takesAudio: r.takes_audio, takesVideo: r.takes_video };
   });
 
   // -------------------------------------------------------------------------

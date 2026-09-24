@@ -241,7 +241,7 @@ describe("dashboard", () => {
     const d = json<{ live: object; today: object; yesterday: object; languages: { code: string; online: number; inCall: number }[];
       byHour: { calls: number }[]; openReportsByReason: Record<string, number>; activity: { kind: string; user: { id: string } }[] }>(
       await call(h, "GET", "/v1/admin/dashboard", { token: admin }));
-    expect(d.live).toEqual({ voiceCalls: 1, videoCalls: 0, ringing: 0, companionsOnline: 2 });
+    expect(d.live).toEqual({ voiceCalls: 1, videoCalls: 0, ringing: 0, companionsOnline: 2, callersOnline: 0, companionsInApp: 0 });
     expect(d.today).toMatchObject({ connectedCalls: 1, minutesBilled: 1, coinsSpent: 10, companionEarningsPaise: 300 });
     expect(d.yesterday).toEqual({ connectedCalls: 0, coinsSpent: 0, newUsers: 0 });
     expect(d.languages.find((l) => l.code === "ta")).toMatchObject({ online: 1, inCall: 1 });

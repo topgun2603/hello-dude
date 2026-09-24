@@ -26,7 +26,9 @@ class AdminUserInput {
     required this.reportsAgainst,
     required this.kycStatus,
     required this.online,
+    required this.takingCalls,
     required this.lastSeenAt,
+    required this.avatarId,
   });
 
   String id;
@@ -62,10 +64,20 @@ class AdminUserInput {
 
   AdminUserInputKycStatusEnum? kycStatus;
 
+  /// Has the app open right now (or is taking calls)
   bool online;
 
-  /// Latest of: last online (companions), last sign-in or token refresh, last call
+  /// Companion switched Online and taking calls
+  bool takingCalls;
+
+  /// Latest of: app open, last online (companions), last sign-in, last call
   Object? lastSeenAt;
+
+  /// 1 female, 2 male, 3 transgender illustrations; other ids are letter circles
+  ///
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int avatarId;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminUserInput &&
@@ -82,7 +94,9 @@ class AdminUserInput {
     other.reportsAgainst == reportsAgainst &&
     other.kycStatus == kycStatus &&
     other.online == online &&
-    other.lastSeenAt == lastSeenAt;
+    other.takingCalls == takingCalls &&
+    other.lastSeenAt == lastSeenAt &&
+    other.avatarId == avatarId;
 
   @override
   int get hashCode =>
@@ -100,10 +114,12 @@ class AdminUserInput {
     (reportsAgainst.hashCode) +
     (kycStatus == null ? 0 : kycStatus!.hashCode) +
     (online.hashCode) +
-    (lastSeenAt == null ? 0 : lastSeenAt!.hashCode);
+    (takingCalls.hashCode) +
+    (lastSeenAt == null ? 0 : lastSeenAt!.hashCode) +
+    (avatarId.hashCode);
 
   @override
-  String toString() => 'AdminUserInput[id=$id, displayName=$displayName, phone=$phone, role=$role, status=$status, primaryLanguage=$primaryLanguage, createdAt=$createdAt, coins=$coins, earningsPaise=$earningsPaise, calls=$calls, reportsAgainst=$reportsAgainst, kycStatus=$kycStatus, online=$online, lastSeenAt=$lastSeenAt]';
+  String toString() => 'AdminUserInput[id=$id, displayName=$displayName, phone=$phone, role=$role, status=$status, primaryLanguage=$primaryLanguage, createdAt=$createdAt, coins=$coins, earningsPaise=$earningsPaise, calls=$calls, reportsAgainst=$reportsAgainst, kycStatus=$kycStatus, online=$online, takingCalls=$takingCalls, lastSeenAt=$lastSeenAt, avatarId=$avatarId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -128,11 +144,13 @@ class AdminUserInput {
       json[r'kycStatus'] = null;
     }
       json[r'online'] = this.online;
+      json[r'takingCalls'] = this.takingCalls;
     if (this.lastSeenAt != null) {
       json[r'lastSeenAt'] = this.lastSeenAt;
     } else {
       json[r'lastSeenAt'] = null;
     }
+      json[r'avatarId'] = this.avatarId;
     return json;
   }
 
@@ -171,7 +189,11 @@ class AdminUserInput {
         assert(json.containsKey(r'kycStatus'), 'Required key "AdminUserInput[kycStatus]" is missing from JSON.');
         assert(json.containsKey(r'online'), 'Required key "AdminUserInput[online]" is missing from JSON.');
         assert(json[r'online'] != null, 'Required key "AdminUserInput[online]" has a null value in JSON.');
+        assert(json.containsKey(r'takingCalls'), 'Required key "AdminUserInput[takingCalls]" is missing from JSON.');
+        assert(json[r'takingCalls'] != null, 'Required key "AdminUserInput[takingCalls]" has a null value in JSON.');
         assert(json.containsKey(r'lastSeenAt'), 'Required key "AdminUserInput[lastSeenAt]" is missing from JSON.');
+        assert(json.containsKey(r'avatarId'), 'Required key "AdminUserInput[avatarId]" is missing from JSON.');
+        assert(json[r'avatarId'] != null, 'Required key "AdminUserInput[avatarId]" has a null value in JSON.');
         return true;
       }());
 
@@ -189,7 +211,9 @@ class AdminUserInput {
         reportsAgainst: mapValueOfType<int>(json, r'reportsAgainst')!,
         kycStatus: AdminUserInputKycStatusEnum.fromJson(json[r'kycStatus']),
         online: mapValueOfType<bool>(json, r'online')!,
+        takingCalls: mapValueOfType<bool>(json, r'takingCalls')!,
         lastSeenAt: mapValueOfType<Object>(json, r'lastSeenAt'),
+        avatarId: mapValueOfType<int>(json, r'avatarId')!,
       );
     }
     return null;
@@ -250,7 +274,9 @@ class AdminUserInput {
     'reportsAgainst',
     'kycStatus',
     'online',
+    'takingCalls',
     'lastSeenAt',
+    'avatarId',
   };
 }
 

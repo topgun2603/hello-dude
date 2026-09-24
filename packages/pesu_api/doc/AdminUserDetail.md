@@ -19,7 +19,9 @@ Name | Type | Description | Notes
 **avatarId** | **int** |  | 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **termsAcceptedAt** | [**DateTime**](DateTime.md) |  | 
-**online** | **bool** |  | 
+**online** | **bool** | Has the app open right now (or is taking calls) | 
+**takingCalls** | **bool** | Companion switched Online and taking calls | 
+**lastActiveAt** | [**DateTime**](DateTime.md) | Last time the app was open | 
 **lastSignInAt** | [**DateTime**](DateTime.md) |  | 
 **activeSessions** | **int** |  | 
 **devices** | **int** |  | 
@@ -35,6 +37,7 @@ Name | Type | Description | Notes
 **refunds** | [**List<AdminUserDetailRefundsInner>**](AdminUserDetailRefundsInner.md) |  | [default to const []]
 **audit** | [**List<AdminUserDetailAuditInner>**](AdminUserDetailAuditInner.md) |  | [default to const []]
 **notes** | [**List<AdminNote>**](AdminNote.md) |  | [default to const []]
+**vip** | [**AdminUserDetailVip**](AdminUserDetailVip.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

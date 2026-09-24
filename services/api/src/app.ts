@@ -10,6 +10,7 @@ import type { Redis } from "ioredis";
 import type { Db } from "./db/pool.js";
 import { ApiError } from "./errors.js";
 import type { OtpService } from "./auth/otp.js";
+import type { PhoneVerifier } from "./auth/firebase-auth.js";
 import type { TokenService } from "./auth/tokens.js";
 import "./auth/guard.js";
 import { CallError, type BillingEngine } from "./billing/engine.js";
@@ -40,6 +41,15 @@ import { notificationRoutes } from "./routes/notifications.js";
 import { growthRoutes } from "./routes/growth.js";
 import { chatRoutes } from "./routes/chat.js";
 import { bookingRoutes } from "./routes/bookings.js";
+import { vipRoutes } from "./routes/vip.js";
+import { rewardsRoutes } from "./routes/rewards.js";
+import { roomRoutes } from "./routes/rooms.js";
+import { staffRoutes } from "./routes/staff.js";
+import { analyticsRoutes } from "./routes/analytics.js";
+import { liveRoutes } from "./routes/lives.js";
+import { groupRoutes } from "./routes/groups.js";
+import { photoRoutes } from "./routes/photos.js";
+import { promotionRoutes } from "./routes/promotions.js";
 import type { LegalInfo } from "./legal/pages.js";
 
 export interface AppDeps {
@@ -49,6 +59,8 @@ export interface AppDeps {
   rooms: RoomControl;
   events: UserEvents;
   otp: OtpService;
+  /** Firebase phone sign-in for the mobile app (the admin panel uses `otp`). */
+  phoneAuth?: PhoneVerifier;
   tokens: TokenService;
   push: PushSender;
   webhooks: WebhookVerifier;
@@ -73,12 +85,26 @@ declare module "fastify" {
 
 const CALL_ERROR_STATUS: Record<CallError["code"], number> = {
   OFFLINE: 409, BUSY: 409, BLOCKED: 403, NO_RATE: 409, INSUFFICIENT_BALANCE: 402,
-  NOT_A_COMPANION: 409, VIDEO_NOT_ENABLED: 409, CALLER_INACTIVE: 403,
+  NOT_A_COMPANION: 409, VIDEO_NOT_ENABLED: 409, VOICE_OFF: 409, CALLER_INACTIVE: 403,
+};
+
+/** What the app shows when a call can't start. */
+const CALL_ERROR_MESSAGE: Record<CallError["code"], string> = {
+  OFFLINE: "They just went offline. Try someone else.",
+  BUSY: "They're on another call right now.",
+  BLOCKED: "You can't call this person.",
+  NO_RATE: "Calls in this language aren't open yet.",
+  INSUFFICIENT_BALANCE: "Not enough coins for the first minute. Add coins to call.",
+  NOT_A_COMPANION: "This person isn't taking calls.",
+  VIDEO_NOT_ENABLED: "They aren't taking video calls right now. Try a voice call.",
+  VOICE_OFF: "They only take video calls right now.",
+  CALLER_INACTIVE: "Your account can't make calls right now. Contact support.",
 };
 
 export const OPERATION_IDS: Record<string, string> = {
   "POST /v1/auth/otp/send": "sendOtp",
   "POST /v1/auth/otp/verify": "verifyOtp",
+  "POST /v1/auth/firebase": "signInWithFirebase",
   "POST /v1/auth/signup": "signUp",
   "POST /v1/auth/refresh": "refreshTokens",
   "POST /v1/auth/logout": "logout",
@@ -119,6 +145,7 @@ export const OPERATION_IDS: Record<string, string> = {
   "GET /v1/legal": "listLegalPages",
   "GET /v1/legal/:id": "getLegalPage",
   "POST /v1/calls/:id/moderation": "flagVideoFrame",
+  "POST /v1/calls/:id/verify-connected": "verifyCallConnected",
   "GET /v1/notifications": "listNotifications",
   "GET /v1/notifications/unread-count": "unreadNotificationCount",
   "POST /v1/notifications/read": "markNotificationsRead",
@@ -139,6 +166,86 @@ export const OPERATION_IDS: Record<string, string> = {
   "POST /v1/bookings/:id/decline": "declineBooking",
   "POST /v1/bookings/:id/cancel": "cancelBooking",
   "POST /v1/bookings/:id/start": "startBooking",
+  "GET /v1/vip": "getVip",
+  "GET /v1/companion/rewards": "getCompanionRewards",
+  "GET /v1/room-categories": "listRoomCategories",
+  "PUT /v1/companion/call-types": "setCompanionCallTypes",
+  "GET /v1/wallet/history": "getCoinHistory",
+  "GET /v1/admin/me": "adminMe",
+  "GET /v1/admin/analytics": "adminAnalytics",
+  "GET /v1/lives": "listLives",
+  "POST /v1/lives": "startLive",
+  "POST /v1/lives/:id/host-heartbeat": "liveHostHeartbeat",
+  "POST /v1/lives/:id/end": "endLive",
+  "POST /v1/lives/:id/join": "joinLive",
+  "POST /v1/lives/:id/heartbeat": "liveHeartbeat",
+  "POST /v1/lives/:id/leave": "leaveLive",
+  "POST /v1/lives/:id/messages": "sendLiveMessage",
+  "POST /v1/lives/:id/react": "sendLiveReaction",
+  "POST /v1/lives/:id/gifts": "sendLiveGift",
+  "POST /v1/lives/:id/moderation": "flagLiveFrame",
+  "GET /v1/admin/lives": "adminListLives",
+  "POST /v1/admin/lives/:id/end": "adminEndLive",
+  "GET /v1/groups": "listGroups",
+  "POST /v1/groups": "createGroup",
+  "POST /v1/groups/:id/open": "openGroup",
+  "POST /v1/groups/:id/host-heartbeat": "groupHostHeartbeat",
+  "POST /v1/groups/:id/end": "endGroup",
+  "POST /v1/groups/:id/book": "bookGroupSeat",
+  "POST /v1/groups/:id/cancel-booking": "cancelGroupSeat",
+  "POST /v1/groups/:id/join": "joinGroup",
+  "POST /v1/groups/:id/heartbeat": "groupHeartbeat",
+  "POST /v1/groups/:id/leave": "leaveGroup",
+  "POST /v1/groups/:id/messages": "sendGroupMessage",
+  "POST /v1/groups/:id/react": "sendGroupReaction",
+  "POST /v1/groups/:id/gifts": "sendGroupGift",
+  "POST /v1/groups/:id/moderation": "flagGroupFrame",
+  "POST /v1/groups/:id/report": "reportInGroup",
+  "GET /v1/admin/groups": "adminListGroups",
+  "POST /v1/admin/groups/:id/end": "adminEndGroup",
+  "GET /v1/me/photo": "getMyPhoto",
+  "PUT /v1/me/photo": "uploadMyPhoto",
+  "DELETE /v1/me/photo": "deleteMyPhoto",
+  "GET /v1/photos/:userId/:file": "getPhoto",
+  "GET /v1/admin/photos": "adminListPhotos",
+  "POST /v1/admin/photos/:userId/decision": "adminDecidePhoto",
+  "GET /v1/admin/roles": "adminListRoles",
+  "POST /v1/admin/roles": "adminCreateRole",
+  "PUT /v1/admin/roles/:code": "adminUpdateRole",
+  "DELETE /v1/admin/roles/:code": "adminDeleteRole",
+  "GET /v1/admin/staff": "adminListStaff",
+  "POST /v1/admin/staff": "adminAddStaff",
+  "PUT /v1/admin/staff/:id": "adminUpdateStaff",
+  "GET /v1/promotions/current": "getCurrentPromotion",
+  "POST /v1/promotions/:id/events": "logPromotionEvent",
+  "GET /v1/admin/promotions": "adminListPromotions",
+  "POST /v1/admin/promotions": "adminCreatePromotion",
+  "PUT /v1/admin/promotions/:id": "adminUpdatePromotion",
+  "POST /v1/admin/promotions/:id/active": "adminSetPromotionActive",
+  "DELETE /v1/admin/promotions/:id": "adminDeletePromotion",
+  "GET /v1/rooms": "listRooms",
+  "POST /v1/rooms": "startRoom",
+  "GET /v1/rooms/:id": "getRoom",
+  "POST /v1/rooms/:id/join": "joinRoom",
+  "POST /v1/rooms/:id/heartbeat": "roomHeartbeat",
+  "POST /v1/rooms/:id/leave": "leaveRoom",
+  "POST /v1/rooms/:id/hand": "raiseHand",
+  "POST /v1/rooms/:id/stage/:userId": "setRoomStage",
+  "POST /v1/rooms/:id/token": "roomToken",
+  "POST /v1/rooms/:id/messages": "sendRoomMessage",
+  "POST /v1/rooms/:id/react": "sendRoomReaction",
+  "POST /v1/rooms/:id/gifts": "sendRoomGift",
+  "GET /v1/admin/rooms": "adminListRooms",
+  "POST /v1/admin/rooms/:id/end": "adminEndRoom",
+  "GET /v1/admin/companion-levels": "adminListCompanionLevels",
+  "PUT /v1/admin/companion-levels/:level": "adminUpdateCompanionLevel",
+  "GET /v1/admin/bonus-campaigns": "adminListBonusCampaigns",
+  "POST /v1/admin/bonus-campaigns": "adminCreateBonusCampaign",
+  "PUT /v1/admin/bonus-campaigns/:id": "adminUpdateBonusCampaign",
+  "POST /v1/admin/users/:id/vip": "adminGrantVip",
+  "POST /v1/admin/users/:id/vip/revoke": "adminRevokeVip",
+  "GET /v1/admin/vip-plans": "adminListVipPlans",
+  "PUT /v1/admin/vip-plans/:id": "adminUpdateVipPlan",
   "GET /v1/admin/moderation": "adminListModerationFlags",
   "GET /v1/admin/moderation/:id/frame": "adminGetModerationFrame",
   "POST /v1/admin/moderation/:id/resolve": "adminResolveModerationFlag",
@@ -223,7 +330,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       return reply.status(err.status).send({ error: { code: err.code, message: err.message } });
     }
     if (err instanceof CallError) {
-      return reply.status(CALL_ERROR_STATUS[err.code]).send({ error: { code: err.code, message: err.code } });
+      return reply.status(CALL_ERROR_STATUS[err.code]).send({ error: { code: err.code, message: CALL_ERROR_MESSAGE[err.code] } });
     }
     const status = (err as { statusCode?: number }).statusCode;
     if (status && status < 500) {
@@ -271,6 +378,15 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     await v1.register(growthRoutes);
     await v1.register(chatRoutes);
     await v1.register(bookingRoutes);
+    await v1.register(vipRoutes);
+    await v1.register(rewardsRoutes);
+    await v1.register(roomRoutes);
+    await v1.register(staffRoutes);
+    await v1.register(analyticsRoutes);
+    await v1.register(liveRoutes);
+    await v1.register(groupRoutes);
+    await v1.register(photoRoutes);
+    await v1.register(promotionRoutes);
   }, { prefix: "/v1" });
   await app.register(legalHtmlRoutes);
 

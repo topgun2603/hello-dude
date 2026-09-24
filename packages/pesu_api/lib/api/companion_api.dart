@@ -262,6 +262,51 @@ class CompanionApi {
     return null;
   }
 
+  /// Rewards screen: level, today's goal, online streak and bonuses
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getCompanionRewardsWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/rewards';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Rewards screen: level, today's goal, online streak and bonuses
+  Future<GetCompanionRewards200Response?> getCompanionRewards({ Future<void>? abortTrigger, }) async {
+    final response = await getCompanionRewardsWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetCompanionRewards200Response',) as GetCompanionRewards200Response;
+    
+    }
+    return null;
+  }
+
   /// Verification progress
   ///
   /// Note: This method returns the HTTP [Response].
@@ -355,6 +400,59 @@ class CompanionApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Payout',) as Payout;
+    
+    }
+    return null;
+  }
+
+  /// Choose which calls to take: voice, video or both (video only once it's unlocked)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [SetCompanionCallTypesRequest] setCompanionCallTypesRequest (required):
+  Future<Response> setCompanionCallTypesWithHttpInfo(SetCompanionCallTypesRequest setCompanionCallTypesRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/call-types';
+
+    // ignore: prefer_final_locals
+    Object? postBody = setCompanionCallTypesRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Choose which calls to take: voice, video or both (video only once it's unlocked)
+  ///
+  /// Parameters:
+  ///
+  /// * [SetCompanionCallTypesRequest] setCompanionCallTypesRequest (required):
+  Future<SetCompanionCallTypes200Response?> setCompanionCallTypes(SetCompanionCallTypesRequest setCompanionCallTypesRequest, { Future<void>? abortTrigger, }) async {
+    final response = await setCompanionCallTypesWithHttpInfo(setCompanionCallTypesRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'SetCompanionCallTypes200Response',) as SetCompanionCallTypes200Response;
     
     }
     return null;

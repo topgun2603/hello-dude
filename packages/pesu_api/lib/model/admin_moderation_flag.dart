@@ -22,6 +22,8 @@ class AdminModerationFlag {
     required this.reviewer,
     required this.hasFrame,
     required this.call,
+    required this.liveId,
+    required this.groupId,
     required this.subject,
     required this.detectedBy,
   });
@@ -44,11 +46,15 @@ class AdminModerationFlag {
   /// false once deleted under the retention policy
   bool hasFrame;
 
-  AdminModerationFlagCall call;
+  AdminModerationFlagCall? call;
+
+  String? liveId;
+
+  String? groupId;
 
   AdminModerationFlagSubject subject;
 
-  AdminDashboard200ResponseActivityInnerUser detectedBy;
+  AdminReportReporter detectedBy;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminModerationFlag &&
@@ -61,6 +67,8 @@ class AdminModerationFlag {
     other.reviewer == reviewer &&
     other.hasFrame == hasFrame &&
     other.call == call &&
+    other.liveId == liveId &&
+    other.groupId == groupId &&
     other.subject == subject &&
     other.detectedBy == detectedBy;
 
@@ -75,12 +83,14 @@ class AdminModerationFlag {
     (reviewedAt == null ? 0 : reviewedAt!.hashCode) +
     (reviewer == null ? 0 : reviewer!.hashCode) +
     (hasFrame.hashCode) +
-    (call.hashCode) +
+    (call == null ? 0 : call!.hashCode) +
+    (liveId == null ? 0 : liveId!.hashCode) +
+    (groupId == null ? 0 : groupId!.hashCode) +
     (subject.hashCode) +
     (detectedBy.hashCode);
 
   @override
-  String toString() => 'AdminModerationFlag[id=$id, createdAt=$createdAt, score=$score, status=$status, note=$note, reviewedAt=$reviewedAt, reviewer=$reviewer, hasFrame=$hasFrame, call=$call, subject=$subject, detectedBy=$detectedBy]';
+  String toString() => 'AdminModerationFlag[id=$id, createdAt=$createdAt, score=$score, status=$status, note=$note, reviewedAt=$reviewedAt, reviewer=$reviewer, hasFrame=$hasFrame, call=$call, liveId=$liveId, groupId=$groupId, subject=$subject, detectedBy=$detectedBy]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -104,7 +114,21 @@ class AdminModerationFlag {
       json[r'reviewer'] = null;
     }
       json[r'hasFrame'] = this.hasFrame;
+    if (this.call != null) {
       json[r'call'] = this.call;
+    } else {
+      json[r'call'] = null;
+    }
+    if (this.liveId != null) {
+      json[r'liveId'] = this.liveId;
+    } else {
+      json[r'liveId'] = null;
+    }
+    if (this.groupId != null) {
+      json[r'groupId'] = this.groupId;
+    } else {
+      json[r'groupId'] = null;
+    }
       json[r'subject'] = this.subject;
       json[r'detectedBy'] = this.detectedBy;
     return json;
@@ -135,7 +159,8 @@ class AdminModerationFlag {
         assert(json.containsKey(r'hasFrame'), 'Required key "AdminModerationFlag[hasFrame]" is missing from JSON.');
         assert(json[r'hasFrame'] != null, 'Required key "AdminModerationFlag[hasFrame]" has a null value in JSON.');
         assert(json.containsKey(r'call'), 'Required key "AdminModerationFlag[call]" is missing from JSON.');
-        assert(json[r'call'] != null, 'Required key "AdminModerationFlag[call]" has a null value in JSON.');
+        assert(json.containsKey(r'liveId'), 'Required key "AdminModerationFlag[liveId]" is missing from JSON.');
+        assert(json.containsKey(r'groupId'), 'Required key "AdminModerationFlag[groupId]" is missing from JSON.');
         assert(json.containsKey(r'subject'), 'Required key "AdminModerationFlag[subject]" is missing from JSON.');
         assert(json[r'subject'] != null, 'Required key "AdminModerationFlag[subject]" has a null value in JSON.');
         assert(json.containsKey(r'detectedBy'), 'Required key "AdminModerationFlag[detectedBy]" is missing from JSON.');
@@ -152,9 +177,11 @@ class AdminModerationFlag {
         reviewedAt: mapDateTime(json, r'reviewedAt', r''),
         reviewer: mapValueOfType<String>(json, r'reviewer'),
         hasFrame: mapValueOfType<bool>(json, r'hasFrame')!,
-        call: AdminModerationFlagCall.fromJson(json[r'call'])!,
+        call: AdminModerationFlagCall.fromJson(json[r'call']),
+        liveId: mapValueOfType<String>(json, r'liveId'),
+        groupId: mapValueOfType<String>(json, r'groupId'),
         subject: AdminModerationFlagSubject.fromJson(json[r'subject'])!,
-        detectedBy: AdminDashboard200ResponseActivityInnerUser.fromJson(json[r'detectedBy'])!,
+        detectedBy: AdminReportReporter.fromJson(json[r'detectedBy'])!,
       );
     }
     return null;
@@ -211,6 +238,8 @@ class AdminModerationFlag {
     'reviewer',
     'hasFrame',
     'call',
+    'liveId',
+    'groupId',
     'subject',
     'detectedBy',
   };

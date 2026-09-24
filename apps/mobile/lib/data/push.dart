@@ -23,7 +23,8 @@ import 'session.dart';
 /// * Accept / Decline on the native UI arrive as [CallAction]s.
 /// * Tapping a notification opens its screen once the session is signed in:
 ///   inbox notices (data has `notificationId`) -> /notifications,
-///   chat messages (`type: chat_message`) -> `/chat/<conversationId>`.
+///   chat messages (`type: chat_message`) -> `/chat/<conversationId>`,
+///   live voice rooms (`type: room_live`) -> `/room/<roomId>`.
 
 /// Runs in its own isolate when a push arrives and the app isn't in front.
 @pragma('vm:entry-point')
@@ -121,8 +122,11 @@ class PushController {
   void _opened(RemoteMessage m) {
     final d = m.data;
     final conversation = d['conversationId'];
+    final room = d['roomId'];
     if (d['type'] == 'chat_message' && conversation is String) {
       _pendingRoute = '/chat/$conversation';
+    } else if (d['type'] == 'room_live' && room is String) {
+      _pendingRoute = '/room/$room';
     } else if (d['notificationId'] != null) {
       _pendingRoute = '/notifications';
     } else {
@@ -185,7 +189,7 @@ class PushController {
 
   Future<void> _send(String token) async {
     final api = _ref.read(apiProvider);
-    await api.call(
+    await api.send(
       () => api.profile.registerDevice(RegisterDeviceRequest(fcmToken: token)),
     );
   }

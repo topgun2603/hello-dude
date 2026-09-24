@@ -63,10 +63,15 @@ class VideoModerator extends ChangeNotifier {
         _cleanStreak = 0;
         _setHidden(true);
         final now = _now();
-        if (_lastReport == null || now.difference(_lastReport!) >= reportCooldown) {
+        if (_lastReport == null ||
+            now.difference(_lastReport!) >= reportCooldown) {
           _lastReport = now;
           // Upload in the background; the blur never waits for the network.
-          unawaited(report(frame, score).catchError((Object e) => debugPrint('moderation upload failed: $e')));
+          unawaited(
+            report(frame, score).catchError(
+              (Object e) => debugPrint('moderation upload failed: $e'),
+            ),
+          );
         }
       } else if (_hidden && ++_cleanStreak >= clearAfter) {
         _cleanStreak = 0;

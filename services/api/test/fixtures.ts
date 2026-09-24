@@ -9,9 +9,19 @@ import { TEST_DATABASE_URL, TEST_REDIS_URL } from "./env.js";
 export class FakeRooms implements RoomControl {
   readonly participants = new Map<string, number>();
   readonly closed: string[] = [];
-  async participantCount(room: string) { return this.participants.get(room) ?? 0; }
+  async participantCount(room: string) { return this.participants.get(room) ?? this.identities.get(room)?.size ?? 0; }
+  /** Who is "in" each room, for tests of the LiveKit presence check. */
+  readonly identities = new Map<string, Set<string>>();
+  async participantIdentities(room: string) { return [...(this.identities.get(room) ?? [])]; }
   async closeRoom(room: string) { this.closed.push(room); this.participants.delete(room); }
-  async joinToken(room: string, identity: string) { return `token:${room}:${identity}`; }
+  readonly removed: { room: string; identity: string }[] = [];
+  async removeParticipant(room: string, identity: string) {
+    this.removed.push({ room, identity });
+    this.identities.get(room)?.delete(identity);
+  }
+  async joinToken(room: string, identity: string, opts?: { canPublish?: boolean }) {
+    return `token:${room}:${identity}${opts?.canPublish === false ? ":listen" : ""}`;
+  }
 }
 
 export class RecordingEvents implements UserEvents {

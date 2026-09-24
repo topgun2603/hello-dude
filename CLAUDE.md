@@ -50,7 +50,11 @@ A Hima-style companion calling app for India (reference: Play Store `com.gmwapp.
 - **Companion payouts:** RazorpayX or Cashfree Payouts to UPI. Debit the earnings
   wallet when the payout is **requested**, not when it completes. Failed payouts
   credit the money back to the balance.
-- **OTP:** MSG91 (DLT-registered templates). Firebase Auth is the fallback option.
+- **OTP (owner, 2026-09-24): Firebase Auth phone sign-in for the mobile app, India (+91) only.**
+  The app verifies the number with Firebase and sends the ID token to `POST /v1/auth/firebase`;
+  the server checks it with firebase-admin and issues its own sessions (same result as otp/verify).
+  The **admin panel stays off Firebase**: it keeps `/v1/auth/otp/*` (dev code in dev; MSG91 in
+  production). Dev mode keeps `DEV_OTP_CODE` for the demo accounts and tests.
 - **Backend is REST + OpenAPI, not tRPC** — the Flutter app can't consume tRPC.
   Generate the Dart API client from the OpenAPI spec.
 
@@ -126,7 +130,7 @@ recording, call details + refund request, companion offline KYC, companion home
 KYC review queue, payouts approval, reports, pricing).
 **Later (v2):** voice rooms, chat, VIP subscription, scheduled calls, daily check-in,
 referrals + share card, companion levels/academy video hosting, A/B pricing UI.
-**v2 is being built now** (owner, 2026-09-23: "do all the V2 pipeline").
+**v2 is built** (owner asked 2026-09-23; done 2026-09-24): notifications inbox, daily check-in, referrals + share card, chat, scheduled calls, VIP, companion levels/bonuses, voice rooms, admin Engagement page. VIP purchases and referral rewards wait for Play Billing (first recharge).
 
 ## v2 rules (defaults chosen where the designs are silent — all amounts admin-editable placeholders)
 - **Notifications inbox** (caller + companion): stored rows + FCM push; types: favourite online,
@@ -156,6 +160,70 @@ referrals + share card, companion levels/academy video hosting, A/B pricing UI.
 - **Voice rooms:** hosted by approved companions only; listening free; up to 8 on stage (host
   approves raised hands); gifts to host/speakers use the same companion gift share as calls;
   LiveKit audio rooms.
+- **Offers popup** (owner asked 2026-09-24): admin → Offers popup creates promotions shown as a
+  bottom sheet with confetti when the app opens (and again after ≥10 min in the background, only
+  on the main tabs, never over a call or when the app was opened by accepting a call). The live
+  offer for that person with the highest priority wins; audience all / callers / companions /
+  never-paid / paid; frequency every open / daily (IST) / once. Buttons only open in-app screens,
+  never external links (Play payments policy). Shows and taps are counted per offer.
+- **Companion call types** (owner asked 2026-09-24): companions switch Voice and Video on/off
+  on their home (at least one on). Video still has to be unlocked first; taking video = unlocked
+  AND switched on. Listings, call start, instant match, favourites and bookings respect it.
+  If an admin locks video again, voice is switched back on so they still get calls.
+- **No screenshots** (owner asked 2026-09-24): FLAG_SECURE on the whole Android app — blocks
+  screenshots and screen recording, and the app shows blank in recent apps.
+- **Admin RBAC** (owner asked 2026-09-24): staff = users with role 'admin', each with one
+  admin role (table admin_roles). Built-in roles: Admin (every permission, locked), Moderator,
+  Finance; custom roles from Staff & roles. Permissions live in
+  services/api/src/auth/permissions.ts and are checked **per request from the DB** (`can("…")`
+  preHandler), so role changes and switch-offs apply at once. **Every new /admin route must use
+  `can("<permission>")`**, and the admin panel hides pages/buttons via `useCan()`. Guard rails:
+  nobody edits their own role/access, never zero active Admins, staff phone numbers can't be
+  app accounts, every change audited. `make-admin` creates a full Admin (the owner).
+- **Analytics** (owner asked 2026-09-24): admin → Analytics (permission `analytics.view`, not given
+  to Moderator/Finance by default — tick it per role). Any IST date range vs the previous period:
+  totals, daily trend, language / voice-video / hour breakdowns, leaderboards (top rated, works
+  most, top earners, top spenders, most reported) and an **estimated** margin: sales ÷ (1+GST) ×
+  (1−store fee) − companion earnings, vs target — GST %, fee % and target % are settings
+  (`analytics.*`). Dashboard shows callers online (app open = live WebSocket, Redis `presence:app`).
+- **Live mode, phase 1** (owner asked 2026-09-24): a companion with video unlocked goes live
+  (one-to-many video, LiveKit SFU, 480p); no 1:1 calls while live (engine refuses BUSY). Callers
+  swipe a Reels-style feed (only the visible live joins). **Billing is per minute like 1:1**
+  (owner, 2026-09-24; passes were dropped): free preview (live.preview_seconds 10 s, once per
+  viewer per live, live.previews_per_day 20), then the viewer opts in ("Keep watching · N
+  coins/min", live.coins_per_min **3**) — minute 1 charged on opt-in, then one at the start of
+  every minute LiveKit shows them in the room (worker every 10 s; live_ticks PK blocks double
+  charges; low-coins warning; removed when they can't pay; balance never negative). Leaving stops
+  charging, so no refunds are needed. Companion earns coins × coin.value_paise (already NET per
+  coin) × live.companion_share_bps (2500 = 25% of net → the 75% margin target); live gifts use the
+  gift share. Chat needs a paid minute; hearts/gifts don't. Controls: empty live warned at 5 min,
+  ended at live.empty_end_minutes (10); live.max_minutes 180; live.max_per_day 4 per companion.
+  LiveKit Cloud bills per participant-minute + downstream GB (~₹0.09/viewer-minute at 480p);
+  analytics margin subtracts analytics.livekit_paise_per_viewer_minute (9). Host phone runs the
+  nudity check on its own camera (pauses camera 15 s + flags frame); viewers' phones also check.
+  Admin: Engagement → Lives (end with reason, audited); frames in Moderation.
+- **Group video, phase 2** (owner decided 2026-09-24): a companion (video unlocked) hosts up
+  to **10** paying members; **everyone's camera on** (option C, 480p, LiveKit adaptive quality;
+  warn callers it uses more data). **12 coins per member per minute** (group.coins_per_min),
+  companion share group.companion_share_bps 2500 (25% of net). Billing like lives/1:1: prepaid
+  per minute, server-verified LiveKit presence, ticks table PK, low-coins warning then removal,
+  leaving stops charging. **Starts when 3 members are waiting** (no charge while waiting; lobby
+  expires after 10 min), **ends when fewer than 2 members remain**, max 120 min. **Instant and
+  scheduled**: scheduled groups (next 7 days) take free seat bookings, remind 10 min before,
+  cancel if the host doesn't open within 15 min. No 1:1 calls or lives during a group.
+  **Built 2026-09-24** (routes/groups.ts, worker sweepGroups every 10 s, app lib/features/group).
+  Cost control: adaptive stream + dynacast + simulcast; members publish 360p, host 480p; the
+  speaker/host tile is large, others small. Safety: **every participant's phone checks its own
+  camera** (pause 15 s + flag frame to Moderation); long-press any tile to report / block, host
+  can report + remove; join screen discloses "everyone can see your camera". Analytics LiveKit
+  cost counts each group member-minute twice. Admin: Engagement → Group video (end/cancel, audited).
+- **Companion profile photos** (owner asked 2026-09-24): companions may upload their own photo;
+  it shows only after an admin approves it (compared side by side with the KYC selfie), and is
+  used everywhere the avatar shows (cards, lives, groups). Server strips EXIF and re-encodes;
+  photos are served only to signed-in users. **Callers stay avatar-only.** The illustrated
+  avatars (ids 1–3 by gender) remain the fallback.
+- **Online tab** (caller bottom nav): everyone online in any language, with search, language
+  chips, free-now / video / favourites filters and sort; the Random button is a FAB there.
 
 ## Designs
 `design/screens/*.dc.html` — 31 screens (mobile 390×844, admin 1440×900).

@@ -41,6 +41,9 @@ Future<void> startCallFlow(
   OnlineCompanion? companion,
   required String language,
   required bool video,
+
+  /// Anyone free, in any language (the Random button).
+  bool random = false,
 }) async {
   final rate = companion == null
       ? null
@@ -50,7 +53,9 @@ Future<void> startCallFlow(
   final coins = ref.read(walletProvider).valueOrNull?.coins;
   final who =
       companion?.displayName ??
-      'someone who speaks ${languageInfo(language).english}';
+      (random
+          ? 'a random person who is online'
+          : 'someone who speaks ${languageInfo(language).english}');
 
   final ok = await _confirm(
     context,
@@ -108,7 +113,7 @@ Future<void> startCallFlow(
       final r = await api.call(
         () => api.calls.matchCall(
           MatchCallRequest(
-            language: language,
+            language: random ? null : language,
             type: video
                 ? MatchCallRequestTypeEnum.video
                 : MatchCallRequestTypeEnum.audio,
@@ -124,7 +129,7 @@ Future<void> startCallFlow(
         video: video,
         otherName: r.companion.displayName,
         otherAvatarId: r.companion.avatarId,
-        subtitle: languageInfo(language).english,
+        subtitle: random ? 'Random match' : languageInfo(language).english,
       );
     }
     if (context.mounted) await context.push('/call', extra: args);

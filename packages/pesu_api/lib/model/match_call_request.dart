@@ -13,11 +13,11 @@ part of pesu_api;
 class MatchCallRequest {
   /// Returns a new [MatchCallRequest] instance.
   MatchCallRequest({
-    required this.language,
+    this.language,
     required this.type,
   });
 
-  String language;
+  String? language;
 
   MatchCallRequestTypeEnum type;
 
@@ -29,7 +29,7 @@ class MatchCallRequest {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (language.hashCode) +
+    (language == null ? 0 : language!.hashCode) +
     (type.hashCode);
 
   @override
@@ -37,7 +37,11 @@ class MatchCallRequest {
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.language != null) {
       json[r'language'] = this.language;
+    } else {
+      json[r'language'] = null;
+    }
       json[r'type'] = this.type;
     return json;
   }
@@ -53,15 +57,13 @@ class MatchCallRequest {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'language'), 'Required key "MatchCallRequest[language]" is missing from JSON.');
-        assert(json[r'language'] != null, 'Required key "MatchCallRequest[language]" has a null value in JSON.');
         assert(json.containsKey(r'type'), 'Required key "MatchCallRequest[type]" is missing from JSON.');
         assert(json[r'type'] != null, 'Required key "MatchCallRequest[type]" has a null value in JSON.');
         return true;
       }());
 
       return MatchCallRequest(
-        language: mapValueOfType<String>(json, r'language')!,
+        language: mapValueOfType<String>(json, r'language'),
         type: MatchCallRequestTypeEnum.fromJson(json[r'type'])!,
       );
     }
@@ -110,7 +112,6 @@ class MatchCallRequest {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
-    'language',
     'type',
   };
 }

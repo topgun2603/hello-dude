@@ -4,12 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowDown, ArrowRight, ArrowUp, BadgeCheck, CircleAlert, Flag, Grip, Heart, IdCard, Phone, ShieldCheck, UserRound,
-  UsersRound, Video, Wallet,
+  Smartphone, UsersRound, Video, Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Coin } from "@/components/coin";
+import { UserAvatar } from "@/components/user-avatar";
 import { AnimatedNumber } from "@/components/stat-card";
 import { api, type Dashboard, type DashboardEvent, type Report } from "@/lib/api";
 import { count, dateTime, REPORT_REASONS, rupees } from "@/lib/format";
@@ -98,6 +99,7 @@ const TONES = {
   lavender: { bg: "bg-[linear-gradient(135deg,#F5F0FF,#EEE8FF)]", border: "border-[#E6DCFB]", icon: "bg-[linear-gradient(135deg,#A78BFA,#7C3AED)]" },
   mint: { bg: "bg-[linear-gradient(135deg,#ECFBF4,#E3F8F1)]", border: "border-[#CFF0E1]", icon: "bg-[linear-gradient(135deg,#6EE7B7,#10B981)]" },
   cream: { bg: "bg-[linear-gradient(135deg,#FFF9EC,#FFF3DC)]", border: "border-[#F8E9C4]", icon: "bg-[linear-gradient(135deg,#FCD34D,#F59E0B)]" },
+  sky: { bg: "bg-[linear-gradient(135deg,#EEF7FF,#E6F1FE)]", border: "border-[#D4E6FB]", icon: "bg-[linear-gradient(135deg,#7DD3FC,#0EA5E9)]" },
 };
 
 function Kpi({ index, tone, icon: Icon, art, label, value, badge, hint }: {
@@ -131,7 +133,7 @@ function Kpis({ d }: { d?: Dashboard }) {
   const liveCalls = d && d.live.voiceCalls + d.live.videoCalls;
   const languagesLive = d?.languages.filter((l) => l.online > 0).length;
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
       <Kpi index={0} tone="peach" art={<Coin size={60} className="-mt-0.5 self-start drop-shadow-[0_6px_12px_rgba(217,119,6,0.35)]" />} label="Coins spent today" value={d?.today.coinsSpent}
         badge={d && <Delta now={d.today.coinsSpent} before={d.yesterday.coinsSpent} />}
         hint={d && `${count(d.today.minutesBilled)} minutes billed • Companions earned ${rupees(d.today.companionEarningsPaise)}`} />
@@ -143,9 +145,13 @@ function Kpis({ d }: { d?: Dashboard }) {
           </span>
         )}
         hint={d && `${d.live.voiceCalls} voice • ${d.live.videoCalls} video${d.live.ringing ? ` • ${d.live.ringing} ringing` : ""}`} />
-      <Kpi index={2} tone="mint" icon={UsersRound} label="Companions online" value={d?.live.companionsOnline}
-        hint={d && (languagesLive ? `Across ${languagesLive} language${languagesLive === 1 ? "" : "s"}` : "Nobody online right now")} />
-      <Kpi index={3} tone="cream" icon={UserRound} label="New sign-ups today" value={d?.today.newUsers}
+      <Kpi index={2} tone="sky" icon={Smartphone} label="Callers online" value={d?.live.callersOnline}
+        hint={d && (d.live.callersOnline ? "With the app open right now" : "No callers in the app right now")} />
+      <Kpi index={3} tone="mint" icon={UsersRound} label="Companions online" value={d?.live.companionsOnline}
+        hint={d && (languagesLive
+          ? `Taking calls in ${languagesLive} language${languagesLive === 1 ? "" : "s"} • ${d.live.companionsInApp} in the app`
+          : `Nobody taking calls • ${d.live.companionsInApp} in the app`)} />
+      <Kpi index={4} tone="cream" icon={UserRound} label="New sign-ups today" value={d?.today.newUsers}
         badge={d && <Delta now={d.today.newUsers} before={d.yesterday.newUsers} />}
         hint={d && `${count(d.today.newCallers)} callers • ${count(d.today.newCompanions)} companions`} />
     </div>
@@ -296,19 +302,6 @@ function Supply({ d }: { d?: Dashboard }) {
 
 // ---------------------------------------------------------------------------
 
-const AVATARS = [
-  "from-pink-400 to-rose-500", "from-violet-400 to-purple-600", "from-amber-300 to-orange-500",
-  "from-emerald-300 to-teal-500", "from-sky-300 to-indigo-500", "from-fuchsia-400 to-pink-600",
-];
-function Avatar({ id, name }: { id: string; name: string }) {
-  const hue = AVATARS[[...id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % AVATARS.length];
-  return (
-    <span className={cn("grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br font-heading font-bold text-white", hue)}>
-      {name.trim().charAt(0).toUpperCase() || "?"}
-    </span>
-  );
-}
-
 function ago(iso: string) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return "just now";
@@ -345,7 +338,7 @@ function Activity({ events }: { events?: DashboardEvent[] }) {
             <motion.li key={`${e.kind}-${e.user.id}-${e.at}`} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03 }} className="flex items-center gap-3 py-2.5">
               <span className={cn("grid size-9 shrink-0 place-items-center rounded-full", x.tint)}><Icon className="size-4" /></span>
-              <Avatar id={e.user.id} name={e.user.displayName} />
+              <UserAvatar id={e.user.id} name={e.user.displayName} avatarId={e.user.avatarId} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold">{e.user.displayName}</p>
                 <p className="truncate text-[13px] text-muted-foreground">{x.text}</p>
@@ -442,7 +435,7 @@ function Attention({ d }: { d?: Dashboard }) {
     <section className={cn(card, "p-6")}>
       <h2 className="mb-3 flex items-center gap-2 font-heading text-lg font-bold">
         Needs attention
-        <span className={cn("rounded-full px-2 text-xs font-bold text-white", total ? "bg-rose-500" : "bg-slate-300")}>{total}</span>
+        <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold text-white", total ? "bg-rose-500" : "bg-slate-300")}>{total}</span>
       </h2>
       <ul className="divide-y divide-[#F1EEF7]">
         {rows.map((r) => {

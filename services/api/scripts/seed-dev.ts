@@ -13,10 +13,10 @@ const cfg = loadConfig();
 if (cfg.NODE_ENV === "production") throw new Error("seed-dev must never run in production");
 
 const DEMO = [
-  { name: "Priya", phone: "+916000000001", avatar: 2, langs: ["ta", "en"] },
-  { name: "Kavya", phone: "+916000000002", avatar: 3, langs: ["ta", "en"] },
-  { name: "Divya", phone: "+916000000003", avatar: 4, langs: ["ta"] },
-  { name: "Meena", phone: "+916000000004", avatar: 5, langs: ["ta", "te"] },
+  { name: "Priya", phone: "+916000000001", avatar: 1, langs: ["ta", "en"] },
+  { name: "Kavya", phone: "+916000000002", avatar: 1, langs: ["ta", "en"] },
+  { name: "Divya", phone: "+916000000003", avatar: 1, langs: ["ta"] },
+  { name: "Meena", phone: "+916000000004", avatar: 1, langs: ["ta", "te"] },
 ];
 const DEMO_COINS = 500;
 
@@ -28,7 +28,7 @@ for (const d of DEMO) {
     const userId = (await c.query<{ id: string }>(
       `INSERT INTO users (phone, gender, role, display_name, avatar_id, primary_language, terms_accepted_at)
        VALUES ($1, 'female', 'companion', $2, $3, $4, now())
-       ON CONFLICT (phone) DO UPDATE SET display_name = EXCLUDED.display_name RETURNING id`,
+       ON CONFLICT (phone) DO UPDATE SET display_name = EXCLUDED.display_name, avatar_id = EXCLUDED.avatar_id RETURNING id`,
       [d.phone, d.name, d.avatar, d.langs[0]],
     )).rows[0]!.id;
     await c.query(
@@ -48,18 +48,18 @@ for (const d of DEMO) {
 
 // Demo callers, so the caller side can be tried after your own number became a companion.
 const DEMO_CALLERS = [
-  { name: "Arjun", phone: "+916100000001", avatar: 6, lang: "ta" },
-  { name: "Karthik", phone: "+916100000002", avatar: 7, lang: "ta" },
-  { name: "Vijay", phone: "+916100000003", avatar: 8, lang: "te" },
-  { name: "Suresh", phone: "+916100000004", avatar: 9, lang: "kn" },
-  { name: "Rahul", phone: "+916100000005", avatar: 10, lang: "hi" },
+  { name: "Arjun", phone: "+916100000001", avatar: 2, lang: "ta" },
+  { name: "Karthik", phone: "+916100000002", avatar: 2, lang: "ta" },
+  { name: "Vijay", phone: "+916100000003", avatar: 2, lang: "te" },
+  { name: "Suresh", phone: "+916100000004", avatar: 2, lang: "kn" },
+  { name: "Rahul", phone: "+916100000005", avatar: 2, lang: "hi" },
 ];
 for (const d of DEMO_CALLERS) {
   await tx(db, async (c) => {
     const userId = (await c.query<{ id: string }>(
       `INSERT INTO users (phone, gender, role, display_name, avatar_id, primary_language, terms_accepted_at)
        VALUES ($1, 'male', 'caller', $2, $3, $4, now())
-       ON CONFLICT (phone) DO UPDATE SET display_name = EXCLUDED.display_name RETURNING id`,
+       ON CONFLICT (phone) DO UPDATE SET display_name = EXCLUDED.display_name, avatar_id = EXCLUDED.avatar_id RETURNING id`,
       [d.phone, d.name, d.avatar, d.lang],
     )).rows[0]!.id;
     await c.query(

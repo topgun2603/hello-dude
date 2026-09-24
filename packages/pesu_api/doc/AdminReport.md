@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 **details** | **String** |  | 
 **status** | **String** |  | 
 **callId** | **String** |  | 
-**reporter** | [**AdminDashboard200ResponseActivityInnerUser**](AdminDashboard200ResponseActivityInnerUser.md) |  | 
+**reporter** | [**AdminReportReporter**](AdminReportReporter.md) |  | 
 **reported** | [**AdminReportReported**](AdminReportReported.md) |  | 
 **resolutionNote** | **String** |  | 
 **resolvedAt** | [**DateTime**](DateTime.md) |  | 

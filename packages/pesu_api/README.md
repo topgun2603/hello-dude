@@ -48,14 +48,13 @@ import 'package:pesu_api/api.dart';
 //defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
 
 final api_instance = AdminApi();
-final id = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
-final adminAddUserNoteRequest = AdminAddUserNoteRequest(); // AdminAddUserNoteRequest | 
+final adminAddStaffRequest = AdminAddStaffRequest(); // AdminAddStaffRequest | 
 
 try {
-    final result = api_instance.adminAddUserNote(id, adminAddUserNoteRequest);
+    final result = api_instance.adminAddStaff(adminAddStaffRequest);
     print(result);
 } catch (e) {
-    print('Exception when calling AdminApi->adminAddUserNote: $e\n');
+    print('Exception when calling AdminApi->adminAddStaff: $e\n');
 }
 
 ```
@@ -66,55 +65,95 @@ All URIs are relative to *http://localhost*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*AdminApi* | [**adminAddStaff**](doc//AdminApi.md#adminaddstaff) | **POST** /v1/admin/staff | Add a staff member: they sign in to the panel with this phone number (OTP)
 *AdminApi* | [**adminAddUserNote**](doc//AdminApi.md#adminaddusernote) | **POST** /v1/admin/users/{id}/notes | Add a private admin note to a caller or companion
+*AdminApi* | [**adminAnalytics**](doc//AdminApi.md#adminanalytics) | **GET** /v1/admin/analytics | Analytics for a date range (India time, both days included), with the previous period for comparison
 *AdminApi* | [**adminApprovePayout**](doc//AdminApi.md#adminapprovepayout) | **POST** /v1/admin/payouts/{id}/approve | Approve and send to UPI. Failures are credited back to the companion automatically.
 *AdminApi* | [**adminAuditLog**](doc//AdminApi.md#adminauditlog) | **GET** /v1/admin/audit | Latest admin actions
+*AdminApi* | [**adminCreateBonusCampaign**](doc//AdminApi.md#admincreatebonuscampaign) | **POST** /v1/admin/bonus-campaigns | Create a bonus campaign
 *AdminApi* | [**adminCreateGift**](doc//AdminApi.md#admincreategift) | **POST** /v1/admin/gifts | Add a gift. Its code is made from the name and never changes (the app and ledger refer to it).
 *AdminApi* | [**adminCreatePackage**](doc//AdminApi.md#admincreatepackage) | **POST** /v1/admin/coin-packages | Add a coin pack. Create the Google Play product with the same SKU first.
+*AdminApi* | [**adminCreatePromotion**](doc//AdminApi.md#admincreatepromotion) | **POST** /v1/admin/promotions | 
 *AdminApi* | [**adminCreateRate**](doc//AdminApi.md#admincreaterate) | **POST** /v1/admin/rates | Add a rate version. Calls already running keep their old rate.
+*AdminApi* | [**adminCreateRole**](doc//AdminApi.md#admincreaterole) | **POST** /v1/admin/roles | Add a custom role
 *AdminApi* | [**adminDashboard**](doc//AdminApi.md#admindashboard) | **GET** /v1/admin/dashboard | Live numbers and today's totals (India time)
+*AdminApi* | [**adminDecidePhoto**](doc//AdminApi.md#admindecidephoto) | **POST** /v1/admin/photos/{userId}/decision | Approve (it replaces their avatar everywhere) or reject with a reason they'll see
 *AdminApi* | [**adminDecideRefund**](doc//AdminApi.md#admindeciderefund) | **POST** /v1/admin/refunds/{id}/decide | Approve (all or part of the coins) or reject a refund request
+*AdminApi* | [**adminDeletePromotion**](doc//AdminApi.md#admindeletepromotion) | **DELETE** /v1/admin/promotions/{id} | Delete a promotion and its view stats
+*AdminApi* | [**adminDeleteRole**](doc//AdminApi.md#admindeleterole) | **DELETE** /v1/admin/roles/{code} | Delete a custom role nobody has
+*AdminApi* | [**adminEndGroup**](doc//AdminApi.md#adminendgroup) | **POST** /v1/admin/groups/{id}/end | End or cancel a group now (moderation)
+*AdminApi* | [**adminEndLive**](doc//AdminApi.md#adminendlive) | **POST** /v1/admin/lives/{id}/end | End a live now (moderation)
+*AdminApi* | [**adminEndRoom**](doc//AdminApi.md#adminendroom) | **POST** /v1/admin/rooms/{id}/end | End a room now (moderation)
 *AdminApi* | [**adminGetModerationFrame**](doc//AdminApi.md#admingetmoderationframe) | **GET** /v1/admin/moderation/{id}/frame | The flagged frame (decrypted). Every view is audit-logged.
 *AdminApi* | [**adminGetUser**](doc//AdminApi.md#admingetuser) | **GET** /v1/admin/users/{id} | Everything about one caller or companion: profile, wallets, calls, money and safety history
+*AdminApi* | [**adminGrantVip**](doc//AdminApi.md#admingrantvip) | **POST** /v1/admin/users/{id}/vip | Give a caller VIP for some days (extends an active VIP). Audited; the caller is notified.
 *AdminApi* | [**adminKycDecision**](doc//AdminApi.md#adminkycdecision) | **POST** /v1/admin/kyc/{userId}/decision | Approve (companion can go online) or reject with a reason the companion will see
 *AdminApi* | [**adminKycFile**](doc//AdminApi.md#adminkycfile) | **GET** /v1/admin/kyc/{userId}/files/{doc} | Decrypted KYC image for side-by-side review. Every view is audit-logged.
 *AdminApi* | [**adminKycQueue**](doc//AdminApi.md#adminkycqueue) | **GET** /v1/admin/kyc | KYC review queue (oldest first) or decided cases
+*AdminApi* | [**adminListBonusCampaigns**](doc//AdminApi.md#adminlistbonuscampaigns) | **GET** /v1/admin/bonus-campaigns | Time-window bonus campaigns for companions
+*AdminApi* | [**adminListCompanionLevels**](doc//AdminApi.md#adminlistcompanionlevels) | **GET** /v1/admin/companion-levels | Companion levels
 *AdminApi* | [**adminListGifts**](doc//AdminApi.md#adminlistgifts) | **GET** /v1/admin/gifts | 
+*AdminApi* | [**adminListGroups**](doc//AdminApi.md#adminlistgroups) | **GET** /v1/admin/groups | Open groups, then the last 50 that ended
+*AdminApi* | [**adminListLives**](doc//AdminApi.md#adminlistlives) | **GET** /v1/admin/lives | Lives now, then the last 50 that ended
 *AdminApi* | [**adminListModerationFlags**](doc//AdminApi.md#adminlistmoderationflags) | **GET** /v1/admin/moderation | Video frames flagged for nudity by the app, oldest open first
 *AdminApi* | [**adminListPackages**](doc//AdminApi.md#adminlistpackages) | **GET** /v1/admin/coin-packages | 
 *AdminApi* | [**adminListPayouts**](doc//AdminApi.md#adminlistpayouts) | **GET** /v1/admin/payouts | 
+*AdminApi* | [**adminListPhotos**](doc//AdminApi.md#adminlistphotos) | **GET** /v1/admin/photos | Companion photos waiting for review, oldest first
+*AdminApi* | [**adminListPromotions**](doc//AdminApi.md#adminlistpromotions) | **GET** /v1/admin/promotions | Offers popup: every promotion with its reach and taps
 *AdminApi* | [**adminListRates**](doc//AdminApi.md#adminlistrates) | **GET** /v1/admin/rates | All call rates: current, scheduled and past
 *AdminApi* | [**adminListRefunds**](doc//AdminApi.md#adminlistrefunds) | **GET** /v1/admin/refunds | 
 *AdminApi* | [**adminListReports**](doc//AdminApi.md#adminlistreports) | **GET** /v1/admin/reports | 
+*AdminApi* | [**adminListRoles**](doc//AdminApi.md#adminlistroles) | **GET** /v1/admin/roles | Roles and the permission catalogue (for the permission grid)
+*AdminApi* | [**adminListRooms**](doc//AdminApi.md#adminlistrooms) | **GET** /v1/admin/rooms | Live voice rooms
 *AdminApi* | [**adminListSettings**](doc//AdminApi.md#adminlistsettings) | **GET** /v1/admin/settings | 
+*AdminApi* | [**adminListStaff**](doc//AdminApi.md#adminliststaff) | **GET** /v1/admin/staff | Everyone who can sign in to the admin panel
 *AdminApi* | [**adminListUsers**](doc//AdminApi.md#adminlistusers) | **GET** /v1/admin/users | Search callers or companions by name or the last digits of their number
+*AdminApi* | [**adminListVipPlans**](doc//AdminApi.md#adminlistvipplans) | **GET** /v1/admin/vip-plans | VIP plans (prices must match the Play Console products)
+*AdminApi* | [**adminMe**](doc//AdminApi.md#adminme) | **GET** /v1/admin/me | The signed-in staff member, their role and permissions (the panel hides what they can't do)
 *AdminApi* | [**adminRejectPayout**](doc//AdminApi.md#adminrejectpayout) | **POST** /v1/admin/payouts/{id}/reject | Reject a withdrawal; the amount goes back to the companion's balance
 *AdminApi* | [**adminResolveModerationFlag**](doc//AdminApi.md#adminresolvemoderationflag) | **POST** /v1/admin/moderation/{id}/resolve | Dismiss a flagged frame (false alarm), or act on it by suspending or banning the person on video
 *AdminApi* | [**adminResolveReport**](doc//AdminApi.md#adminresolvereport) | **POST** /v1/admin/reports/{id}/resolve | Dismiss a report, or act on it by suspending the reported user
+*AdminApi* | [**adminRevokeVip**](doc//AdminApi.md#adminrevokevip) | **POST** /v1/admin/users/{id}/vip/revoke | End someone's VIP now (e.g. a mistaken grant). Play subscriptions must also be refunded in Play Console.
 *AdminApi* | [**adminSendCoins**](doc//AdminApi.md#adminsendcoins) | **POST** /v1/admin/users/{id}/coins | Give a caller free coins (goodwill / compensation). Written to the ledger and the audit log
 *AdminApi* | [**adminSendMessage**](doc//AdminApi.md#adminsendmessage) | **POST** /v1/admin/users/{id}/message | Send a push notification to one caller or companion
+*AdminApi* | [**adminSetPromotionActive**](doc//AdminApi.md#adminsetpromotionactive) | **POST** /v1/admin/promotions/{id}/active | Switch a promotion on or off
 *AdminApi* | [**adminSetUserStatus**](doc//AdminApi.md#adminsetuserstatus) | **POST** /v1/admin/users/{id}/status | Suspend, ban or reactivate an account
 *AdminApi* | [**adminSetVideo**](doc//AdminApi.md#adminsetvideo) | **POST** /v1/admin/companions/{userId}/video | Unlock or lock video calls for a companion (after academy + clean record)
+*AdminApi* | [**adminUpdateBonusCampaign**](doc//AdminApi.md#adminupdatebonuscampaign) | **PUT** /v1/admin/bonus-campaigns/{id} | Edit or switch off a bonus campaign
+*AdminApi* | [**adminUpdateCompanionLevel**](doc//AdminApi.md#adminupdatecompanionlevel) | **PUT** /v1/admin/companion-levels/{level} | Change a level's name, thresholds or earnings boost (applies to calls that start after this)
 *AdminApi* | [**adminUpdateGift**](doc//AdminApi.md#adminupdategift) | **PUT** /v1/admin/gifts/{id} | 
 *AdminApi* | [**adminUpdatePackage**](doc//AdminApi.md#adminupdatepackage) | **PUT** /v1/admin/coin-packages/{id} | Edit a coin pack. The Google Play product price must be changed to match in Play Console.
+*AdminApi* | [**adminUpdatePromotion**](doc//AdminApi.md#adminupdatepromotion) | **PUT** /v1/admin/promotions/{id} | 
+*AdminApi* | [**adminUpdateRole**](doc//AdminApi.md#adminupdaterole) | **PUT** /v1/admin/roles/{code} | Edit a role's name, description and permissions (not the built-in Admin)
 *AdminApi* | [**adminUpdateSetting**](doc//AdminApi.md#adminupdatesetting) | **PUT** /v1/admin/settings/{key} | 
+*AdminApi* | [**adminUpdateStaff**](doc//AdminApi.md#adminupdatestaff) | **PUT** /v1/admin/staff/{id} | Change a staff member's role, or switch their access off/on
+*AdminApi* | [**adminUpdateVipPlan**](doc//AdminApi.md#adminupdatevipplan) | **PUT** /v1/admin/vip-plans/{id} | Change a VIP plan's price, badge or visibility
 *AuthApi* | [**logout**](doc//AuthApi.md#logout) | **POST** /v1/auth/logout | 
 *AuthApi* | [**refreshTokens**](doc//AuthApi.md#refreshtokens) | **POST** /v1/auth/refresh | Swap a refresh token for a new token pair (the old one stops working)
 *AuthApi* | [**sendOtp**](doc//AuthApi.md#sendotp) | **POST** /v1/auth/otp/send | Send a 6-digit code to a mobile number
+*AuthApi* | [**signInWithFirebase**](doc//AuthApi.md#signinwithfirebase) | **POST** /v1/auth/firebase | Mobile app sign-in: the app verified the number with Firebase Auth and sends its ID token. Indian (+91) mobiles only. Same result as otp/verify.
 *AuthApi* | [**signUp**](doc//AuthApi.md#signup) | **POST** /v1/auth/signup | Create the account after OTP (Main + Language screens)
 *AuthApi* | [**verifyOtp**](doc//AuthApi.md#verifyotp) | **POST** /v1/auth/otp/verify | Verify the code. Existing users get tokens; new numbers get a signup token.
+*BookingsApi* | [**cancelBooking**](doc//BookingsApi.md#cancelbooking) | **POST** /v1/bookings/{id}/cancel | Caller cancels; the held coins come back in full
+*BookingsApi* | [**confirmBooking**](doc//BookingsApi.md#confirmbooking) | **POST** /v1/bookings/{id}/confirm | Companion accepts the booked time
+*BookingsApi* | [**createBooking**](doc//BookingsApi.md#createbooking) | **POST** /v1/bookings | Book a call with a favourite. Coins for the full duration are held now and returned if it doesn't happen.
+*BookingsApi* | [**declineBooking**](doc//BookingsApi.md#declinebooking) | **POST** /v1/bookings/{id}/decline | Companion declines; the caller's coins come back
+*BookingsApi* | [**getBookingSlots**](doc//BookingsApi.md#getbookingslots) | **GET** /v1/companions/{id}/slots | Bookable times for the next few days (IST), and the durations offered
+*BookingsApi* | [**listBookings**](doc//BookingsApi.md#listbookings) | **GET** /v1/bookings | My bookings: upcoming (and in progress) first, then the last 30 days
+*BookingsApi* | [**startBooking**](doc//BookingsApi.md#startbooking) | **POST** /v1/bookings/{id}/start | Caller starts the booked call (from 5 min before to 15 min after). The hold comes back and the call is billed per minute.
 *CallsApi* | [**acceptCall**](doc//CallsApi.md#acceptcall) | **POST** /v1/calls/{id}/accept | Companion answers a ringing call and gets their join token
 *CallsApi* | [**endCall**](doc//CallsApi.md#endcall) | **POST** /v1/calls/{id}/end | Hang up (either side). Safe to repeat.
 *CallsApi* | [**flagVideoFrame**](doc//CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (the other person's video)
 *CallsApi* | [**getCall**](doc//CallsApi.md#getcall) | **GET** /v1/calls/{id} | Call details: every billed minute, refunds included
-*CallsApi* | [**listCalls**](doc//CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first. Page with `before` = createdAt of the last call seen.
+*CallsApi* | [**listCalls**](doc//CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
 *CallsApi* | [**listGifts**](doc//CallsApi.md#listgifts) | **GET** /v1/gifts | Gifts a caller can send during a call
-*CallsApi* | [**matchCall**](doc//CallsApi.md#matchcall) | **POST** /v1/calls/match | Instant match: ring a free online companion who speaks the language
+*CallsApi* | [**matchCall**](doc//CallsApi.md#matchcall) | **POST** /v1/calls/match | Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)
 *CallsApi* | [**rateCall**](doc//CallsApi.md#ratecall) | **POST** /v1/calls/{id}/rating | Rate a finished call (once)
 *CallsApi* | [**rejectCall**](doc//CallsApi.md#rejectcall) | **POST** /v1/calls/{id}/reject | 
 *CallsApi* | [**requestRefund**](doc//CallsApi.md#requestrefund) | **POST** /v1/calls/{id}/refund-request | Ask for a refund on a finished call (once per call)
 *CallsApi* | [**sendGift**](doc//CallsApi.md#sendgift) | **POST** /v1/calls/{id}/gifts | Send a gift during a live call. clientRef makes a retried tap safe.
 *CallsApi* | [**startCall**](doc//CallsApi.md#startcall) | **POST** /v1/calls | Call a specific companion. Nothing is charged until both sides join.
+*CallsApi* | [**verifyCallConnected**](doc//CallsApi.md#verifycallconnected) | **POST** /v1/calls/{id}/verify-connected | The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so
 *ChatApi* | [**getChatMessages**](doc//ChatApi.md#getchatmessages) | **GET** /v1/chats/{id}/messages | The thread: messages and calls between you, newest first (page with ?before=<ISO time>)
 *ChatApi* | [**listChats**](doc//ChatApi.md#listchats) | **GET** /v1/chats | My conversations, most recent first, with unread counts
 *ChatApi* | [**markChatRead**](doc//ChatApi.md#markchatread) | **POST** /v1/chats/{id}/read | Mark the conversation read up to now
@@ -125,8 +164,10 @@ Class | Method | HTTP request | Description
 *CompanionApi* | [**companionEarnings**](doc//CompanionApi.md#companionearnings) | **GET** /v1/companion/earnings | Balance, last 7 days and withdrawals
 *CompanionApi* | [**companionHome**](doc//CompanionApi.md#companionhome) | **GET** /v1/companion/home | Companion home: status and today's numbers (India time)
 *CompanionApi* | [**getAcademy**](doc//CompanionApi.md#getacademy) | **GET** /v1/companion/academy | Lessons, in order, with my progress (quiz answers are not included)
+*CompanionApi* | [**getCompanionRewards**](doc//CompanionApi.md#getcompanionrewards) | **GET** /v1/companion/rewards | Rewards screen: level, today's goal, online streak and bonuses
 *CompanionApi* | [**getKyc**](doc//CompanionApi.md#getkyc) | **GET** /v1/companion/kyc | Verification progress
 *CompanionApi* | [**requestPayout**](doc//CompanionApi.md#requestpayout) | **POST** /v1/companion/payouts | Withdraw to UPI. The amount leaves the balance now; a failed payout is credited back.
+*CompanionApi* | [**setCompanionCallTypes**](doc//CompanionApi.md#setcompanioncalltypes) | **PUT** /v1/companion/call-types | Choose which calls to take: voice, video or both (video only once it's unlocked)
 *CompanionApi* | [**setPresence**](doc//CompanionApi.md#setpresence) | **POST** /v1/companion/presence | Go online / offline. While online, call again every 60 s as a heartbeat.
 *CompanionApi* | [**setUpi**](doc//CompanionApi.md#setupi) | **PUT** /v1/companion/upi | Step 3b / later: UPI ID for withdrawals
 *CompanionApi* | [**submitKyc**](doc//CompanionApi.md#submitkyc) | **POST** /v1/companion/kyc/submit | Send everything for review
@@ -134,28 +175,75 @@ Class | Method | HTTP request | Description
 *CompanionApi* | [**uploadPan**](doc//CompanionApi.md#uploadpan) | **POST** /v1/companion/kyc/pan | Step 3a: PAN number + photo of the card (needed for TDS)
 *CompanionApi* | [**uploadSelfie**](doc//CompanionApi.md#uploadselfie) | **POST** /v1/companion/kyc/selfie | Step 2: live selfie. The app runs the blink check (ML Kit) before sending.
 *CompanionsApi* | [**getCompanion**](doc//CompanionsApi.md#getcompanion) | **GET** /v1/companions/{id} | One companion with current rates (for Call buttons outside the home list, e.g. chat)
-*CompanionsApi* | [**listOnlineCompanions**](doc//CompanionsApi.md#listonlinecompanions) | **GET** /v1/companions/online | Home screen: who is online now in a language
+*CompanionsApi* | [**listOnlineCompanions**](doc//CompanionsApi.md#listonlinecompanions) | **GET** /v1/companions/online | Who is online now: in one language (Home), or everyone when language is left out (Online tab)
 *FavouritesApi* | [**addFavourite**](doc//FavouritesApi.md#addfavourite) | **PUT** /v1/favourites/{companionId} | Add (or update) a favourite. notify = alert me when they come online.
 *FavouritesApi* | [**listFavourites**](doc//FavouritesApi.md#listfavourites) | **GET** /v1/favourites | My favourite companions, free ones first
 *FavouritesApi* | [**removeFavourite**](doc//FavouritesApi.md#removefavourite) | **DELETE** /v1/favourites/{companionId} | 
+*GroupsApi* | [**bookGroupSeat**](doc//GroupsApi.md#bookgroupseat) | **POST** /v1/groups/{id}/book | Book a free seat in a scheduled group (reminder 10 min before)
+*GroupsApi* | [**cancelGroupSeat**](doc//GroupsApi.md#cancelgroupseat) | **POST** /v1/groups/{id}/cancel-booking | Give up a booked seat
+*GroupsApi* | [**createGroup**](doc//GroupsApi.md#creategroup) | **POST** /v1/groups | Host a group video (companions with video unlocked). Leave scheduledAt out to open a lobby now; set it (within 7 days) to take seat bookings.
+*GroupsApi* | [**endGroup**](doc//GroupsApi.md#endgroup) | **POST** /v1/groups/{id}/end | Host: end (or cancel) the group
+*GroupsApi* | [**flagGroupFrame**](doc//GroupsApi.md#flaggroupframe) | **POST** /v1/groups/{id}/moderation | A frame an on-device check flagged. Every phone checks its own camera (and blurs it at once); subjectId is whose video it is.
+*GroupsApi* | [**groupHeartbeat**](doc//GroupsApi.md#groupheartbeat) | **POST** /v1/groups/{id}/heartbeat | Member: still here (every 20 s). Returns the group; when it turns live, join again for the room.
+*GroupsApi* | [**groupHostHeartbeat**](doc//GroupsApi.md#grouphostheartbeat) | **POST** /v1/groups/{id}/host-heartbeat | Host: still here (every 15 s). Returns the group, who's waiting and what it has earned.
+*GroupsApi* | [**joinGroup**](doc//GroupsApi.md#joingroup) | **POST** /v1/groups/{id}/join | Join the lobby or the live group. Send agree=true: everyone in the group sees your camera, and once it's live you pay per minute (the first minute when it starts, or now if it's already live). 402 AGREE_REQUIRED / INSUFFICIENT_BALANCE.
+*GroupsApi* | [**leaveGroup**](doc//GroupsApi.md#leavegroup) | **POST** /v1/groups/{id}/leave | Member: leave (stops the per-minute charge)
+*GroupsApi* | [**listGroups**](doc//GroupsApi.md#listgroups) | **GET** /v1/groups | Callers: groups live now, lobbies filling up and upcoming ones. Companions: their own open groups.
+*GroupsApi* | [**openGroup**](doc//GroupsApi.md#opengroup) | **POST** /v1/groups/{id}/open | Host: open the lobby of a scheduled group (up to 15 min early). Booked members are told.
+*GroupsApi* | [**reportInGroup**](doc//GroupsApi.md#reportingroup) | **POST** /v1/groups/{id}/report | Report someone in the group. The host can also remove them.
+*GroupsApi* | [**sendGroupGift**](doc//GroupsApi.md#sendgroupgift) | **POST** /v1/groups/{id}/gifts | Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.
+*GroupsApi* | [**sendGroupMessage**](doc//GroupsApi.md#sendgroupmessage) | **POST** /v1/groups/{id}/messages | Chat (members and the host; safety-filtered; one message every 2 s)
+*GroupsApi* | [**sendGroupReaction**](doc//GroupsApi.md#sendgroupreaction) | **POST** /v1/groups/{id}/react | Send a reaction
 *GrowthApi* | [**claimCheckIn**](doc//GrowthApi.md#claimcheckin) | **POST** /v1/checkin/claim | Claim today's bonus (once per IST day; repeating is harmless)
 *GrowthApi* | [**getCheckIn**](doc//GrowthApi.md#getcheckin) | **GET** /v1/checkin | Daily bonus: today's streak day and the 7-day reward ladder
 *GrowthApi* | [**getReferral**](doc//GrowthApi.md#getreferral) | **GET** /v1/referral | Invite friends: my code, the reward and how many friends joined
 *GrowthApi* | [**getShareCard**](doc//GrowthApi.md#getsharecard) | **GET** /v1/share-card | What the share card shows: today's talk time, language and invite code (never who they talked to)
 *LegalApi* | [**getLegalPage**](doc//LegalApi.md#getlegalpage) | **GET** /v1/legal/{id} | One legal page as blocks the app renders natively
 *LegalApi* | [**listLegalPages**](doc//LegalApi.md#listlegalpages) | **GET** /v1/legal | The legal pages the app lists under Profile → Legal
+*LivesApi* | [**endLive**](doc//LivesApi.md#endlive) | **POST** /v1/lives/{id}/end | Host: end the live
+*LivesApi* | [**flagLiveFrame**](doc//LivesApi.md#flagliveframe) | **POST** /v1/lives/{id}/moderation | A frame of the host's video that an on-device check flagged (host's own phone or a viewer's)
+*LivesApi* | [**joinLive**](doc//LivesApi.md#joinlive) | **POST** /v1/lives/{id}/join | Watch. The first visit has a free preview. After it, send pay=true to keep watching at the per-minute price (the first minute is charged now, then one each minute you stay). 402 PAY_TO_WATCH / INSUFFICIENT_BALANCE otherwise.
+*LivesApi* | [**leaveLive**](doc//LivesApi.md#leavelive) | **POST** /v1/lives/{id}/leave | Viewer: stop watching (stops the per-minute charge)
+*LivesApi* | [**listLives**](doc//LivesApi.md#listlives) | **GET** /v1/lives | Live now (favourites first, then the busiest), with the price per minute
+*LivesApi* | [**liveHeartbeat**](doc//LivesApi.md#liveheartbeat) | **POST** /v1/lives/{id}/heartbeat | Viewer: still watching (every 20 s). Returns your access.
+*LivesApi* | [**liveHostHeartbeat**](doc//LivesApi.md#livehostheartbeat) | **POST** /v1/lives/{id}/host-heartbeat | Host: still live (every 15 s). Returns viewers and what this live has earned.
+*LivesApi* | [**sendLiveGift**](doc//LivesApi.md#sendlivegift) | **POST** /v1/lives/{id}/gifts | Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.
+*LivesApi* | [**sendLiveMessage**](doc//LivesApi.md#sendlivemessage) | **POST** /v1/lives/{id}/messages | Chat (paying viewers and the host; safety-filtered; one message every 2 s)
+*LivesApi* | [**sendLiveReaction**](doc//LivesApi.md#sendlivereaction) | **POST** /v1/lives/{id}/react | Send a reaction (anyone watching, preview included)
+*LivesApi* | [**startLive**](doc//LivesApi.md#startlive) | **POST** /v1/lives | Go live (companions with video unlocked). You stop getting 1:1 calls until the live ends.
 *NotificationsApi* | [**listNotifications**](doc//NotificationsApi.md#listnotifications) | **GET** /v1/notifications | My notifications, newest first (page with ?before=<id>)
 *NotificationsApi* | [**markNotificationsRead**](doc//NotificationsApi.md#marknotificationsread) | **POST** /v1/notifications/read | Mark some notifications read (ids), or every one with all: true (\"Read all\")
 *NotificationsApi* | [**unreadNotificationCount**](doc//NotificationsApi.md#unreadnotificationcount) | **GET** /v1/notifications/unread-count | Number for the bell badge
+*PhotosApi* | [**deleteMyPhoto**](doc//PhotosApi.md#deletemyphoto) | **DELETE** /v1/me/photo | Remove my photo (and any waiting for review); the avatar shows again
+*PhotosApi* | [**getMyPhoto**](doc//PhotosApi.md#getmyphoto) | **GET** /v1/me/photo | My profile photo and its review status
+*PhotosApi* | [**getPhoto**](doc//PhotosApi.md#getphoto) | **GET** /v1/photos/{userId}/{file} | A profile photo, through a signed URL from the API (never linked directly)
+*PhotosApi* | [**uploadMyPhoto**](doc//PhotosApi.md#uploadmyphoto) | **PUT** /v1/me/photo | Upload a profile photo (companions). It's cleaned (metadata removed) and shown after an admin approves it; until then your current photo or avatar stays.
 *ProfileApi* | [**deleteAccount**](doc//ProfileApi.md#deleteaccount) | **POST** /v1/me/delete | Permanently delete my account. Unused coins are forfeited; companions must withdraw earnings first.
 *ProfileApi* | [**getMe**](doc//ProfileApi.md#getme) | **GET** /v1/me | 
 *ProfileApi* | [**listLanguages**](doc//ProfileApi.md#listlanguages) | **GET** /v1/languages | Languages users can pick
 *ProfileApi* | [**registerDevice**](doc//ProfileApi.md#registerdevice) | **PUT** /v1/devices | Register this phone's FCM token for call and message pushes
 *ProfileApi* | [**updateMe**](doc//ProfileApi.md#updateme) | **PATCH** /v1/me | Update name, avatar or languages (primary language must be in `languages`)
+*PromotionsApi* | [**getCurrentPromotion**](doc//PromotionsApi.md#getcurrentpromotion) | **GET** /v1/promotions/current | The offer to show in the app-open bottom sheet, if any
+*PromotionsApi* | [**logPromotionEvent**](doc//PromotionsApi.md#logpromotionevent) | **POST** /v1/promotions/{id}/events | The app showed the sheet, or the user tapped its button (drives frequency and admin stats)
+*RoomsApi* | [**getRoom**](doc//RoomsApi.md#getroom) | **GET** /v1/rooms/{id} | Current stage and members
+*RoomsApi* | [**joinRoom**](doc//RoomsApi.md#joinroom) | **POST** /v1/rooms/{id}/join | Join as a listener (free). Rejoining keeps your role.
+*RoomsApi* | [**leaveRoom**](doc//RoomsApi.md#leaveroom) | **POST** /v1/rooms/{id}/leave | Leave. When the host leaves, the room ends.
+*RoomsApi* | [**listRoomCategories**](doc//RoomsApi.md#listroomcategories) | **GET** /v1/room-categories | Room categories (All + these)
+*RoomsApi* | [**listRooms**](doc//RoomsApi.md#listrooms) | **GET** /v1/rooms | Live rooms, biggest first (optionally one category / language)
+*RoomsApi* | [**raiseHand**](doc//RoomsApi.md#raisehand) | **POST** /v1/rooms/{id}/hand | Raise or lower your hand to speak
+*RoomsApi* | [**roomHeartbeat**](doc//RoomsApi.md#roomheartbeat) | **POST** /v1/rooms/{id}/heartbeat | Still here (every 30 s)
+*RoomsApi* | [**roomToken**](doc//RoomsApi.md#roomtoken) | **POST** /v1/rooms/{id}/token | A fresh LiveKit token for your current role (after moving on/off stage)
+*RoomsApi* | [**sendRoomGift**](doc//RoomsApi.md#sendroomgift) | **POST** /v1/rooms/{id}/gifts | Send a gift to a companion on stage (same prices and companion share as call gifts)
+*RoomsApi* | [**sendRoomMessage**](doc//RoomsApi.md#sendroommessage) | **POST** /v1/rooms/{id}/messages | Say something in the room feed (safety-filtered; one message every 2 s)
+*RoomsApi* | [**sendRoomReaction**](doc//RoomsApi.md#sendroomreaction) | **POST** /v1/rooms/{id}/react | Send a reaction
+*RoomsApi* | [**setRoomStage**](doc//RoomsApi.md#setroomstage) | **POST** /v1/rooms/{id}/stage/{userId} | Host: bring someone on stage, or move a speaker back to listening. They then fetch a new token.
+*RoomsApi* | [**startRoom**](doc//RoomsApi.md#startroom) | **POST** /v1/rooms | Start a room (approved companions; one live room at a time)
 *SafetyApi* | [**blockUser**](doc//SafetyApi.md#blockuser) | **POST** /v1/blocks | Block someone: neither side can see or call the other
 *SafetyApi* | [**listBlocks**](doc//SafetyApi.md#listblocks) | **GET** /v1/blocks | 
 *SafetyApi* | [**reportUser**](doc//SafetyApi.md#reportuser) | **POST** /v1/reports | Report someone (also blocks them). Pass callId when reporting a call.
 *SafetyApi* | [**unblockUser**](doc//SafetyApi.md#unblockuser) | **DELETE** /v1/blocks/{userId} | 
+*VipApi* | [**getVip**](doc//VipApi.md#getvip) | **GET** /v1/vip | My VIP status, the perks and the plans on sale
+*WalletApi* | [**getCoinHistory**](doc//WalletApi.md#getcoinhistory) | **GET** /v1/wallet/history | Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
 *WalletApi* | [**getWallet**](doc//WalletApi.md#getwallet) | **GET** /v1/wallet | 
 *WalletApi* | [**listCoinPackages**](doc//WalletApi.md#listcoinpackages) | **GET** /v1/coin-packages | Coin packs for sale (Google Play SKUs). Signed-in new users also get the first-recharge offer.
 *WalletApi* | [**listLedger**](doc//WalletApi.md#listledger) | **GET** /v1/wallet/ledger | Every coin in or out, newest first. Page with `before` = last id seen.
@@ -168,15 +256,45 @@ Class | Method | HTTP request | Description
  - [AcademyLessonInputQuizInner](doc//AcademyLessonInputQuizInner.md)
  - [AcademyLessonQuizInner](doc//AcademyLessonQuizInner.md)
  - [AddFavouriteRequest](doc//AddFavouriteRequest.md)
+ - [AdminAddStaffRequest](doc//AdminAddStaffRequest.md)
  - [AdminAddUserNoteRequest](doc//AdminAddUserNoteRequest.md)
+ - [AdminAnalytics](doc//AdminAnalytics.md)
+ - [AdminAnalyticsByHourInner](doc//AdminAnalyticsByHourInner.md)
+ - [AdminAnalyticsByLanguageInner](doc//AdminAnalyticsByLanguageInner.md)
+ - [AdminAnalyticsByTypeInner](doc//AdminAnalyticsByTypeInner.md)
+ - [AdminAnalyticsDailyInner](doc//AdminAnalyticsDailyInner.md)
+ - [AdminAnalyticsInput](doc//AdminAnalyticsInput.md)
+ - [AdminAnalyticsInputByHourInner](doc//AdminAnalyticsInputByHourInner.md)
+ - [AdminAnalyticsInputByLanguageInner](doc//AdminAnalyticsInputByLanguageInner.md)
+ - [AdminAnalyticsInputByTypeInner](doc//AdminAnalyticsInputByTypeInner.md)
+ - [AdminAnalyticsInputDailyInner](doc//AdminAnalyticsInputDailyInner.md)
+ - [AdminAnalyticsInputMargin](doc//AdminAnalyticsInputMargin.md)
+ - [AdminAnalyticsInputMostActiveInner](doc//AdminAnalyticsInputMostActiveInner.md)
+ - [AdminAnalyticsInputMostReportedInner](doc//AdminAnalyticsInputMostReportedInner.md)
+ - [AdminAnalyticsInputPrevious](doc//AdminAnalyticsInputPrevious.md)
+ - [AdminAnalyticsInputRange](doc//AdminAnalyticsInputRange.md)
+ - [AdminAnalyticsInputTopEarnersInner](doc//AdminAnalyticsInputTopEarnersInner.md)
+ - [AdminAnalyticsInputTopRatedInner](doc//AdminAnalyticsInputTopRatedInner.md)
+ - [AdminAnalyticsInputTopSpendersInner](doc//AdminAnalyticsInputTopSpendersInner.md)
+ - [AdminAnalyticsMargin](doc//AdminAnalyticsMargin.md)
+ - [AdminAnalyticsMostActiveInner](doc//AdminAnalyticsMostActiveInner.md)
+ - [AdminAnalyticsMostReportedInner](doc//AdminAnalyticsMostReportedInner.md)
+ - [AdminAnalyticsPrevious](doc//AdminAnalyticsPrevious.md)
+ - [AdminAnalyticsRange](doc//AdminAnalyticsRange.md)
+ - [AdminAnalyticsTopEarnersInner](doc//AdminAnalyticsTopEarnersInner.md)
+ - [AdminAnalyticsTopRatedInner](doc//AdminAnalyticsTopRatedInner.md)
+ - [AdminAnalyticsTopSpendersInner](doc//AdminAnalyticsTopSpendersInner.md)
  - [AdminAuditLog200ResponseInner](doc//AdminAuditLog200ResponseInner.md)
  - [AdminCallRate](doc//AdminCallRate.md)
  - [AdminCallRateInput](doc//AdminCallRateInput.md)
  - [AdminCoinPackage](doc//AdminCoinPackage.md)
  - [AdminCoinPackageInput](doc//AdminCoinPackageInput.md)
+ - [AdminCreateBonusCampaignRequest](doc//AdminCreateBonusCampaignRequest.md)
  - [AdminCreateGiftRequest](doc//AdminCreateGiftRequest.md)
  - [AdminCreatePackageRequest](doc//AdminCreatePackageRequest.md)
+ - [AdminCreatePromotionRequest](doc//AdminCreatePromotionRequest.md)
  - [AdminCreateRateRequest](doc//AdminCreateRateRequest.md)
+ - [AdminCreateRoleRequest](doc//AdminCreateRoleRequest.md)
  - [AdminDashboard200Response](doc//AdminDashboard200Response.md)
  - [AdminDashboard200ResponseActivityInner](doc//AdminDashboard200ResponseActivityInner.md)
  - [AdminDashboard200ResponseActivityInnerUser](doc//AdminDashboard200ResponseActivityInnerUser.md)
@@ -186,20 +304,30 @@ Class | Method | HTTP request | Description
  - [AdminDashboard200ResponsePendingPayouts](doc//AdminDashboard200ResponsePendingPayouts.md)
  - [AdminDashboard200ResponseToday](doc//AdminDashboard200ResponseToday.md)
  - [AdminDashboard200ResponseYesterday](doc//AdminDashboard200ResponseYesterday.md)
+ - [AdminDecidePhotoRequest](doc//AdminDecidePhotoRequest.md)
  - [AdminDecideRefundRequest](doc//AdminDecideRefundRequest.md)
  - [AdminGift](doc//AdminGift.md)
  - [AdminGiftInput](doc//AdminGiftInput.md)
+ - [AdminGrantVip200Response](doc//AdminGrantVip200Response.md)
+ - [AdminGrantVipRequest](doc//AdminGrantVipRequest.md)
+ - [AdminGroup](doc//AdminGroup.md)
+ - [AdminGroupInput](doc//AdminGroupInput.md)
  - [AdminKycCase](doc//AdminKycCase.md)
  - [AdminKycCaseAadhaar](doc//AdminKycCaseAadhaar.md)
- - [AdminKycCaseAcademy](doc//AdminKycCaseAcademy.md)
  - [AdminKycCaseInput](doc//AdminKycCaseInput.md)
  - [AdminKycCaseInputAadhaar](doc//AdminKycCaseInputAadhaar.md)
  - [AdminKycCaseInputAcademy](doc//AdminKycCaseInputAcademy.md)
  - [AdminKycDecisionRequest](doc//AdminKycDecisionRequest.md)
  - [AdminListPayouts200Response](doc//AdminListPayouts200Response.md)
  - [AdminListPayouts200ResponseTotals](doc//AdminListPayouts200ResponseTotals.md)
+ - [AdminListRoles200Response](doc//AdminListRoles200Response.md)
+ - [AdminListRoles200ResponsePermissionsInner](doc//AdminListRoles200ResponsePermissionsInner.md)
  - [AdminListSettings200ResponseInner](doc//AdminListSettings200ResponseInner.md)
  - [AdminListUsers200Response](doc//AdminListUsers200Response.md)
+ - [AdminLive](doc//AdminLive.md)
+ - [AdminLiveInput](doc//AdminLiveInput.md)
+ - [AdminMe](doc//AdminMe.md)
+ - [AdminMeInput](doc//AdminMeInput.md)
  - [AdminModerationFlag](doc//AdminModerationFlag.md)
  - [AdminModerationFlagCall](doc//AdminModerationFlagCall.md)
  - [AdminModerationFlagInput](doc//AdminModerationFlagInput.md)
@@ -212,6 +340,8 @@ Class | Method | HTTP request | Description
  - [AdminPayoutCompanion](doc//AdminPayoutCompanion.md)
  - [AdminPayoutInput](doc//AdminPayoutInput.md)
  - [AdminPayoutInputCompanion](doc//AdminPayoutInputCompanion.md)
+ - [AdminPromotion](doc//AdminPromotion.md)
+ - [AdminPromotionInput](doc//AdminPromotionInput.md)
  - [AdminRefund](doc//AdminRefund.md)
  - [AdminRefundCall](doc//AdminRefundCall.md)
  - [AdminRefundCaller](doc//AdminRefundCaller.md)
@@ -220,23 +350,32 @@ Class | Method | HTTP request | Description
  - [AdminRefundInputCall](doc//AdminRefundInputCall.md)
  - [AdminRefundInputCaller](doc//AdminRefundInputCaller.md)
  - [AdminRefundInputCompanion](doc//AdminRefundInputCompanion.md)
- - [AdminRejectPayoutRequest](doc//AdminRejectPayoutRequest.md)
  - [AdminReport](doc//AdminReport.md)
  - [AdminReportInput](doc//AdminReportInput.md)
  - [AdminReportInputReported](doc//AdminReportInputReported.md)
  - [AdminReportInputReporter](doc//AdminReportInputReporter.md)
  - [AdminReportReported](doc//AdminReportReported.md)
+ - [AdminReportReporter](doc//AdminReportReporter.md)
  - [AdminResolveModerationFlagRequest](doc//AdminResolveModerationFlagRequest.md)
  - [AdminResolveReportRequest](doc//AdminResolveReportRequest.md)
+ - [AdminRevokeVipRequest](doc//AdminRevokeVipRequest.md)
+ - [AdminRole](doc//AdminRole.md)
+ - [AdminRoleInput](doc//AdminRoleInput.md)
  - [AdminSendCoins200Response](doc//AdminSendCoins200Response.md)
  - [AdminSendCoinsRequest](doc//AdminSendCoinsRequest.md)
  - [AdminSendMessage200Response](doc//AdminSendMessage200Response.md)
  - [AdminSendMessageRequest](doc//AdminSendMessageRequest.md)
+ - [AdminSetPromotionActiveRequest](doc//AdminSetPromotionActiveRequest.md)
  - [AdminSetUserStatusRequest](doc//AdminSetUserStatusRequest.md)
  - [AdminSetVideoRequest](doc//AdminSetVideoRequest.md)
+ - [AdminStaff](doc//AdminStaff.md)
+ - [AdminStaffInput](doc//AdminStaffInput.md)
+ - [AdminUpdateCompanionLevelRequest](doc//AdminUpdateCompanionLevelRequest.md)
  - [AdminUpdateGiftRequest](doc//AdminUpdateGiftRequest.md)
  - [AdminUpdatePackageRequest](doc//AdminUpdatePackageRequest.md)
  - [AdminUpdateSettingRequest](doc//AdminUpdateSettingRequest.md)
+ - [AdminUpdateStaffRequest](doc//AdminUpdateStaffRequest.md)
+ - [AdminUpdateVipPlanRequest](doc//AdminUpdateVipPlanRequest.md)
  - [AdminUser](doc//AdminUser.md)
  - [AdminUserDetail](doc//AdminUserDetail.md)
  - [AdminUserDetailAuditInner](doc//AdminUserDetailAuditInner.md)
@@ -252,23 +391,33 @@ Class | Method | HTTP request | Description
  - [AdminUserDetailInputRefundsInner](doc//AdminUserDetailInputRefundsInner.md)
  - [AdminUserDetailInputReportsInner](doc//AdminUserDetailInputReportsInner.md)
  - [AdminUserDetailInputStats](doc//AdminUserDetailInputStats.md)
+ - [AdminUserDetailInputVip](doc//AdminUserDetailInputVip.md)
  - [AdminUserDetailLedgerInner](doc//AdminUserDetailLedgerInner.md)
  - [AdminUserDetailPayoutsInner](doc//AdminUserDetailPayoutsInner.md)
  - [AdminUserDetailPurchasesInner](doc//AdminUserDetailPurchasesInner.md)
  - [AdminUserDetailRefundsInner](doc//AdminUserDetailRefundsInner.md)
  - [AdminUserDetailReportsInner](doc//AdminUserDetailReportsInner.md)
  - [AdminUserDetailStats](doc//AdminUserDetailStats.md)
+ - [AdminUserDetailVip](doc//AdminUserDetailVip.md)
  - [AdminUserInput](doc//AdminUserInput.md)
+ - [AnalyticsTotals](doc//AnalyticsTotals.md)
+ - [AnalyticsTotalsInput](doc//AnalyticsTotalsInput.md)
  - [AnswerLessonQuiz200Response](doc//AnswerLessonQuiz200Response.md)
  - [AnswerLessonQuizRequest](doc//AnswerLessonQuizRequest.md)
  - [ApplyAsCompanionRequest](doc//ApplyAsCompanionRequest.md)
  - [BlockUserRequest](doc//BlockUserRequest.md)
+ - [BonusCampaign](doc//BonusCampaign.md)
+ - [BonusCampaignInput](doc//BonusCampaignInput.md)
+ - [Booking](doc//Booking.md)
+ - [BookingInput](doc//BookingInput.md)
  - [CallDetails](doc//CallDetails.md)
  - [CallDetailsGiftsInner](doc//CallDetailsGiftsInner.md)
  - [CallDetailsInput](doc//CallDetailsInput.md)
  - [CallDetailsInputGiftsInner](doc//CallDetailsInputGiftsInner.md)
  - [CallDetailsInputMinutesInner](doc//CallDetailsInputMinutesInner.md)
  - [CallDetailsMinutesInner](doc//CallDetailsMinutesInner.md)
+ - [CallHistorySummary](doc//CallHistorySummary.md)
+ - [CallHistorySummaryInput](doc//CallHistorySummaryInput.md)
  - [CallSummary](doc//CallSummary.md)
  - [CallSummaryInput](doc//CallSummaryInput.md)
  - [ChatItem](doc//ChatItem.md)
@@ -278,35 +427,71 @@ Class | Method | HTTP request | Description
  - [CheckInInput](doc//CheckInInput.md)
  - [CheckInInputDaysInner](doc//CheckInInputDaysInner.md)
  - [ClaimCheckIn200Response](doc//ClaimCheckIn200Response.md)
+ - [CoinHistoryItem](doc//CoinHistoryItem.md)
+ - [CoinHistoryItemInput](doc//CoinHistoryItemInput.md)
+ - [CoinHistorySummary](doc//CoinHistorySummary.md)
+ - [CoinHistorySummaryInput](doc//CoinHistorySummaryInput.md)
+ - [CompanionBonus](doc//CompanionBonus.md)
+ - [CompanionBonusInput](doc//CompanionBonusInput.md)
  - [CompanionEarnings200Response](doc//CompanionEarnings200Response.md)
  - [CompanionEarnings200ResponseWeekInner](doc//CompanionEarnings200ResponseWeekInner.md)
  - [CompanionHome200Response](doc//CompanionHome200Response.md)
  - [CompanionHome200ResponseRecentInner](doc//CompanionHome200ResponseRecentInner.md)
  - [CompanionHome200ResponseToday](doc//CompanionHome200ResponseToday.md)
+ - [CompanionLevel](doc//CompanionLevel.md)
+ - [CompanionLevelInput](doc//CompanionLevelInput.md)
  - [CompanionRates](doc//CompanionRates.md)
  - [CompanionRatesInput](doc//CompanionRatesInput.md)
+ - [ConfirmBookingRequest](doc//ConfirmBookingRequest.md)
  - [Conversation](doc//Conversation.md)
  - [ConversationInput](doc//ConversationInput.md)
  - [ConversationInputOther](doc//ConversationInputOther.md)
  - [ConversationOther](doc//ConversationOther.md)
+ - [CreateBooking201Response](doc//CreateBooking201Response.md)
+ - [CreateBookingRequest](doc//CreateBookingRequest.md)
+ - [CreateGroupRequest](doc//CreateGroupRequest.md)
  - [DeleteAccount200Response](doc//DeleteAccount200Response.md)
  - [DeleteAccountRequest](doc//DeleteAccountRequest.md)
  - [Favourite](doc//Favourite.md)
  - [FavouriteInput](doc//FavouriteInput.md)
+ - [FlagGroupFrameRequest](doc//FlagGroupFrameRequest.md)
+ - [FlagLiveFrameRequest](doc//FlagLiveFrameRequest.md)
  - [FlagVideoFrame201Response](doc//FlagVideoFrame201Response.md)
  - [FlagVideoFrame202Response](doc//FlagVideoFrame202Response.md)
  - [FlagVideoFrameRequest](doc//FlagVideoFrameRequest.md)
  - [GetAcademy200Response](doc//GetAcademy200Response.md)
+ - [GetBookingSlots200Response](doc//GetBookingSlots200Response.md)
+ - [GetBookingSlots200ResponseDaysInner](doc//GetBookingSlots200ResponseDaysInner.md)
+ - [GetBookingSlots200ResponseDaysInnerSlotsInner](doc//GetBookingSlots200ResponseDaysInnerSlotsInner.md)
  - [GetChatMessages200Response](doc//GetChatMessages200Response.md)
+ - [GetCoinHistory200Response](doc//GetCoinHistory200Response.md)
  - [GetCompanion200Response](doc//GetCompanion200Response.md)
+ - [GetCompanionRewards200Response](doc//GetCompanionRewards200Response.md)
+ - [GetCompanionRewards200ResponseAcademy](doc//GetCompanionRewards200ResponseAcademy.md)
+ - [GetCurrentPromotion200Response](doc//GetCurrentPromotion200Response.md)
  - [GetLegalPage200Response](doc//GetLegalPage200Response.md)
  - [GetReferral200Response](doc//GetReferral200Response.md)
  - [GetShareCard200Response](doc//GetShareCard200Response.md)
+ - [GetVip200Response](doc//GetVip200Response.md)
+ - [GetVip200ResponseWeeklyGift](doc//GetVip200ResponseWeeklyGift.md)
  - [GetWallet200Response](doc//GetWallet200Response.md)
  - [Gift](doc//Gift.md)
  - [GiftInput](doc//GiftInput.md)
+ - [GroupCard](doc//GroupCard.md)
+ - [GroupCardHost](doc//GroupCardHost.md)
+ - [GroupCardInput](doc//GroupCardInput.md)
+ - [GroupCardInputHost](doc//GroupCardInputHost.md)
+ - [GroupHeartbeat200Response](doc//GroupHeartbeat200Response.md)
+ - [GroupHostState](doc//GroupHostState.md)
+ - [GroupHostStateInput](doc//GroupHostStateInput.md)
+ - [GroupJoin](doc//GroupJoin.md)
+ - [GroupJoinInput](doc//GroupJoinInput.md)
+ - [GroupRoom](doc//GroupRoom.md)
+ - [GroupRoomInput](doc//GroupRoomInput.md)
+ - [JoinGroupRequest](doc//JoinGroupRequest.md)
  - [JoinInfo](doc//JoinInfo.md)
  - [JoinInfoInput](doc//JoinInfoInput.md)
+ - [JoinLiveRequest](doc//JoinLiveRequest.md)
  - [KycState](doc//KycState.md)
  - [KycStateAadhaar](doc//KycStateAadhaar.md)
  - [KycStateInput](doc//KycStateInput.md)
@@ -328,17 +513,34 @@ Class | Method | HTTP request | Description
  - [LegalSpan](doc//LegalSpan.md)
  - [LegalSpanInput](doc//LegalSpanInput.md)
  - [ListBlocks200ResponseInner](doc//ListBlocks200ResponseInner.md)
+ - [ListBookings200Response](doc//ListBookings200Response.md)
  - [ListCalls200Response](doc//ListCalls200Response.md)
  - [ListChats200Response](doc//ListChats200Response.md)
  - [ListCoinPackages200ResponseInner](doc//ListCoinPackages200ResponseInner.md)
+ - [ListGroups200Response](doc//ListGroups200Response.md)
  - [ListLanguages200ResponseInner](doc//ListLanguages200ResponseInner.md)
  - [ListLedger200Response](doc//ListLedger200Response.md)
  - [ListLegalPages200ResponseInner](doc//ListLegalPages200ResponseInner.md)
+ - [ListLives200Response](doc//ListLives200Response.md)
  - [ListNotifications200Response](doc//ListNotifications200Response.md)
  - [ListOnlineCompanions200Response](doc//ListOnlineCompanions200Response.md)
+ - [LiveAccess](doc//LiveAccess.md)
+ - [LiveAccessInput](doc//LiveAccessInput.md)
+ - [LiveCard](doc//LiveCard.md)
+ - [LiveCardHost](doc//LiveCardHost.md)
+ - [LiveCardInput](doc//LiveCardInput.md)
+ - [LiveCardInputHost](doc//LiveCardInputHost.md)
+ - [LiveHostHeartbeat200Response](doc//LiveHostHeartbeat200Response.md)
+ - [LiveJoin](doc//LiveJoin.md)
+ - [LiveJoinInput](doc//LiveJoinInput.md)
+ - [LivePricing](doc//LivePricing.md)
+ - [LivePricingInput](doc//LivePricingInput.md)
+ - [LogPromotionEventRequest](doc//LogPromotionEventRequest.md)
  - [MarkNotificationsReadRequest](doc//MarkNotificationsReadRequest.md)
  - [MatchCall201Response](doc//MatchCall201Response.md)
  - [MatchCallRequest](doc//MatchCallRequest.md)
+ - [MyPhoto](doc//MyPhoto.md)
+ - [MyPhotoInput](doc//MyPhotoInput.md)
  - [NotificationItem](doc//NotificationItem.md)
  - [NotificationItemInput](doc//NotificationItemInput.md)
  - [OnlineCompanion](doc//OnlineCompanion.md)
@@ -349,38 +551,71 @@ Class | Method | HTTP request | Description
  - [PartyInput](doc//PartyInput.md)
  - [Payout](doc//Payout.md)
  - [PayoutInput](doc//PayoutInput.md)
+ - [PendingPhoto](doc//PendingPhoto.md)
+ - [PendingPhotoInput](doc//PendingPhotoInput.md)
+ - [PendingPhotoInputUser](doc//PendingPhotoInputUser.md)
+ - [PendingPhotoUser](doc//PendingPhotoUser.md)
  - [Profile](doc//Profile.md)
  - [ProfileCompanion](doc//ProfileCompanion.md)
  - [ProfileInput](doc//ProfileInput.md)
  - [ProfileInputCompanion](doc//ProfileInputCompanion.md)
+ - [Promotion](doc//Promotion.md)
+ - [PromotionInput](doc//PromotionInput.md)
+ - [RaiseHandRequest](doc//RaiseHandRequest.md)
  - [RateCallRequest](doc//RateCallRequest.md)
  - [RefreshTokensRequest](doc//RefreshTokensRequest.md)
  - [RefundRequest](doc//RefundRequest.md)
  - [RefundRequestInput](doc//RefundRequestInput.md)
  - [RegisterDeviceRequest](doc//RegisterDeviceRequest.md)
+ - [ReportInGroupRequest](doc//ReportInGroupRequest.md)
  - [ReportUser201Response](doc//ReportUser201Response.md)
  - [ReportUserRequest](doc//ReportUserRequest.md)
  - [RequestPayoutRequest](doc//RequestPayoutRequest.md)
  - [RequestRefundRequest](doc//RequestRefundRequest.md)
+ - [RoomCard](doc//RoomCard.md)
+ - [RoomCardHost](doc//RoomCardHost.md)
+ - [RoomCardInput](doc//RoomCardInput.md)
+ - [RoomCardInputHost](doc//RoomCardInputHost.md)
+ - [RoomJoin](doc//RoomJoin.md)
+ - [RoomJoinInput](doc//RoomJoinInput.md)
+ - [RoomMember](doc//RoomMember.md)
+ - [RoomMemberInput](doc//RoomMemberInput.md)
+ - [RoomState](doc//RoomState.md)
+ - [RoomStateInput](doc//RoomStateInput.md)
+ - [RoomToken200Response](doc//RoomToken200Response.md)
  - [SendChatMessageRequest](doc//SendChatMessageRequest.md)
  - [SendGift201Response](doc//SendGift201Response.md)
  - [SendGiftRequest](doc//SendGiftRequest.md)
  - [SendOtp200Response](doc//SendOtp200Response.md)
  - [SendOtpRequest](doc//SendOtpRequest.md)
+ - [SendRoomGift201Response](doc//SendRoomGift201Response.md)
+ - [SendRoomGiftRequest](doc//SendRoomGiftRequest.md)
+ - [SendRoomMessageRequest](doc//SendRoomMessageRequest.md)
+ - [SendRoomReactionRequest](doc//SendRoomReactionRequest.md)
+ - [SetCompanionCallTypes200Response](doc//SetCompanionCallTypes200Response.md)
+ - [SetCompanionCallTypesRequest](doc//SetCompanionCallTypesRequest.md)
  - [SetPresence200Response](doc//SetPresence200Response.md)
  - [SetPresenceRequest](doc//SetPresenceRequest.md)
+ - [SetRoomStageRequest](doc//SetRoomStageRequest.md)
  - [SetUpiRequest](doc//SetUpiRequest.md)
+ - [SignInWithFirebaseRequest](doc//SignInWithFirebaseRequest.md)
  - [SignUp201Response](doc//SignUp201Response.md)
  - [SignUpRequest](doc//SignUpRequest.md)
  - [StartCallRequest](doc//StartCallRequest.md)
+ - [StartLiveRequest](doc//StartLiveRequest.md)
+ - [StartRoomRequest](doc//StartRoomRequest.md)
  - [TokenPair](doc//TokenPair.md)
  - [TokenPairInput](doc//TokenPairInput.md)
  - [UnreadNotificationCount200Response](doc//UnreadNotificationCount200Response.md)
  - [UpdateMeRequest](doc//UpdateMeRequest.md)
  - [UploadAadhaarRequest](doc//UploadAadhaarRequest.md)
+ - [UploadMyPhotoRequest](doc//UploadMyPhotoRequest.md)
  - [UploadPanRequest](doc//UploadPanRequest.md)
  - [UploadSelfieRequest](doc//UploadSelfieRequest.md)
+ - [VerifyCallConnected200Response](doc//VerifyCallConnected200Response.md)
  - [VerifyOtpRequest](doc//VerifyOtpRequest.md)
+ - [VipPlan](doc//VipPlan.md)
+ - [VipPlanInput](doc//VipPlanInput.md)
 
 
 ## Documentation For Authorization

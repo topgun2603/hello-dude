@@ -15,6 +15,8 @@ class CompanionHome200Response {
   CompanionHome200Response({
     required this.kycStatus,
     required this.videoEnabled,
+    required this.takesAudio,
+    required this.takesVideo,
     required this.online,
     required this.today,
     this.recent = const [],
@@ -22,7 +24,14 @@ class CompanionHome200Response {
 
   CompanionHome200ResponseKycStatusEnum kycStatus;
 
+  /// Video is unlocked (KYC + academy + clean record)
   bool videoEnabled;
+
+  /// The companion's own switch: takes voice calls
+  bool takesAudio;
+
+  /// The companion's own switch: takes video calls (only counts when unlocked)
+  bool takesVideo;
 
   bool online;
 
@@ -34,6 +43,8 @@ class CompanionHome200Response {
   bool operator ==(Object other) => identical(this, other) || other is CompanionHome200Response &&
     other.kycStatus == kycStatus &&
     other.videoEnabled == videoEnabled &&
+    other.takesAudio == takesAudio &&
+    other.takesVideo == takesVideo &&
     other.online == online &&
     other.today == today &&
     _deepEquality.equals(other.recent, recent);
@@ -43,17 +54,21 @@ class CompanionHome200Response {
     // ignore: unnecessary_parenthesis
     (kycStatus.hashCode) +
     (videoEnabled.hashCode) +
+    (takesAudio.hashCode) +
+    (takesVideo.hashCode) +
     (online.hashCode) +
     (today.hashCode) +
     (recent.hashCode);
 
   @override
-  String toString() => 'CompanionHome200Response[kycStatus=$kycStatus, videoEnabled=$videoEnabled, online=$online, today=$today, recent=$recent]';
+  String toString() => 'CompanionHome200Response[kycStatus=$kycStatus, videoEnabled=$videoEnabled, takesAudio=$takesAudio, takesVideo=$takesVideo, online=$online, today=$today, recent=$recent]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'kycStatus'] = this.kycStatus;
       json[r'videoEnabled'] = this.videoEnabled;
+      json[r'takesAudio'] = this.takesAudio;
+      json[r'takesVideo'] = this.takesVideo;
       json[r'online'] = this.online;
       json[r'today'] = this.today;
       json[r'recent'] = this.recent;
@@ -75,6 +90,10 @@ class CompanionHome200Response {
         assert(json[r'kycStatus'] != null, 'Required key "CompanionHome200Response[kycStatus]" has a null value in JSON.');
         assert(json.containsKey(r'videoEnabled'), 'Required key "CompanionHome200Response[videoEnabled]" is missing from JSON.');
         assert(json[r'videoEnabled'] != null, 'Required key "CompanionHome200Response[videoEnabled]" has a null value in JSON.');
+        assert(json.containsKey(r'takesAudio'), 'Required key "CompanionHome200Response[takesAudio]" is missing from JSON.');
+        assert(json[r'takesAudio'] != null, 'Required key "CompanionHome200Response[takesAudio]" has a null value in JSON.');
+        assert(json.containsKey(r'takesVideo'), 'Required key "CompanionHome200Response[takesVideo]" is missing from JSON.');
+        assert(json[r'takesVideo'] != null, 'Required key "CompanionHome200Response[takesVideo]" has a null value in JSON.');
         assert(json.containsKey(r'online'), 'Required key "CompanionHome200Response[online]" is missing from JSON.');
         assert(json[r'online'] != null, 'Required key "CompanionHome200Response[online]" has a null value in JSON.');
         assert(json.containsKey(r'today'), 'Required key "CompanionHome200Response[today]" is missing from JSON.');
@@ -87,6 +106,8 @@ class CompanionHome200Response {
       return CompanionHome200Response(
         kycStatus: CompanionHome200ResponseKycStatusEnum.fromJson(json[r'kycStatus'])!,
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
+        takesAudio: mapValueOfType<bool>(json, r'takesAudio')!,
+        takesVideo: mapValueOfType<bool>(json, r'takesVideo')!,
         online: mapValueOfType<bool>(json, r'online')!,
         today: CompanionHome200ResponseToday.fromJson(json[r'today'])!,
         recent: CompanionHome200ResponseRecentInner.listFromJson(json[r'recent']),
@@ -139,6 +160,8 @@ class CompanionHome200Response {
   static const requiredKeys = <String>{
     'kycStatus',
     'videoEnabled',
+    'takesAudio',
+    'takesVideo',
     'online',
     'today',
     'recent',

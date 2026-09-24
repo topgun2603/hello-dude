@@ -9,6 +9,7 @@ import { tx, type Db, type DbClient } from "./db/pool.js";
 import { post } from "./billing/ledger.js";
 import { numberSetting } from "./settings.js";
 import { notify, type NotifyDeps } from "./notifications.js";
+import { activeVip, discounted, vipDiscountPct } from "./vip.js";
 
 export const DURATIONS = [10, 20, 30] as const;
 const SLOT_MIN = 30;
@@ -66,9 +67,10 @@ export class BookingError extends Error {
 
 /** Current per-minute rate for the companion's primary language. */
 async function currentRate(c: DbClient, companionId: string, type: "audio" | "video") {
-  return (await c.query<{ coins: number; video_enabled: boolean }>(
+  return (await c.query<{ coins: number; video_enabled: boolean; takes_audio: boolean }>(
     `SELECT (SELECT coins_per_min FROM call_rates WHERE language_code = u.primary_language AND call_type = $2
-               AND effective_from <= now() ORDER BY effective_from DESC LIMIT 1) AS coins, p.video_enabled
+               AND effective_from <= now() ORDER BY effective_from DESC LIMIT 1) AS coins,
+            p.video_enabled AND p.takes_video AS video_enabled, p.takes_audio
        FROM users u JOIN companion_profiles p ON p.user_id = u.id
       WHERE u.id = $1 AND u.role = 'companion' AND u.status = 'active' AND p.kyc_status = 'approved'`, [companionId, type])).rows[0];
 }
@@ -82,7 +84,8 @@ export async function createBooking(c: DbClient, input: { callerId: string; comp
   if (blocked) throw new BookingError(403, "BOOKING_BLOCKED", "You can't book this companion");
   const rate = await currentRate(c, companionId, type);
   if (!rate?.coins) throw new BookingError(404, "COMPANION_NOT_FOUND", "This companion isn't available");
-  if (type === "video" && !rate.video_enabled) throw new BookingError(400, "VIDEO_NOT_ENABLED", "This companion doesn't take video calls yet");
+  if (type === "video" && !rate.video_enabled) throw new BookingError(400, "VIDEO_NOT_ENABLED", "This companion doesn't take video calls right now");
+  if (type === "audio" && !rate.takes_audio) throw new BookingError(400, "VOICE_OFF", "This companion only takes video calls right now");
 
   // The slot must be one we offer, and still free (serialised per companion).
   await c.query(`SELECT pg_advisory_xact_lock(hashtext('booking:' || $1))`, [companionId]);
@@ -99,10 +102,12 @@ export async function createBooking(c: DbClient, input: { callerId: string; comp
     throw new BookingError(409, "SLOT_TAKEN", "That time was just taken. Pick another.");
   }
 
-  const held = rate.coins * minutes;
+  // VIPs pay their discounted per-minute price here too.
+  const coinsPerMin = (await activeVip(c, callerId)) ? discounted(rate.coins, await vipDiscountPct(c)) : rate.coins;
+  const held = coinsPerMin * minutes;
   const id = (await c.query<{ id: string }>(
     `INSERT INTO bookings (caller_id, companion_id, call_type, start_at, minutes, coins_per_min, held_coins)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`, [callerId, companionId, type, startAt, minutes, rate.coins, held])).rows[0]!.id;
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`, [callerId, companionId, type, startAt, minutes, coinsPerMin, held])).rows[0]!.id;
   const balance = await post(c, callerId, "coins", "booking_hold", -held, `booking:${id}:hold`, { note: "Held for a booked call" });
   if (balance === null) throw new BookingError(402, "INSUFFICIENT_COINS", `You need ${held} coins to book this call`);
   return { id, held, balance };

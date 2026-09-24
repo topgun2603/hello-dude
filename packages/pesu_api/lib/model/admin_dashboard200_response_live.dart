@@ -17,6 +17,8 @@ class AdminDashboard200ResponseLive {
     required this.videoCalls,
     required this.ringing,
     required this.companionsOnline,
+    required this.callersOnline,
+    required this.companionsInApp,
   });
 
   /// Minimum value: -9007199254740991
@@ -31,16 +33,32 @@ class AdminDashboard200ResponseLive {
   /// Maximum value: 9007199254740991
   int ringing;
 
+  /// Companions taking calls
+  ///
   /// Minimum value: -9007199254740991
   /// Maximum value: 9007199254740991
   int companionsOnline;
+
+  /// Callers with the app open
+  ///
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int callersOnline;
+
+  /// Companions with the app open (taking calls or not)
+  ///
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int companionsInApp;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminDashboard200ResponseLive &&
     other.voiceCalls == voiceCalls &&
     other.videoCalls == videoCalls &&
     other.ringing == ringing &&
-    other.companionsOnline == companionsOnline;
+    other.companionsOnline == companionsOnline &&
+    other.callersOnline == callersOnline &&
+    other.companionsInApp == companionsInApp;
 
   @override
   int get hashCode =>
@@ -48,10 +66,12 @@ class AdminDashboard200ResponseLive {
     (voiceCalls.hashCode) +
     (videoCalls.hashCode) +
     (ringing.hashCode) +
-    (companionsOnline.hashCode);
+    (companionsOnline.hashCode) +
+    (callersOnline.hashCode) +
+    (companionsInApp.hashCode);
 
   @override
-  String toString() => 'AdminDashboard200ResponseLive[voiceCalls=$voiceCalls, videoCalls=$videoCalls, ringing=$ringing, companionsOnline=$companionsOnline]';
+  String toString() => 'AdminDashboard200ResponseLive[voiceCalls=$voiceCalls, videoCalls=$videoCalls, ringing=$ringing, companionsOnline=$companionsOnline, callersOnline=$callersOnline, companionsInApp=$companionsInApp]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -59,6 +79,8 @@ class AdminDashboard200ResponseLive {
       json[r'videoCalls'] = this.videoCalls;
       json[r'ringing'] = this.ringing;
       json[r'companionsOnline'] = this.companionsOnline;
+      json[r'callersOnline'] = this.callersOnline;
+      json[r'companionsInApp'] = this.companionsInApp;
     return json;
   }
 
@@ -81,6 +103,10 @@ class AdminDashboard200ResponseLive {
         assert(json[r'ringing'] != null, 'Required key "AdminDashboard200ResponseLive[ringing]" has a null value in JSON.');
         assert(json.containsKey(r'companionsOnline'), 'Required key "AdminDashboard200ResponseLive[companionsOnline]" is missing from JSON.');
         assert(json[r'companionsOnline'] != null, 'Required key "AdminDashboard200ResponseLive[companionsOnline]" has a null value in JSON.');
+        assert(json.containsKey(r'callersOnline'), 'Required key "AdminDashboard200ResponseLive[callersOnline]" is missing from JSON.');
+        assert(json[r'callersOnline'] != null, 'Required key "AdminDashboard200ResponseLive[callersOnline]" has a null value in JSON.');
+        assert(json.containsKey(r'companionsInApp'), 'Required key "AdminDashboard200ResponseLive[companionsInApp]" is missing from JSON.');
+        assert(json[r'companionsInApp'] != null, 'Required key "AdminDashboard200ResponseLive[companionsInApp]" has a null value in JSON.');
         return true;
       }());
 
@@ -89,6 +115,8 @@ class AdminDashboard200ResponseLive {
         videoCalls: mapValueOfType<int>(json, r'videoCalls')!,
         ringing: mapValueOfType<int>(json, r'ringing')!,
         companionsOnline: mapValueOfType<int>(json, r'companionsOnline')!,
+        callersOnline: mapValueOfType<int>(json, r'callersOnline')!,
+        companionsInApp: mapValueOfType<int>(json, r'companionsInApp')!,
       );
     }
     return null;
@@ -140,6 +168,8 @@ class AdminDashboard200ResponseLive {
     'videoCalls',
     'ringing',
     'companionsOnline',
+    'callersOnline',
+    'companionsInApp',
   };
 }
 

@@ -16,10 +16,12 @@ class OnlineCompanionInput {
     required this.id,
     required this.displayName,
     required this.avatarId,
+    required this.photoUrl,
     required this.primaryLanguage,
     this.languages = const [],
     required this.rating,
     required this.ratingCount,
+    required this.audioEnabled,
     required this.videoEnabled,
     required this.busy,
     required this.isFavourite,
@@ -34,6 +36,9 @@ class OnlineCompanionInput {
   /// Maximum value: 9007199254740991
   int avatarId;
 
+  /// Approved profile photo (signed URL path); null = show the avatar
+  String? photoUrl;
+
   String primaryLanguage;
 
   List<String> languages;
@@ -45,6 +50,10 @@ class OnlineCompanionInput {
   /// Maximum value: 9007199254740991
   int ratingCount;
 
+  /// Takes voice calls right now
+  bool audioEnabled;
+
+  /// Takes video calls right now (unlocked and switched on)
   bool videoEnabled;
 
   bool busy;
@@ -58,10 +67,12 @@ class OnlineCompanionInput {
     other.id == id &&
     other.displayName == displayName &&
     other.avatarId == avatarId &&
+    other.photoUrl == photoUrl &&
     other.primaryLanguage == primaryLanguage &&
     _deepEquality.equals(other.languages, languages) &&
     other.rating == rating &&
     other.ratingCount == ratingCount &&
+    other.audioEnabled == audioEnabled &&
     other.videoEnabled == videoEnabled &&
     other.busy == busy &&
     other.isFavourite == isFavourite &&
@@ -73,23 +84,30 @@ class OnlineCompanionInput {
     (id.hashCode) +
     (displayName.hashCode) +
     (avatarId.hashCode) +
+    (photoUrl == null ? 0 : photoUrl!.hashCode) +
     (primaryLanguage.hashCode) +
     (languages.hashCode) +
     (rating == null ? 0 : rating!.hashCode) +
     (ratingCount.hashCode) +
+    (audioEnabled.hashCode) +
     (videoEnabled.hashCode) +
     (busy.hashCode) +
     (isFavourite.hashCode) +
     (rates.hashCode);
 
   @override
-  String toString() => 'OnlineCompanionInput[id=$id, displayName=$displayName, avatarId=$avatarId, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates]';
+  String toString() => 'OnlineCompanionInput[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'id'] = this.id;
       json[r'displayName'] = this.displayName;
       json[r'avatarId'] = this.avatarId;
+    if (this.photoUrl != null) {
+      json[r'photoUrl'] = this.photoUrl;
+    } else {
+      json[r'photoUrl'] = null;
+    }
       json[r'primaryLanguage'] = this.primaryLanguage;
       json[r'languages'] = this.languages;
     if (this.rating != null) {
@@ -98,6 +116,7 @@ class OnlineCompanionInput {
       json[r'rating'] = null;
     }
       json[r'ratingCount'] = this.ratingCount;
+      json[r'audioEnabled'] = this.audioEnabled;
       json[r'videoEnabled'] = this.videoEnabled;
       json[r'busy'] = this.busy;
       json[r'isFavourite'] = this.isFavourite;
@@ -122,6 +141,7 @@ class OnlineCompanionInput {
         assert(json[r'displayName'] != null, 'Required key "OnlineCompanionInput[displayName]" has a null value in JSON.');
         assert(json.containsKey(r'avatarId'), 'Required key "OnlineCompanionInput[avatarId]" is missing from JSON.');
         assert(json[r'avatarId'] != null, 'Required key "OnlineCompanionInput[avatarId]" has a null value in JSON.');
+        assert(json.containsKey(r'photoUrl'), 'Required key "OnlineCompanionInput[photoUrl]" is missing from JSON.');
         assert(json.containsKey(r'primaryLanguage'), 'Required key "OnlineCompanionInput[primaryLanguage]" is missing from JSON.');
         assert(json[r'primaryLanguage'] != null, 'Required key "OnlineCompanionInput[primaryLanguage]" has a null value in JSON.');
         assert(json.containsKey(r'languages'), 'Required key "OnlineCompanionInput[languages]" is missing from JSON.');
@@ -129,6 +149,8 @@ class OnlineCompanionInput {
         assert(json.containsKey(r'rating'), 'Required key "OnlineCompanionInput[rating]" is missing from JSON.');
         assert(json.containsKey(r'ratingCount'), 'Required key "OnlineCompanionInput[ratingCount]" is missing from JSON.');
         assert(json[r'ratingCount'] != null, 'Required key "OnlineCompanionInput[ratingCount]" has a null value in JSON.');
+        assert(json.containsKey(r'audioEnabled'), 'Required key "OnlineCompanionInput[audioEnabled]" is missing from JSON.');
+        assert(json[r'audioEnabled'] != null, 'Required key "OnlineCompanionInput[audioEnabled]" has a null value in JSON.');
         assert(json.containsKey(r'videoEnabled'), 'Required key "OnlineCompanionInput[videoEnabled]" is missing from JSON.');
         assert(json[r'videoEnabled'] != null, 'Required key "OnlineCompanionInput[videoEnabled]" has a null value in JSON.');
         assert(json.containsKey(r'busy'), 'Required key "OnlineCompanionInput[busy]" is missing from JSON.');
@@ -144,6 +166,7 @@ class OnlineCompanionInput {
         id: mapValueOfType<String>(json, r'id')!,
         displayName: mapValueOfType<String>(json, r'displayName')!,
         avatarId: mapValueOfType<int>(json, r'avatarId')!,
+        photoUrl: mapValueOfType<String>(json, r'photoUrl'),
         primaryLanguage: mapValueOfType<String>(json, r'primaryLanguage')!,
         languages: json[r'languages'] is Iterable
             ? (json[r'languages'] as Iterable).cast<String>().toList(growable: false)
@@ -152,6 +175,7 @@ class OnlineCompanionInput {
             ? null
             : num.parse('${json[r'rating']}'),
         ratingCount: mapValueOfType<int>(json, r'ratingCount')!,
+        audioEnabled: mapValueOfType<bool>(json, r'audioEnabled')!,
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
         busy: mapValueOfType<bool>(json, r'busy')!,
         isFavourite: mapValueOfType<bool>(json, r'isFavourite')!,
@@ -206,10 +230,12 @@ class OnlineCompanionInput {
     'id',
     'displayName',
     'avatarId',
+    'photoUrl',
     'primaryLanguage',
     'languages',
     'rating',
     'ratingCount',
+    'audioEnabled',
     'videoEnabled',
     'busy',
     'isFavourite',

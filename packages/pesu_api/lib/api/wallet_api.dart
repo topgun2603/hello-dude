@@ -16,6 +16,95 @@ class WalletApi {
 
   final ApiClient apiClient;
 
+  /// Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] filter:
+  ///   Leave out for all
+  ///
+  /// * [Object] from:
+  ///
+  /// * [Object] to:
+  ///
+  /// * [String] cursor:
+  ///   nextCursor from the previous page
+  ///
+  /// * [int] limit:
+  Future<Response> getCoinHistoryWithHttpInfo({ String? filter, Object? from, Object? to, String? cursor, int? limit, Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/wallet/history';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    if (filter != null) {
+      queryParams.addAll(_queryParams('', 'filter', filter));
+    }
+    if (from != null) {
+      queryParams.addAll(_queryParams('', 'from', from));
+    }
+    if (to != null) {
+      queryParams.addAll(_queryParams('', 'to', to));
+    }
+    if (cursor != null) {
+      queryParams.addAll(_queryParams('', 'cursor', cursor));
+    }
+    if (limit != null) {
+      queryParams.addAll(_queryParams('', 'limit', limit));
+    }
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
+  ///
+  /// Parameters:
+  ///
+  /// * [String] filter:
+  ///   Leave out for all
+  ///
+  /// * [Object] from:
+  ///
+  /// * [Object] to:
+  ///
+  /// * [String] cursor:
+  ///   nextCursor from the previous page
+  ///
+  /// * [int] limit:
+  Future<GetCoinHistory200Response?> getCoinHistory({ String? filter, Object? from, Object? to, String? cursor, int? limit, Future<void>? abortTrigger, }) async {
+    final response = await getCoinHistoryWithHttpInfo(filter: filter, from: from, to: to, cursor: cursor, limit: limit, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetCoinHistory200Response',) as GetCoinHistory200Response;
+    
+    }
+    return null;
+  }
+
   /// Performs an HTTP 'GET /v1/wallet' operation and returns the [Response].
   Future<Response> getWalletWithHttpInfo({ Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations

@@ -9,10 +9,66 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**getCoinHistory**](WalletApi.md#getcoinhistory) | **GET** /v1/wallet/history | Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
 [**getWallet**](WalletApi.md#getwallet) | **GET** /v1/wallet | 
 [**listCoinPackages**](WalletApi.md#listcoinpackages) | **GET** /v1/coin-packages | Coin packs for sale (Google Play SKUs). Signed-in new users also get the first-recharge offer.
 [**listLedger**](WalletApi.md#listledger) | **GET** /v1/wallet/ledger | Every coin in or out, newest first. Page with `before` = last id seen.
 
+
+# **getCoinHistory**
+> GetCoinHistory200Response getCoinHistory(filter, from, to, cursor, limit)
+
+Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = WalletApi();
+final filter = filter_example; // String | Leave out for all
+final from = ; // Object | 
+final to = ; // Object | 
+final cursor = cursor_example; // String | nextCursor from the previous page
+final limit = 56; // int | 
+
+try {
+    final result = api_instance.getCoinHistory(filter, from, to, cursor, limit);
+    print(result);
+} catch (e) {
+    print('Exception when calling WalletApi->getCoinHistory: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **filter** | **String**| Leave out for all | [optional] 
+ **from** | [**Object**](.md)|  | [optional] 
+ **to** | [**Object**](.md)|  | [optional] 
+ **cursor** | **String**| nextCursor from the previous page | [optional] 
+ **limit** | **int**|  | [optional] [default to 20]
+
+### Return type
+
+[**GetCoinHistory200Response**](GetCoinHistory200Response.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getWallet**
 > GetWallet200Response getWallet()

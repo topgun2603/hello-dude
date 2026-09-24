@@ -49,7 +49,9 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
                 gender: draft.gender,
                 language: _chosen!,
                 ageConfirmed: true,
-                referralCode: _code.text.trim().isEmpty ? null : _code.text.trim(),
+                referralCode: _code.text.trim().isEmpty
+                    ? null
+                    : _code.text.trim(),
               ),
             ),
           );
@@ -70,7 +72,10 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
         context.go('/welcome');
       } else if (errorCode(e) == 'INVALID_REFERRAL_CODE') {
         setState(() => _showCode = true);
-        showError(context, "That invite code doesn't exist. Check it, or clear it to continue.");
+        showError(
+          context,
+          "That invite code doesn't exist. Check it, or clear it to continue.",
+        );
       } else {
         showError(context, friendlyError(e));
       }
@@ -211,21 +216,37 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
                         controller: _code,
                         textCapitalization: TextCapitalization.characters,
                         maxLength: 20,
-                        style: AppText.body(16, color: AppColors.lightText, weight: FontWeight.w700),
+                        style: AppText.body(
+                          16,
+                          color: AppColors.lightText,
+                          weight: FontWeight.w700,
+                        ),
                         decoration: InputDecoration(
                           counterText: '',
                           hintText: "Friend's invite code (optional)",
-                          prefixIcon: const Icon(Icons.card_giftcard_rounded, color: AppColors.pink),
+                          prefixIcon: const Icon(
+                            Icons.card_giftcard_rounded,
+                            color: AppColors.pink,
+                          ),
                           filled: true,
                           fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       )
                     else
                       TextButton(
                         onPressed: () => setState(() => _showCode = true),
-                        child: Text('Have an invite code?',
-                            style: AppText.body(14, color: AppColors.pink, weight: FontWeight.w700)),
+                        child: Text(
+                          'Have an invite code?',
+                          style: AppText.body(
+                            14,
+                            color: AppColors.pink,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     const SizedBox(height: 4),
                     Row(

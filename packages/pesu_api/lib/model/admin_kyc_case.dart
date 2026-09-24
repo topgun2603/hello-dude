@@ -58,7 +58,7 @@ class AdminKycCase {
 
   bool videoEnabled;
 
-  AdminKycCaseAcademy academy;
+  GetCompanionRewards200ResponseAcademy academy;
 
   List<AdminKycCaseDocumentsEnum> documents;
 
@@ -195,7 +195,7 @@ class AdminKycCase {
         upi: mapValueOfType<String>(json, r'upi'),
         rejectReason: mapValueOfType<String>(json, r'rejectReason'),
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
-        academy: AdminKycCaseAcademy.fromJson(json[r'academy'])!,
+        academy: GetCompanionRewards200ResponseAcademy.fromJson(json[r'academy'])!,
         documents: AdminKycCaseDocumentsEnum.listFromJson(json[r'documents']),
       );
     }

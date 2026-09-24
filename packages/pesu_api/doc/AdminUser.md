@@ -20,8 +20,10 @@ Name | Type | Description | Notes
 **calls** | **int** |  | 
 **reportsAgainst** | **int** |  | 
 **kycStatus** | **String** |  | 
-**online** | **bool** |  | 
-**lastSeenAt** | [**DateTime**](DateTime.md) | Latest of: last online (companions), last sign-in or token refresh, last call | 
+**online** | **bool** | Has the app open right now (or is taking calls) | 
+**takingCalls** | **bool** | Companion switched Online and taking calls | 
+**lastSeenAt** | [**DateTime**](DateTime.md) | Latest of: app open, last online (companions), last sign-in, last call | 
+**avatarId** | **int** | 1 female, 2 male, 3 transgender illustrations; other ids are letter circles | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

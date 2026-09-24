@@ -11,11 +11,13 @@ Name | Type | Description | Notes
 **id** | **String** |  | 
 **displayName** | **String** |  | 
 **avatarId** | **int** |  | 
+**photoUrl** | **String** | Approved profile photo (signed URL path); null = show the avatar | 
 **primaryLanguage** | **String** |  | 
 **languages** | **List<String>** |  | [default to const []]
 **rating** | **num** | Average stars, null until rated | 
 **ratingCount** | **int** |  | 
-**videoEnabled** | **bool** |  | 
+**audioEnabled** | **bool** | Takes voice calls right now | 
+**videoEnabled** | **bool** | Takes video calls right now (unlocked and switched on) | 
 **busy** | **bool** |  | 
 **isFavourite** | **bool** |  | 
 **rates** | [**CompanionRatesInput**](CompanionRatesInput.md) |  | 

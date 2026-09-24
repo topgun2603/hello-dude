@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { WebSocket } from "ws";
+import { WebSocket as WsClient, type WebSocket } from "ws";
 import { createCaller, createCompanion, resetState, setRate } from "../test/fixtures.js";
 import { call, createAppHarness, json, tokenFor, webhook, type AppHarness } from "../test/app-harness.js";
 
@@ -39,6 +39,35 @@ describe("realtime WebSocket", () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(sb.got.map((e) => e.t)).toEqual(["hello"]);
     sa.ws.close(); sb.ws.close();
+  });
+
+  it("admin sees a caller as online while their app is connected, with a last-active time after", async () => {
+    const caller = await createCaller(h, 0);
+    const adminId = (await h.db.query<{ id: string }>(
+      `INSERT INTO users (phone, gender, role, display_name, primary_language) VALUES ('+919999900000', 'other', 'admin', 'Ops', 'en') RETURNING id`,
+    )).rows[0]!.id;
+    const admin = await tokenFor(h, adminId, "admin");
+    type Detail = { online: boolean; takingCalls: boolean; lastActiveAt: string | null };
+    const detail = async () => json<Detail>(await call(h, "GET", `/v1/admin/users/${caller}`, { token: admin }));
+    const listed = async () => json<{ users: { id: string; online: boolean }[] }>(
+      await call(h, "GET", "/v1/admin/users?role=caller", { token: admin })).users.find((u) => u.id === caller)!;
+
+    expect(await detail()).toMatchObject({ online: false, takingCalls: false, lastActiveAt: null });
+    // A real socket (injectWS never delivers the client's close to the server).
+    const address = await h.app.listen({ port: 0, host: "127.0.0.1" });
+    const ws = new WsClient(`${address.replace("http", "ws")}/v1/ws?token=${encodeURIComponent(await tokenFor(h, caller, "caller"))}`);
+    await new Promise((r) => ws.once("message", r));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(await detail()).toMatchObject({ online: true, takingCalls: false });
+    expect((await listed()).online).toBe(true);
+    const dash = json<{ live: { callersOnline: number; companionsInApp: number } }>(await call(h, "GET", "/v1/admin/dashboard", { token: admin }));
+    expect(dash.live).toMatchObject({ callersOnline: 1, companionsInApp: 0 });
+
+    ws.close();
+    for (let i = 0; i < 100 && (await detail()).online; i++) await new Promise((r) => setTimeout(r, 30));
+    const after = await detail();
+    expect(after.online).toBe(false);
+    expect(after.lastActiveAt).not.toBeNull();
   });
 
   it("refuses a connection without a valid token", async () => {

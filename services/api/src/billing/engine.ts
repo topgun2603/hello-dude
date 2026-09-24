@@ -22,6 +22,7 @@ import type { Redis } from "ioredis";
 import { tx, type Db, type DbClient } from "../db/pool.js";
 import { post } from "./ledger.js";
 import type { RoomControl, UserEvents } from "./ports.js";
+import { priceCall } from "./pricing.js";
 
 export const DUE_ZSET = "billing:due"; // member = "<callId>:<minuteNo>", score = due epoch ms
 export const ONLINE_SET = "online:companions";
@@ -43,7 +44,7 @@ export class CallError extends Error {
   constructor(
     readonly code:
       | "OFFLINE" | "BUSY" | "BLOCKED" | "NO_RATE" | "INSUFFICIENT_BALANCE"
-      | "NOT_A_COMPANION" | "VIDEO_NOT_ENABLED" | "CALLER_INACTIVE",
+      | "NOT_A_COMPANION" | "VIDEO_NOT_ENABLED" | "VOICE_OFF" | "CALLER_INACTIVE",
   ) {
     super(code);
   }
@@ -77,6 +78,12 @@ export interface BillingDeps {
   rooms: RoomControl;
   events: UserEvents;
   log?: Pick<Console, "warn" | "error">;
+  /**
+   * LiveKit Cloud can't send webhooks to a PC-only API, so the sweep asks LiveKit
+   * directly: ringing calls with both people in the room connect, active calls
+   * with fewer than two end. Off by default (webhooks do it).
+   */
+  pollRooms?: boolean;
 }
 
 export class BillingEngine {
@@ -92,6 +99,26 @@ export class BillingEngine {
     this.rooms = deps.rooms;
     this.events = deps.events;
     this.log = deps.log ?? console;
+    this.pollRooms = deps.pollRooms ?? false;
+  }
+
+  private readonly pollRooms: boolean;
+
+  /**
+   * Starts billing only if LiveKit itself says both the caller and the companion
+   * are in the room — never on the app's word. Same idempotent path as the
+   * participant_joined webhook. Returns whether the call is (now) connected.
+   */
+  async connectIfBothPresent(callId: string): Promise<boolean> {
+    const call = (await this.db.query<{ room_name: string; caller_id: string; companion_id: string; status: string }>(
+      `SELECT room_name, caller_id, companion_id, status FROM calls WHERE id = $1`, [callId])).rows[0];
+    if (!call) return false;
+    if (call.status === "active") return true;
+    if (call.status !== "ringing") return false;
+    const present = new Set(await this.rooms.participantIdentities(call.room_name));
+    if (!present.has(call.caller_id) || !present.has(call.companion_id)) return false;
+    await this.onCallConnected(callId);
+    return true;
   }
 
   // -------------------------------------------------------------------------
@@ -110,8 +137,9 @@ export class BillingEngine {
         )).rows[0];
         if (caller?.status !== "active") throw new CallError("CALLER_INACTIVE");
 
-        const companion = (await c.query<{ status: string; role: string; kyc_status: string; video_enabled: boolean }>(
-          `SELECT u.status, u.role, p.kyc_status, p.video_enabled
+        const companion = (await c.query<{ status: string; role: string; kyc_status: string; video_enabled: boolean; takes_audio: boolean }>(
+          // video_enabled here = unlocked AND the companion's own video switch is on.
+          `SELECT u.status, u.role, p.kyc_status, p.video_enabled AND p.takes_video AS video_enabled, p.takes_audio
              FROM users u JOIN companion_profiles p ON p.user_id = u.id
             WHERE u.id = $1`,
           [companionId],
@@ -120,7 +148,14 @@ export class BillingEngine {
             || companion.kyc_status !== "approved") {
           throw new CallError("NOT_A_COMPANION");
         }
+        // Live on stream or hosting a group: no 1:1 calls until it ends.
+        if ((await c.query(`SELECT 1 FROM lives WHERE host_id = $1 AND status = 'live'
+                             UNION ALL SELECT 1 FROM group_sessions WHERE host_id = $1 AND status IN ('lobby', 'live')`,
+                           [companionId])).rowCount) {
+          throw new CallError("BUSY");
+        }
         if (type === "video" && !companion.video_enabled) throw new CallError("VIDEO_NOT_ENABLED");
+        if (type === "audio" && !companion.takes_audio) throw new CallError("VOICE_OFF");
 
         const blocked = await c.query(
           `SELECT 1 FROM blocks
@@ -138,11 +173,14 @@ export class BillingEngine {
           [companionId, type],
         )).rows[0];
         if (!rate) throw new CallError("NO_RATE");
+        // Perks (VIP discount) adjust the price; see pricing.ts.
+        const price = await priceCall(c, callerId, companionId,
+          { coinsPerMin: rate.coins_per_min, companionPaisePerMin: rate.companion_paise_per_min });
 
         const balance = (await c.query<{ balance: number }>(
           `SELECT balance FROM wallets WHERE user_id = $1 AND kind = 'coins'`, [callerId],
         )).rows[0]?.balance ?? 0;
-        if (balance < rate.coins_per_min) throw new CallError("INSUFFICIENT_BALANCE");
+        if (balance < price.coinsPerMin) throw new CallError("INSUFFICIENT_BALANCE");
 
         return (await c.query<CallRow>(
           `INSERT INTO calls (caller_id, companion_id, type, language_code, rate_id,
@@ -150,7 +188,7 @@ export class BillingEngine {
            VALUES ($1, $2, $3, $4, $5, $6, $7, 'call_' || gen_random_uuid())
            RETURNING *`,
           [callerId, companionId, type, rate.language_code, rate.id,
-           rate.coins_per_min, rate.companion_paise_per_min],
+           price.coinsPerMin, price.companionPaisePerMin],
         )).rows[0]!;
       });
 
@@ -348,6 +386,19 @@ export class BillingEngine {
       [RING_TIMEOUT_S],
     );
     for (const r of stale.rows) await this.endCall(r.id, "timeout");
+
+    if (this.pollRooms) {
+      const ringing = await this.db.query<{ id: string }>(`SELECT id FROM calls WHERE status = 'ringing'`);
+      for (const r of ringing.rows) await this.connectIfBothPresent(r.id).catch((e) => this.log.warn("presence check failed", e));
+      // Without participant_left webhooks, end calls where someone has gone.
+      const live = await this.db.query<{ id: string; room_name: string; caller_id: string; companion_id: string }>(
+        `SELECT id, room_name, caller_id, companion_id FROM calls WHERE status = 'active' AND started_at < now() - interval '20 seconds'`);
+      for (const r of live.rows) {
+        const present = new Set(await this.rooms.participantIdentities(r.room_name));
+        if (!present.has(r.caller_id)) await this.endCall(r.id, "caller_hangup");
+        else if (!present.has(r.companion_id)) await this.endCall(r.id, "companion_hangup");
+      }
+    }
 
     // Every active call must have its next minute scheduled. If Redis lost it,
     // ask LiveKit whether both people are still there.

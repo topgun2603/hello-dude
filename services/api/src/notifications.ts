@@ -23,6 +23,11 @@ export const NOTICE_TYPES = [
   "kyc_decided",
   "chat_message",
   "room_live",
+  "live_started",
+  "group_open",
+  "group_reminder",
+  "group_cancelled",
+  "photo_decided",
   "vip",
   "bonus_earned",
 ] as const;

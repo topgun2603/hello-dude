@@ -25,6 +25,8 @@ class AdminUserDetail {
     required this.createdAt,
     required this.termsAcceptedAt,
     required this.online,
+    required this.takingCalls,
+    required this.lastActiveAt,
     required this.lastSignInAt,
     required this.activeSessions,
     required this.devices,
@@ -40,6 +42,7 @@ class AdminUserDetail {
     this.refunds = const [],
     this.audit = const [],
     this.notes = const [],
+    required this.vip,
   });
 
   String id;
@@ -67,7 +70,14 @@ class AdminUserDetail {
 
   DateTime? termsAcceptedAt;
 
+  /// Has the app open right now (or is taking calls)
   bool online;
+
+  /// Companion switched Online and taking calls
+  bool takingCalls;
+
+  /// Last time the app was open
+  DateTime? lastActiveAt;
 
   DateTime? lastSignInAt;
 
@@ -107,6 +117,8 @@ class AdminUserDetail {
 
   List<AdminNote> notes;
 
+  AdminUserDetailVip? vip;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminUserDetail &&
     other.id == id &&
@@ -121,6 +133,8 @@ class AdminUserDetail {
     other.createdAt == createdAt &&
     other.termsAcceptedAt == termsAcceptedAt &&
     other.online == online &&
+    other.takingCalls == takingCalls &&
+    other.lastActiveAt == lastActiveAt &&
     other.lastSignInAt == lastSignInAt &&
     other.activeSessions == activeSessions &&
     other.devices == devices &&
@@ -135,7 +149,8 @@ class AdminUserDetail {
     _deepEquality.equals(other.reports, reports) &&
     _deepEquality.equals(other.refunds, refunds) &&
     _deepEquality.equals(other.audit, audit) &&
-    _deepEquality.equals(other.notes, notes);
+    _deepEquality.equals(other.notes, notes) &&
+    other.vip == vip;
 
   @override
   int get hashCode =>
@@ -152,6 +167,8 @@ class AdminUserDetail {
     (createdAt.hashCode) +
     (termsAcceptedAt == null ? 0 : termsAcceptedAt!.hashCode) +
     (online.hashCode) +
+    (takingCalls.hashCode) +
+    (lastActiveAt == null ? 0 : lastActiveAt!.hashCode) +
     (lastSignInAt == null ? 0 : lastSignInAt!.hashCode) +
     (activeSessions.hashCode) +
     (devices.hashCode) +
@@ -166,10 +183,11 @@ class AdminUserDetail {
     (reports.hashCode) +
     (refunds.hashCode) +
     (audit.hashCode) +
-    (notes.hashCode);
+    (notes.hashCode) +
+    (vip == null ? 0 : vip!.hashCode);
 
   @override
-  String toString() => 'AdminUserDetail[id=$id, displayName=$displayName, phone=$phone, gender=$gender, role=$role, status=$status, primaryLanguage=$primaryLanguage, languages=$languages, avatarId=$avatarId, createdAt=$createdAt, termsAcceptedAt=$termsAcceptedAt, online=$online, lastSignInAt=$lastSignInAt, activeSessions=$activeSessions, devices=$devices, coins=$coins, earningsPaise=$earningsPaise, stats=$stats, companion=$companion, calls=$calls, ledger=$ledger, purchases=$purchases, payouts=$payouts, reports=$reports, refunds=$refunds, audit=$audit, notes=$notes]';
+  String toString() => 'AdminUserDetail[id=$id, displayName=$displayName, phone=$phone, gender=$gender, role=$role, status=$status, primaryLanguage=$primaryLanguage, languages=$languages, avatarId=$avatarId, createdAt=$createdAt, termsAcceptedAt=$termsAcceptedAt, online=$online, takingCalls=$takingCalls, lastActiveAt=$lastActiveAt, lastSignInAt=$lastSignInAt, activeSessions=$activeSessions, devices=$devices, coins=$coins, earningsPaise=$earningsPaise, stats=$stats, companion=$companion, calls=$calls, ledger=$ledger, purchases=$purchases, payouts=$payouts, reports=$reports, refunds=$refunds, audit=$audit, notes=$notes, vip=$vip]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -189,6 +207,12 @@ class AdminUserDetail {
       json[r'termsAcceptedAt'] = null;
     }
       json[r'online'] = this.online;
+      json[r'takingCalls'] = this.takingCalls;
+    if (this.lastActiveAt != null) {
+      json[r'lastActiveAt'] = this.lastActiveAt!.toUtc().toIso8601String();
+    } else {
+      json[r'lastActiveAt'] = null;
+    }
     if (this.lastSignInAt != null) {
       json[r'lastSignInAt'] = this.lastSignInAt!.toUtc().toIso8601String();
     } else {
@@ -212,6 +236,11 @@ class AdminUserDetail {
       json[r'refunds'] = this.refunds;
       json[r'audit'] = this.audit;
       json[r'notes'] = this.notes;
+    if (this.vip != null) {
+      json[r'vip'] = this.vip;
+    } else {
+      json[r'vip'] = null;
+    }
     return json;
   }
 
@@ -249,6 +278,9 @@ class AdminUserDetail {
         assert(json.containsKey(r'termsAcceptedAt'), 'Required key "AdminUserDetail[termsAcceptedAt]" is missing from JSON.');
         assert(json.containsKey(r'online'), 'Required key "AdminUserDetail[online]" is missing from JSON.');
         assert(json[r'online'] != null, 'Required key "AdminUserDetail[online]" has a null value in JSON.');
+        assert(json.containsKey(r'takingCalls'), 'Required key "AdminUserDetail[takingCalls]" is missing from JSON.');
+        assert(json[r'takingCalls'] != null, 'Required key "AdminUserDetail[takingCalls]" has a null value in JSON.');
+        assert(json.containsKey(r'lastActiveAt'), 'Required key "AdminUserDetail[lastActiveAt]" is missing from JSON.');
         assert(json.containsKey(r'lastSignInAt'), 'Required key "AdminUserDetail[lastSignInAt]" is missing from JSON.');
         assert(json.containsKey(r'activeSessions'), 'Required key "AdminUserDetail[activeSessions]" is missing from JSON.');
         assert(json[r'activeSessions'] != null, 'Required key "AdminUserDetail[activeSessions]" has a null value in JSON.');
@@ -277,6 +309,7 @@ class AdminUserDetail {
         assert(json[r'audit'] != null, 'Required key "AdminUserDetail[audit]" has a null value in JSON.');
         assert(json.containsKey(r'notes'), 'Required key "AdminUserDetail[notes]" is missing from JSON.');
         assert(json[r'notes'] != null, 'Required key "AdminUserDetail[notes]" has a null value in JSON.');
+        assert(json.containsKey(r'vip'), 'Required key "AdminUserDetail[vip]" is missing from JSON.');
         return true;
       }());
 
@@ -295,6 +328,8 @@ class AdminUserDetail {
         createdAt: mapDateTime(json, r'createdAt', r'')!,
         termsAcceptedAt: mapDateTime(json, r'termsAcceptedAt', r''),
         online: mapValueOfType<bool>(json, r'online')!,
+        takingCalls: mapValueOfType<bool>(json, r'takingCalls')!,
+        lastActiveAt: mapDateTime(json, r'lastActiveAt', r''),
         lastSignInAt: mapDateTime(json, r'lastSignInAt', r''),
         activeSessions: mapValueOfType<int>(json, r'activeSessions')!,
         devices: mapValueOfType<int>(json, r'devices')!,
@@ -310,6 +345,7 @@ class AdminUserDetail {
         refunds: AdminUserDetailRefundsInner.listFromJson(json[r'refunds']),
         audit: AdminUserDetailAuditInner.listFromJson(json[r'audit']),
         notes: AdminNote.listFromJson(json[r'notes']),
+        vip: AdminUserDetailVip.fromJson(json[r'vip']),
       );
     }
     return null;
@@ -369,6 +405,8 @@ class AdminUserDetail {
     'createdAt',
     'termsAcceptedAt',
     'online',
+    'takingCalls',
+    'lastActiveAt',
     'lastSignInAt',
     'activeSessions',
     'devices',
@@ -384,6 +422,7 @@ class AdminUserDetail {
     'refunds',
     'audit',
     'notes',
+    'vip',
   };
 }
 

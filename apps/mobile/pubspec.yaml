@@ -55,6 +55,9 @@ dependencies:
   tflite_flutter: ^0.12.1
   image: ^4.10.1
   share_plus: ^13.3.0
+  confetti: ^0.8.0
+  wakelock_plus: ^1.7.0
+  firebase_auth: ^6.7.0
 
 dev_dependencies:
   flutter_test:
@@ -80,6 +83,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/avatars/
     # On-device nudity check for video calls (GantMan/nsfw_model 1.2.0, MIT — see LICENSE-nsfw_model.md).
     - assets/models/
 

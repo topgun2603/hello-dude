@@ -4,13 +4,15 @@ export type WalletKind = "coins" | "earnings";
 export type LedgerType =
   | "purchase" | "call_debit" | "call_credit" | "refund" | "refund_reversal"
   | "bonus" | "payout" | "payout_reversal" | "adjustment" | "gift_debit" | "gift_credit"
-  | "daily_bonus" | "referral_bonus" | "booking_hold" | "booking_release";
+  | "daily_bonus" | "referral_bonus" | "booking_hold" | "booking_release" | "live_pass_debit" | "live_pass_credit" | "live_debit" | "live_credit" | "group_debit" | "group_credit";
 
 export interface LedgerRefs {
   callId?: string;
   purchaseId?: string;
   payoutId?: string;
   note?: string;
+  liveId?: string;
+  groupId?: string;
 }
 
 /** Creates the coins + earnings wallets for a user. Safe to call repeatedly. */
@@ -52,10 +54,10 @@ export async function post(
   if (!wallet) return null;
   await c.query(
     `INSERT INTO ledger_entries
-       (wallet_id, type, amount, balance_after, call_id, purchase_id, payout_id, idempotency_key, note)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+       (wallet_id, type, amount, balance_after, call_id, purchase_id, payout_id, idempotency_key, note, live_id, group_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [wallet.id, type, amount, wallet.balance, refs.callId ?? null, refs.purchaseId ?? null,
-     refs.payoutId ?? null, idempotencyKey, refs.note ?? null],
+     refs.payoutId ?? null, idempotencyKey, refs.note ?? null, refs.liveId ?? null, refs.groupId ?? null],
   );
   return wallet.balance;
 }

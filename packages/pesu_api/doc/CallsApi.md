@@ -13,14 +13,15 @@ Method | HTTP request | Description
 [**endCall**](CallsApi.md#endcall) | **POST** /v1/calls/{id}/end | Hang up (either side). Safe to repeat.
 [**flagVideoFrame**](CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (the other person's video)
 [**getCall**](CallsApi.md#getcall) | **GET** /v1/calls/{id} | Call details: every billed minute, refunds included
-[**listCalls**](CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first. Page with `before` = createdAt of the last call seen.
+[**listCalls**](CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
 [**listGifts**](CallsApi.md#listgifts) | **GET** /v1/gifts | Gifts a caller can send during a call
-[**matchCall**](CallsApi.md#matchcall) | **POST** /v1/calls/match | Instant match: ring a free online companion who speaks the language
+[**matchCall**](CallsApi.md#matchcall) | **POST** /v1/calls/match | Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)
 [**rateCall**](CallsApi.md#ratecall) | **POST** /v1/calls/{id}/rating | Rate a finished call (once)
 [**rejectCall**](CallsApi.md#rejectcall) | **POST** /v1/calls/{id}/reject | 
 [**requestRefund**](CallsApi.md#requestrefund) | **POST** /v1/calls/{id}/refund-request | Ask for a refund on a finished call (once per call)
 [**sendGift**](CallsApi.md#sendgift) | **POST** /v1/calls/{id}/gifts | Send a gift during a live call. clientRef makes a retried tap safe.
 [**startCall**](CallsApi.md#startcall) | **POST** /v1/calls | Call a specific companion. Nothing is charged until both sides join.
+[**verifyCallConnected**](CallsApi.md#verifycallconnected) | **POST** /v1/calls/{id}/verify-connected | The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so
 
 
 # **acceptCall**
@@ -214,9 +215,9 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **listCalls**
-> ListCalls200Response listCalls(before, limit)
+> ListCalls200Response listCalls(before, limit, type, outcome, from, to)
 
-Call history, newest first. Page with `before` = createdAt of the last call seen.
+Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
 
 ### Example
 ```dart
@@ -231,9 +232,13 @@ import 'package:pesu_api/api.dart';
 final api_instance = CallsApi();
 final before = ; // Object | 
 final limit = 56; // int | 
+final type = type_example; // String | Only voice (audio) or video calls
+final outcome = outcome_example; // String | connected = both joined; missed = not answered, declined or failed
+final from = ; // Object | Calls made at or after this time
+final to = ; // Object | Calls made before this time
 
 try {
-    final result = api_instance.listCalls(before, limit);
+    final result = api_instance.listCalls(before, limit, type, outcome, from, to);
     print(result);
 } catch (e) {
     print('Exception when calling CallsApi->listCalls: $e\n');
@@ -246,6 +251,10 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **before** | [**Object**](.md)|  | [optional] 
  **limit** | **int**|  | [optional] [default to 20]
+ **type** | **String**| Only voice (audio) or video calls | [optional] 
+ **outcome** | **String**| connected = both joined; missed = not answered, declined or failed | [optional] 
+ **from** | [**Object**](.md)| Calls made at or after this time | [optional] 
+ **to** | [**Object**](.md)| Calls made before this time | [optional] 
 
 ### Return type
 
@@ -302,7 +311,7 @@ No authorization required
 # **matchCall**
 > MatchCall201Response matchCall(matchCallRequest)
 
-Instant match: ring a free online companion who speaks the language
+Instant match: ring a free online companion who speaks the language (no language = anyone, the Random button)
 
 ### Example
 ```dart
@@ -583,6 +592,53 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **verifyCallConnected**
+> VerifyCallConnected200Response verifyCallConnected(id)
+
+The app sees the other person: ask LiveKit (server side) whether both joined, and start the call if so
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CallsApi();
+final id = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final result = api_instance.verifyCallConnected(id);
+    print(result);
+} catch (e) {
+    print('Exception when calling CallsApi->verifyCallConnected: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+
+### Return type
+
+[**VerifyCallConnected200Response**](VerifyCallConnected200Response.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -9,7 +9,9 @@ import 'package:pesu_api/api.dart';
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **kycStatus** | **String** |  | 
-**videoEnabled** | **bool** |  | 
+**videoEnabled** | **bool** | Video is unlocked (KYC + academy + clean record) | 
+**takesAudio** | **bool** | The companion's own switch: takes voice calls | 
+**takesVideo** | **bool** | The companion's own switch: takes video calls (only counts when unlocked) | 
 **online** | **bool** |  | 
 **today** | [**CompanionHome200ResponseToday**](CompanionHome200ResponseToday.md) |  | 
 **recent** | [**List<CompanionHome200ResponseRecentInner>**](CompanionHome200ResponseRecentInner.md) |  | [default to const []]
