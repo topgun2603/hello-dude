@@ -151,6 +151,7 @@ enum ReportUserRequestReasonEnum {
   spam._(r'spam'),
   underage._(r'underage'),
   fraud._(r'fraud'),
+  offPlatform._(r'off_platform'),
   other._(r'other'),
   ;
 
@@ -215,6 +216,7 @@ class ReportUserRequestReasonEnumTypeTransformer {
         case r'spam': return ReportUserRequestReasonEnum.spam;
         case r'underage': return ReportUserRequestReasonEnum.underage;
         case r'fraud': return ReportUserRequestReasonEnum.fraud;
+        case r'off_platform': return ReportUserRequestReasonEnum.offPlatform;
         case r'other': return ReportUserRequestReasonEnum.other;
         default:
           if (!allowNull) {

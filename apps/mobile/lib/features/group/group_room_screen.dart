@@ -69,6 +69,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
   StreamSubscription<Map<String, dynamic>>? _events;
   NudityDetector? _detector;
   bool _checking = false;
+  int _hits = 0; // flagged frames in a row
   String? _speakerId;
 
   String get groupId => widget.groupId;
@@ -358,7 +359,14 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
     try {
       final jpeg = (await track.mediaStreamTrack.captureFrame()).asUint8List();
       final score = await detector.score(jpeg);
-      if (score < 0.7 || !mounted) return;
+      if (!mounted) return;
+      if (score < 0.7) {
+        _hits = 0;
+        return;
+      }
+      // One flagged frame is often a misread (blur, lighting): act on two in a row.
+      if (++_hits < 2) return;
+      _hits = 0;
       setState(() => _paused = true);
       await _room?.localParticipant?.setCameraEnabled(false);
       final api = ref.read(apiProvider);
@@ -576,6 +584,10 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                 ),
                 (ReportInGroupRequestReasonEnum.abuse, 'Abuse or harassment'),
                 (ReportInGroupRequestReasonEnum.underage, 'Looks under 18'),
+                (
+                  ReportInGroupRequestReasonEnum.offPlatform,
+                  'Asked for my number / to pay outside the app',
+                ),
                 (ReportInGroupRequestReasonEnum.fraud, 'Asking for money'),
                 (ReportInGroupRequestReasonEnum.spam, 'Spam'),
               ])

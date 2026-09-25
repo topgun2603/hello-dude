@@ -16,6 +16,114 @@ class ChatApi {
 
   final ApiClient apiClient;
 
+  /// Accept: the chat opens with their request as the first message
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> acceptChatRequestWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/chats/requests/{id}/accept'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Accept: the chat opens with their request as the first message
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Conversation?> acceptChatRequest(String id, { Future<void>? abortTrigger, }) async {
+    final response = await acceptChatRequestWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'Conversation',) as Conversation;
+    
+    }
+    return null;
+  }
+
+  /// Decline (they aren't told directly; they can ask again after 7 days)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> declineChatRequestWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/chats/requests/{id}/decline'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Decline (they aren't told directly; they can ask again after 7 days)
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<String?> declineChatRequest(String id, { Future<void>? abortTrigger, }) async {
+    final response = await declineChatRequestWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
+    
+    }
+    return null;
+  }
+
   /// The thread: messages and calls between you, newest first (page with ?before=<ISO time>)
   ///
   /// Note: This method returns the HTTP [Response].
@@ -80,6 +188,51 @@ class ChatApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetChatMessages200Response',) as GetChatMessages200Response;
+    
+    }
+    return null;
+  }
+
+  /// Companions: requests waiting for an answer. Callers: the requests they sent (last 30 days).
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> listChatRequestsWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/chats/requests';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Companions: requests waiting for an answer. Callers: the requests they sent (last 30 days).
+  Future<ListChatRequests200Response?> listChatRequests({ Future<void>? abortTrigger, }) async {
+    final response = await listChatRequestsWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ListChatRequests200Response',) as ListChatRequests200Response;
     
     }
     return null;
@@ -184,7 +337,7 @@ class ChatApi {
     return null;
   }
 
-  /// Open the chat with someone (created on first use). Needs a connected call between you and no blocks.
+  /// Open the chat with someone (created on first use). Needs a connected call or an accepted message request, and no blocks. A caller without either gets CHAT_NEEDS_REQUEST: send one with POST /chats/requests.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -218,7 +371,7 @@ class ChatApi {
     );
   }
 
-  /// Open the chat with someone (created on first use). Needs a connected call between you and no blocks.
+  /// Open the chat with someone (created on first use). Needs a connected call or an accepted message request, and no blocks. A caller without either gets CHAT_NEEDS_REQUEST: send one with POST /chats/requests.
   ///
   /// Parameters:
   ///
@@ -291,6 +444,59 @@ class ChatApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ChatItem',) as ChatItem;
+    
+    }
+    return null;
+  }
+
+  /// Send a companion you haven't called yet one message request (she accepts or declines). Same safety filter and strikes as chat; a few a day; after a decline you can ask again in 7 days.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [SendChatRequestRequest] sendChatRequestRequest (required):
+  Future<Response> sendChatRequestWithHttpInfo(SendChatRequestRequest sendChatRequestRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/chats/requests';
+
+    // ignore: prefer_final_locals
+    Object? postBody = sendChatRequestRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Send a companion you haven't called yet one message request (she accepts or declines). Same safety filter and strikes as chat; a few a day; after a decline you can ask again in 7 days.
+  ///
+  /// Parameters:
+  ///
+  /// * [SendChatRequestRequest] sendChatRequestRequest (required):
+  Future<ChatRequest?> sendChatRequest(SendChatRequestRequest sendChatRequestRequest, { Future<void>? abortTrigger, }) async {
+    final response = await sendChatRequestWithHttpInfo(sendChatRequestRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ChatRequest',) as ChatRequest;
     
     }
     return null;

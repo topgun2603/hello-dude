@@ -9,6 +9,7 @@ import { notifyFavouritesOnline } from "./favourites.js";
 import { countOnlineMinute } from "../rewards.js";
 import { LanguageCode } from "./profile.js";
 import { PHOTO_V_SQL, photoUrl } from "./photos.js";
+import { Badge, activeBadges } from "./leaderboards.js";
 
 /** Current per-minute prices for one companion (their primary language sets them). */
 export const CompanionRates = z.object({
@@ -30,6 +31,7 @@ export const OnlineCompanion = z.object({
   busy: z.boolean(),
   isFavourite: z.boolean(),
   rates: CompanionRates,
+  badge: Badge.nullable().describe("Best active badge, e.g. '#1 companion this week'"),
 }).meta({ id: "OnlineCompanion" });
 export type OnlineCompanion = z.infer<typeof OnlineCompanion>;
 
@@ -76,8 +78,10 @@ export async function findOnlineCompanions(
   )).rows;
 
   const busy = await busySet(redis, rows.map((r) => r.id));
+  const badges = await activeBadges(db, rows.map((r) => r.id));
   return rows
     .map((r) => ({
+      badge: badges.get(r.id) ?? null,
       id: r.id,
       displayName: r.display_name,
       avatarId: r.avatar_id,
@@ -140,9 +144,11 @@ export const companionRoutes: FastifyPluginAsyncZod = async (app) => {
       [req.params.id, viewer])).rows[0];
     if (!r) throw new ApiError(404, "COMPANION_NOT_FOUND", "This companion isn't available");
     const busy = await busySet(redis, [r.id]);
+    const badge = (await activeBadges(db, [r.id])).get(r.id) ?? null;
     return {
       online: await isOnline(redis, r.id),
       companion: {
+        badge,
         id: r.id, displayName: r.display_name, avatarId: r.avatar_id, photoUrl: photoUrl(app.deps.kycKey, r.id, r.photo_v),
         primaryLanguage: r.primary_language, languages: r.languages,
         rating: r.rating_count ? Math.round((r.rating_sum / r.rating_count) * 10) / 10 : null, ratingCount: r.rating_count,

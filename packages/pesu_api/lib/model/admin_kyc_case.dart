@@ -21,6 +21,7 @@ class AdminKycCase {
     required this.status,
     required this.submittedAt,
     required this.aadhaar,
+    required this.declared,
     required this.selfieBlinks,
     required this.panLast4,
     required this.upi,
@@ -28,6 +29,8 @@ class AdminKycCase {
     required this.videoEnabled,
     required this.academy,
     this.documents = const [],
+    this.redo = const [],
+    required this.voice,
   });
 
   String userId;
@@ -46,6 +49,8 @@ class AdminKycCase {
 
   AdminKycCaseAadhaar aadhaar;
 
+  AdminKycCaseDeclared declared;
+
   /// Minimum value: -9007199254740991
   /// Maximum value: 9007199254740991
   int? selfieBlinks;
@@ -62,6 +67,11 @@ class AdminKycCase {
 
   List<AdminKycCaseDocumentsEnum> documents;
 
+  /// Items the last rejection asked them to send again
+  List<AdminKycCaseRedoEnum> redo;
+
+  AdminKycCaseVoice voice;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminKycCase &&
     other.userId == userId &&
@@ -72,13 +82,16 @@ class AdminKycCase {
     other.status == status &&
     other.submittedAt == submittedAt &&
     other.aadhaar == aadhaar &&
+    other.declared == declared &&
     other.selfieBlinks == selfieBlinks &&
     other.panLast4 == panLast4 &&
     other.upi == upi &&
     other.rejectReason == rejectReason &&
     other.videoEnabled == videoEnabled &&
     other.academy == academy &&
-    _deepEquality.equals(other.documents, documents);
+    _deepEquality.equals(other.documents, documents) &&
+    _deepEquality.equals(other.redo, redo) &&
+    other.voice == voice;
 
   @override
   int get hashCode =>
@@ -91,16 +104,19 @@ class AdminKycCase {
     (status.hashCode) +
     (submittedAt == null ? 0 : submittedAt!.hashCode) +
     (aadhaar.hashCode) +
+    (declared.hashCode) +
     (selfieBlinks == null ? 0 : selfieBlinks!.hashCode) +
     (panLast4 == null ? 0 : panLast4!.hashCode) +
     (upi == null ? 0 : upi!.hashCode) +
     (rejectReason == null ? 0 : rejectReason!.hashCode) +
     (videoEnabled.hashCode) +
     (academy.hashCode) +
-    (documents.hashCode);
+    (documents.hashCode) +
+    (redo.hashCode) +
+    (voice.hashCode);
 
   @override
-  String toString() => 'AdminKycCase[userId=$userId, displayName=$displayName, phone=$phone, gender=$gender, primaryLanguage=$primaryLanguage, status=$status, submittedAt=$submittedAt, aadhaar=$aadhaar, selfieBlinks=$selfieBlinks, panLast4=$panLast4, upi=$upi, rejectReason=$rejectReason, videoEnabled=$videoEnabled, academy=$academy, documents=$documents]';
+  String toString() => 'AdminKycCase[userId=$userId, displayName=$displayName, phone=$phone, gender=$gender, primaryLanguage=$primaryLanguage, status=$status, submittedAt=$submittedAt, aadhaar=$aadhaar, declared=$declared, selfieBlinks=$selfieBlinks, panLast4=$panLast4, upi=$upi, rejectReason=$rejectReason, videoEnabled=$videoEnabled, academy=$academy, documents=$documents, redo=$redo, voice=$voice]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -116,6 +132,7 @@ class AdminKycCase {
       json[r'submittedAt'] = null;
     }
       json[r'aadhaar'] = this.aadhaar;
+      json[r'declared'] = this.declared;
     if (this.selfieBlinks != null) {
       json[r'selfieBlinks'] = this.selfieBlinks;
     } else {
@@ -139,6 +156,8 @@ class AdminKycCase {
       json[r'videoEnabled'] = this.videoEnabled;
       json[r'academy'] = this.academy;
       json[r'documents'] = this.documents;
+      json[r'redo'] = this.redo;
+      json[r'voice'] = this.voice;
     return json;
   }
 
@@ -168,6 +187,8 @@ class AdminKycCase {
         assert(json.containsKey(r'submittedAt'), 'Required key "AdminKycCase[submittedAt]" is missing from JSON.');
         assert(json.containsKey(r'aadhaar'), 'Required key "AdminKycCase[aadhaar]" is missing from JSON.');
         assert(json[r'aadhaar'] != null, 'Required key "AdminKycCase[aadhaar]" has a null value in JSON.');
+        assert(json.containsKey(r'declared'), 'Required key "AdminKycCase[declared]" is missing from JSON.');
+        assert(json[r'declared'] != null, 'Required key "AdminKycCase[declared]" has a null value in JSON.');
         assert(json.containsKey(r'selfieBlinks'), 'Required key "AdminKycCase[selfieBlinks]" is missing from JSON.');
         assert(json.containsKey(r'panLast4'), 'Required key "AdminKycCase[panLast4]" is missing from JSON.');
         assert(json.containsKey(r'upi'), 'Required key "AdminKycCase[upi]" is missing from JSON.');
@@ -178,6 +199,10 @@ class AdminKycCase {
         assert(json[r'academy'] != null, 'Required key "AdminKycCase[academy]" has a null value in JSON.');
         assert(json.containsKey(r'documents'), 'Required key "AdminKycCase[documents]" is missing from JSON.');
         assert(json[r'documents'] != null, 'Required key "AdminKycCase[documents]" has a null value in JSON.');
+        assert(json.containsKey(r'redo'), 'Required key "AdminKycCase[redo]" is missing from JSON.');
+        assert(json[r'redo'] != null, 'Required key "AdminKycCase[redo]" has a null value in JSON.');
+        assert(json.containsKey(r'voice'), 'Required key "AdminKycCase[voice]" is missing from JSON.');
+        assert(json[r'voice'] != null, 'Required key "AdminKycCase[voice]" has a null value in JSON.');
         return true;
       }());
 
@@ -190,6 +215,7 @@ class AdminKycCase {
         status: AdminKycCaseStatusEnum.fromJson(json[r'status'])!,
         submittedAt: mapDateTime(json, r'submittedAt', r''),
         aadhaar: AdminKycCaseAadhaar.fromJson(json[r'aadhaar'])!,
+        declared: AdminKycCaseDeclared.fromJson(json[r'declared'])!,
         selfieBlinks: mapValueOfType<int>(json, r'selfieBlinks'),
         panLast4: mapValueOfType<String>(json, r'panLast4'),
         upi: mapValueOfType<String>(json, r'upi'),
@@ -197,6 +223,8 @@ class AdminKycCase {
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
         academy: GetCompanionRewards200ResponseAcademy.fromJson(json[r'academy'])!,
         documents: AdminKycCaseDocumentsEnum.listFromJson(json[r'documents']),
+        redo: AdminKycCaseRedoEnum.listFromJson(json[r'redo']),
+        voice: AdminKycCaseVoice.fromJson(json[r'voice'])!,
       );
     }
     return null;
@@ -252,6 +280,7 @@ class AdminKycCase {
     'status',
     'submittedAt',
     'aadhaar',
+    'declared',
     'selfieBlinks',
     'panLast4',
     'upi',
@@ -259,6 +288,8 @@ class AdminKycCase {
     'videoEnabled',
     'academy',
     'documents',
+    'redo',
+    'voice',
   };
 }
 
@@ -349,6 +380,7 @@ enum AdminKycCaseDocumentsEnum {
   aadhaarPhoto._(r'aadhaar_photo'),
   selfie._(r'selfie'),
   pan._(r'pan'),
+  voice._(r'voice'),
   ;
 
   /// Instantiate a new enum with the provided value.
@@ -410,6 +442,7 @@ class AdminKycCaseDocumentsEnumTypeTransformer {
         case r'aadhaar_photo': return AdminKycCaseDocumentsEnum.aadhaarPhoto;
         case r'selfie': return AdminKycCaseDocumentsEnum.selfie;
         case r'pan': return AdminKycCaseDocumentsEnum.pan;
+        case r'voice': return AdminKycCaseDocumentsEnum.voice;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');
@@ -421,6 +454,90 @@ class AdminKycCaseDocumentsEnumTypeTransformer {
 
   /// The singleton instance of this transformer.
   static AdminKycCaseDocumentsEnumTypeTransformer? _instance;
+}
+
+
+
+enum AdminKycCaseRedoEnum {
+  age._(r'age'),
+  selfie._(r'selfie'),
+  voice._(r'voice'),
+  pan._(r'pan'),
+  upi._(r'upi'),
+  ;
+
+  /// Instantiate a new enum with the provided value.
+  const AdminKycCaseRedoEnum._(this._value);
+
+  /// The underlying value of this enum member.
+  final String _value;
+
+  @override
+  String toString() => _value;
+
+  /// Encodes this enum as a value suitable for JSON.
+  String toJson() => _value;
+
+  /// Returns the instance of [AdminKycCaseRedoEnum] that was successfully decoded
+  /// from the passed [value] on success, null otherwise.
+  static AdminKycCaseRedoEnum? fromJson(dynamic value) => AdminKycCaseRedoEnumTypeTransformer().decode(value);
+
+  /// Returns a [List] containing instances of [AdminKycCaseRedoEnum]
+  /// that were successfully decoded from the passed [JSON][json].
+  static List<AdminKycCaseRedoEnum> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <AdminKycCaseRedoEnum>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = AdminKycCaseRedoEnum.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
+}
+
+/// Transformation class that can [encode] an instance of [AdminKycCaseRedoEnum] to String,
+/// and [decode] dynamic data back to [AdminKycCaseRedoEnum].
+class AdminKycCaseRedoEnumTypeTransformer {
+  factory AdminKycCaseRedoEnumTypeTransformer() => _instance ??= const AdminKycCaseRedoEnumTypeTransformer._();
+
+  const AdminKycCaseRedoEnumTypeTransformer._();
+
+  String encode(AdminKycCaseRedoEnum data) => data._value;
+
+  /// Returns the instance of [AdminKycCaseRedoEnum] that was successfully decoded
+  /// from the passed [data] value on success, null otherwise.
+  ///
+  /// If [allowNull] is true and the [dynamic value][data] cannot be decoded successfully,
+  /// then null is returned. However, if [allowNull] is false and the [dynamic value][data]
+  /// cannot be decoded successfully, then an [UnimplementedError] is thrown.
+  ///
+  /// The [allowNull] is very handy when an API changes and a new enum value is added or removed,
+  /// and users are still using an old app with the old code.
+  AdminKycCaseRedoEnum? decode(dynamic data, {bool allowNull = true}) {
+    if (data is AdminKycCaseRedoEnum) {
+      return data;
+    }
+    if (data != null) {
+      switch (data) {
+        case r'age': return AdminKycCaseRedoEnum.age;
+        case r'selfie': return AdminKycCaseRedoEnum.selfie;
+        case r'voice': return AdminKycCaseRedoEnum.voice;
+        case r'pan': return AdminKycCaseRedoEnum.pan;
+        case r'upi': return AdminKycCaseRedoEnum.upi;
+        default:
+          if (!allowNull) {
+            throw ArgumentError('Unknown enum value to decode: $data');
+          }
+      }
+    }
+    return null;
+  }
+
+  /// The singleton instance of this transformer.
+  static AdminKycCaseRedoEnumTypeTransformer? _instance;
 }
 
 

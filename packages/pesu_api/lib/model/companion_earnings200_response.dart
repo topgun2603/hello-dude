@@ -17,6 +17,9 @@ class CompanionEarnings200Response {
     required this.upi,
     required this.minWithdrawalPaise,
     required this.tdsBps,
+    required this.panOnFile,
+    required this.tdsWithPanBps,
+    required this.tdsNoPanBps,
     required this.canWithdraw,
     required this.blockedReason,
     this.week = const [],
@@ -33,9 +36,21 @@ class CompanionEarnings200Response {
   /// Maximum value: 9007199254740991
   int minWithdrawalPaise;
 
+  /// TDS on your withdrawals now (higher without a PAN)
+  ///
   /// Minimum value: -9007199254740991
   /// Maximum value: 9007199254740991
   int tdsBps;
+
+  bool panOnFile;
+
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int tdsWithPanBps;
+
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int tdsNoPanBps;
 
   bool canWithdraw;
 
@@ -51,6 +66,9 @@ class CompanionEarnings200Response {
     other.upi == upi &&
     other.minWithdrawalPaise == minWithdrawalPaise &&
     other.tdsBps == tdsBps &&
+    other.panOnFile == panOnFile &&
+    other.tdsWithPanBps == tdsWithPanBps &&
+    other.tdsNoPanBps == tdsNoPanBps &&
     other.canWithdraw == canWithdraw &&
     other.blockedReason == blockedReason &&
     _deepEquality.equals(other.week, week) &&
@@ -63,13 +81,16 @@ class CompanionEarnings200Response {
     (upi == null ? 0 : upi!.hashCode) +
     (minWithdrawalPaise.hashCode) +
     (tdsBps.hashCode) +
+    (panOnFile.hashCode) +
+    (tdsWithPanBps.hashCode) +
+    (tdsNoPanBps.hashCode) +
     (canWithdraw.hashCode) +
     (blockedReason == null ? 0 : blockedReason!.hashCode) +
     (week.hashCode) +
     (payouts.hashCode);
 
   @override
-  String toString() => 'CompanionEarnings200Response[availablePaise=$availablePaise, upi=$upi, minWithdrawalPaise=$minWithdrawalPaise, tdsBps=$tdsBps, canWithdraw=$canWithdraw, blockedReason=$blockedReason, week=$week, payouts=$payouts]';
+  String toString() => 'CompanionEarnings200Response[availablePaise=$availablePaise, upi=$upi, minWithdrawalPaise=$minWithdrawalPaise, tdsBps=$tdsBps, panOnFile=$panOnFile, tdsWithPanBps=$tdsWithPanBps, tdsNoPanBps=$tdsNoPanBps, canWithdraw=$canWithdraw, blockedReason=$blockedReason, week=$week, payouts=$payouts]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -81,6 +102,9 @@ class CompanionEarnings200Response {
     }
       json[r'minWithdrawalPaise'] = this.minWithdrawalPaise;
       json[r'tdsBps'] = this.tdsBps;
+      json[r'panOnFile'] = this.panOnFile;
+      json[r'tdsWithPanBps'] = this.tdsWithPanBps;
+      json[r'tdsNoPanBps'] = this.tdsNoPanBps;
       json[r'canWithdraw'] = this.canWithdraw;
     if (this.blockedReason != null) {
       json[r'blockedReason'] = this.blockedReason;
@@ -110,6 +134,12 @@ class CompanionEarnings200Response {
         assert(json[r'minWithdrawalPaise'] != null, 'Required key "CompanionEarnings200Response[minWithdrawalPaise]" has a null value in JSON.');
         assert(json.containsKey(r'tdsBps'), 'Required key "CompanionEarnings200Response[tdsBps]" is missing from JSON.');
         assert(json[r'tdsBps'] != null, 'Required key "CompanionEarnings200Response[tdsBps]" has a null value in JSON.');
+        assert(json.containsKey(r'panOnFile'), 'Required key "CompanionEarnings200Response[panOnFile]" is missing from JSON.');
+        assert(json[r'panOnFile'] != null, 'Required key "CompanionEarnings200Response[panOnFile]" has a null value in JSON.');
+        assert(json.containsKey(r'tdsWithPanBps'), 'Required key "CompanionEarnings200Response[tdsWithPanBps]" is missing from JSON.');
+        assert(json[r'tdsWithPanBps'] != null, 'Required key "CompanionEarnings200Response[tdsWithPanBps]" has a null value in JSON.');
+        assert(json.containsKey(r'tdsNoPanBps'), 'Required key "CompanionEarnings200Response[tdsNoPanBps]" is missing from JSON.');
+        assert(json[r'tdsNoPanBps'] != null, 'Required key "CompanionEarnings200Response[tdsNoPanBps]" has a null value in JSON.');
         assert(json.containsKey(r'canWithdraw'), 'Required key "CompanionEarnings200Response[canWithdraw]" is missing from JSON.');
         assert(json[r'canWithdraw'] != null, 'Required key "CompanionEarnings200Response[canWithdraw]" has a null value in JSON.');
         assert(json.containsKey(r'blockedReason'), 'Required key "CompanionEarnings200Response[blockedReason]" is missing from JSON.');
@@ -125,6 +155,9 @@ class CompanionEarnings200Response {
         upi: mapValueOfType<String>(json, r'upi'),
         minWithdrawalPaise: mapValueOfType<int>(json, r'minWithdrawalPaise')!,
         tdsBps: mapValueOfType<int>(json, r'tdsBps')!,
+        panOnFile: mapValueOfType<bool>(json, r'panOnFile')!,
+        tdsWithPanBps: mapValueOfType<int>(json, r'tdsWithPanBps')!,
+        tdsNoPanBps: mapValueOfType<int>(json, r'tdsNoPanBps')!,
         canWithdraw: mapValueOfType<bool>(json, r'canWithdraw')!,
         blockedReason: mapValueOfType<String>(json, r'blockedReason'),
         week: CompanionEarnings200ResponseWeekInner.listFromJson(json[r'week']),
@@ -180,6 +213,9 @@ class CompanionEarnings200Response {
     'upi',
     'minWithdrawalPaise',
     'tdsBps',
+    'panOnFile',
+    'tdsWithPanBps',
+    'tdsNoPanBps',
     'canWithdraw',
     'blockedReason',
     'week',

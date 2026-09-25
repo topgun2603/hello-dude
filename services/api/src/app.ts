@@ -48,6 +48,9 @@ import { staffRoutes } from "./routes/staff.js";
 import { analyticsRoutes } from "./routes/analytics.js";
 import { liveRoutes } from "./routes/lives.js";
 import { groupRoutes } from "./routes/groups.js";
+import { inviteRoutes } from "./routes/invites.js";
+import { leaderboardRoutes } from "./routes/leaderboards.js";
+import { pkRoutes } from "./routes/pk.js";
 import { photoRoutes } from "./routes/photos.js";
 import { promotionRoutes } from "./routes/promotions.js";
 import type { LegalInfo } from "./legal/pages.js";
@@ -184,6 +187,8 @@ export const OPERATION_IDS: Record<string, string> = {
   "POST /v1/lives/:id/react": "sendLiveReaction",
   "POST /v1/lives/:id/gifts": "sendLiveGift",
   "POST /v1/lives/:id/moderation": "flagLiveFrame",
+  "POST /v1/lives/:id/snapshot": "uploadLiveSnapshot",
+  "GET /v1/lives/:id/snapshot/:file": "getLiveSnapshot",
   "GET /v1/admin/lives": "adminListLives",
   "POST /v1/admin/lives/:id/end": "adminEndLive",
   "GET /v1/groups": "listGroups",
@@ -260,7 +265,27 @@ export const OPERATION_IDS: Record<string, string> = {
   "POST /v1/admin/payouts/:id/reject": "adminRejectPayout",
   "POST /v1/companion/apply": "applyAsCompanion",
   "GET /v1/companion/kyc": "getKyc",
-  "POST /v1/companion/kyc/aadhaar": "uploadAadhaar",
+  "POST /v1/companion/kyc/age": "confirmCompanionAge",
+  "POST /v1/companion/kyc/voice": "uploadVoiceIntro",
+  "POST /v1/chats/requests": "sendChatRequest",
+  "GET /v1/companion/callers": "listOnlineCallers",
+  "GET /v1/leaderboards": "getLeaderboard",
+  "POST /v1/lives/:id/pk": "challengePk",
+  "POST /v1/pk/:id/accept": "acceptPk",
+  "POST /v1/pk/:id/decline": "declinePk",
+  "GET /v1/pk/:id": "getPk",
+  "POST /v1/pk/:id/end": "endPk",
+  "GET /v1/events/current": "getCurrentEvent",
+  "GET /v1/me/level": "getMyLevel",
+  "GET /v1/admin/events": "adminListEvents",
+  "POST /v1/admin/events": "adminCreateEvent",
+  "PUT /v1/admin/events/:id": "adminUpdateEvent",
+  "GET /v1/admin/caller-levels": "adminListCallerLevels",
+  "PUT /v1/admin/caller-levels/:level": "adminUpdateCallerLevel",
+  "POST /v1/companion/invites": "inviteCaller",
+  "GET /v1/chats/requests": "listChatRequests",
+  "POST /v1/chats/requests/:id/accept": "acceptChatRequest",
+  "POST /v1/chats/requests/:id/decline": "declineChatRequest",
   "POST /v1/companion/kyc/selfie": "uploadSelfie",
   "POST /v1/companion/kyc/pan": "uploadPan",
   "PUT /v1/companion/upi": "setUpi",
@@ -385,6 +410,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     await v1.register(analyticsRoutes);
     await v1.register(liveRoutes);
     await v1.register(groupRoutes);
+    await v1.register(inviteRoutes);
+    await v1.register(leaderboardRoutes);
+    await v1.register(pkRoutes);
     await v1.register(photoRoutes);
     await v1.register(promotionRoutes);
   }, { prefix: "/v1" });

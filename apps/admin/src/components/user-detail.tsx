@@ -618,9 +618,11 @@ const status = (s: string) => <Pill tone={STATUS_TONE[s] ?? "slate"} className="
 function HistoryTabs({ u, tab, onTab }: { u: AdminUserDetail; tab: Tab; onTab: (t: Tab) => void }) {
   const isCompanion = u.role === "companion";
   const other = isCompanion ? "/callers" : "/companions";
-  const partyLink = (p: { id: string; displayName: string }, href: string) =>
-    <Link href={`${href}/${p.id}`} className="font-medium hover:text-primary hover:underline">{p.displayName}</Link>;
-  const viewParty = (p: { id: string; displayName: string }, href: string) => (
+  // id null = the automatic safety check (no person to open).
+  const partyLink = (p: { id: string | null; displayName: string }, href: string) => p.id === null
+    ? <span className="font-medium text-muted-foreground">{p.displayName}</span>
+    : <Link href={`${href}/${p.id}`} className="font-medium hover:text-primary hover:underline">{p.displayName}</Link>;
+  const viewParty = (p: { id: string | null; displayName: string }, href: string) => p.id === null ? null : (
     <Link href={`${href}/${p.id}`} title={`Open ${p.displayName}`} aria-label={`Open ${p.displayName}`}
       className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-[#F4EEFB] hover:text-violet-600"><Eye className="size-4" /></Link>
   );

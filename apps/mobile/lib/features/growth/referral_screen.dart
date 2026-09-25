@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pesu_api/api.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme.dart';
 import '../../data/errors.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../companion/companion_data.dart' show rupees;
 
 final referralProvider = FutureProvider.autoDispose<GetReferral200Response>((
   ref,
@@ -23,6 +25,8 @@ class ReferralScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(referralProvider);
+    final companion =
+        ref.watch(sessionProvider).profile?.role == ProfileRoleEnum.companion;
     return Scaffold(
       body: GlowBackground(
         child: SafeArea(
@@ -92,7 +96,10 @@ class ReferralScreen extends ConsumerWidget {
                     children: [
                       TextSpan(text: 'Give ${r.refereeCoins} coins, '),
                       TextSpan(
-                        text: 'get ${r.referrerCoins} coins',
+                        // Companions earn rupees in their earnings; callers earn coins.
+                        text: companion
+                            ? 'earn ${rupees(r.referrerPaise)}'
+                            : 'get ${r.referrerCoins} coins',
                         style: const TextStyle(color: AppColors.pinkSoft),
                       ),
                     ],
@@ -155,14 +162,16 @@ class ReferralScreen extends ConsumerWidget {
                     Expanded(
                       child: _Stat(
                         value: '${r.joined}',
-                        label: 'Friends joined',
+                        label: companion ? 'Callers joined' : 'Friends joined',
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _Stat(
-                        value: '${r.coinsEarned}',
-                        label: 'Coins earned',
+                        value: companion
+                            ? rupees(r.paiseEarned)
+                            : '${r.coinsEarned}',
+                        label: companion ? 'Earned' : 'Coins earned',
                       ),
                     ),
                   ],
@@ -170,11 +179,20 @@ class ReferralScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 for (final (i, (t, s)) in [
                   ('Share your code', 'Send it on WhatsApp or anywhere'),
-                  ('Friend joins', 'They sign up with your code'),
                   (
-                    'You both get ${r.referrerCoins} coins',
-                    'After their first recharge',
+                    companion ? 'A caller joins' : 'Friend joins',
+                    'They sign up with your code',
                   ),
+                  if (companion)
+                    (
+                      'You earn ${rupees(r.referrerPaise)}',
+                      'Added to your earnings after their first recharge. They get ${r.refereeCoins} coins.',
+                    )
+                  else
+                    (
+                      'You both get ${r.referrerCoins} coins',
+                      'After their first recharge',
+                    ),
                 ].indexed)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 14),
@@ -227,7 +245,15 @@ class ReferralScreen extends ConsumerWidget {
                 GradientButton(
                   label: 'Share with friends',
                   icon: Icons.share_rounded,
-                  onPressed: () => context.push('/share'),
+                  // The share card shows a caller's talk time; companions share the link.
+                  onPressed: companion
+                      ? () => SharePlus.instance.share(
+                          ShareParams(
+                            text:
+                                'Join me on Hello Dude! Use my code ${r.code} and get ${r.refereeCoins} free coins: ${r.link}',
+                          ),
+                        )
+                      : () => context.push('/share'),
                 ),
               ],
             ),

@@ -18,6 +18,14 @@ final chatsProvider = FutureProvider.autoDispose<ListChats200Response>((ref) {
   return api.call(() => api.chat.listChats());
 });
 
+/// Companions: message requests waiting for an answer. Callers: the ones they sent.
+final chatRequestsProvider = FutureProvider.autoDispose<List<ChatRequest>>((
+  ref,
+) async {
+  final api = ref.read(apiProvider);
+  return (await api.call(() => api.chat.listChatRequests())).items;
+});
+
 /// Unread messages across all chats, for the chat icon badge. Bumped live.
 class ChatUnread extends Notifier<int> {
   StreamSubscription<Map<String, dynamic>>? _sub;
@@ -49,24 +57,291 @@ class ChatUnread extends Notifier<int> {
 
 final chatUnreadProvider = NotifierProvider<ChatUnread, int>(ChatUnread.new);
 
-/// Opens (or starts) the chat with someone. Explains why not, if chat isn't possible yet.
+/// Opens (or starts) the chat with someone. A caller who hasn't called her yet
+/// gets the message-request box instead; otherwise explains why not.
 Future<void> openChatWith(
   BuildContext context,
   WidgetRef ref,
-  String userId,
-) async {
+  String userId, {
+  String? name,
+}) async {
   final api = ref.read(apiProvider);
   try {
     final c = await api.call(() => api.chat.openChat(userId));
     if (context.mounted) await context.push('/chat/${c.id}', extra: c);
   } catch (e) {
     if (!context.mounted) return;
+    if (errorCode(e) == 'CHAT_NEEDS_REQUEST') {
+      await showChatRequestSheet(context, ref, userId, name ?? 'her');
+      return;
+    }
     showError(context, switch (errorCode(e)) {
       'CHAT_NEEDS_CALL' =>
         'You can message someone after your first call together.',
       'CHAT_BLOCKED' => "You can't message this person.",
       _ => friendlyError(e),
     });
+  }
+}
+
+/// One message to a companion you haven't called yet; she accepts or declines.
+Future<void> showChatRequestSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String companionId,
+  String name,
+) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: const Color(0xFF16142C),
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  ),
+  builder: (_) => _RequestSheet(companionId: companionId, name: name),
+);
+
+class _RequestSheet extends ConsumerStatefulWidget {
+  const _RequestSheet({required this.companionId, required this.name});
+  final String companionId, name;
+
+  @override
+  ConsumerState<_RequestSheet> createState() => _RequestSheetState();
+}
+
+class _RequestSheetState extends ConsumerState<_RequestSheet> {
+  final _text = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    setState(() => _busy = true);
+    final api = ref.read(apiProvider);
+    try {
+      await api.call(
+        () => api.chat.sendChatRequest(
+          SendChatRequestRequest(
+            companionId: widget.companionId,
+            body: _text.text.trim(),
+          ),
+        ),
+      );
+      ref.invalidate(chatRequestsProvider);
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Request sent. We'll tell you when ${widget.name} accepts.",
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) showError(context, friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      20,
+      16,
+      20,
+      20 + MediaQuery.viewInsetsOf(context).bottom,
+    ),
+    child: SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Message ${widget.name}', style: AppText.heading(20)),
+          const SizedBox(height: 6),
+          Text(
+            "You haven't talked yet, so this goes as a request. If ${widget.name} accepts, the chat opens. "
+            'Keep it friendly — numbers, UPI and other apps are blocked.',
+            style: AppText.body(
+              13.5,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _text,
+            maxLength: 300,
+            maxLines: 3,
+            minLines: 2,
+            autofocus: true,
+            style: AppText.body(15),
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Say hello and why you\'d like to talk…',
+              filled: true,
+              fillColor: AppColors.card,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GradientButton(
+            label: _busy ? 'Sending…' : 'Send request',
+            loading: _busy,
+            onPressed: _text.text.trim().isEmpty || _busy ? null : _send,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Top of Messages: requests to answer (companions) or sent (callers).
+class _RequestsSection extends ConsumerStatefulWidget {
+  const _RequestsSection();
+
+  @override
+  ConsumerState<_RequestsSection> createState() => _RequestsSectionState();
+}
+
+class _RequestsSectionState extends ConsumerState<_RequestsSection> {
+  bool _all = false;
+  final _busy = <String>{};
+
+  Future<void> _answer(ChatRequest r, bool accept) async {
+    setState(() => _busy.add(r.id));
+    final api = ref.read(apiProvider);
+    try {
+      if (accept) {
+        final c = await api.call(() => api.chat.acceptChatRequest(r.id));
+        ref.invalidate(chatRequestsProvider);
+        ref.invalidate(chatsProvider);
+        if (mounted) await context.push('/chat/${c.id}', extra: c);
+      } else {
+        await api.send(() => api.chat.declineChatRequest(r.id));
+        ref.invalidate(chatRequestsProvider);
+      }
+    } catch (e) {
+      if (mounted) showError(context, friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy.remove(r.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final companion =
+        ref.watch(sessionProvider).profile?.role == ProfileRoleEnum.companion;
+    final all = ref.watch(chatRequestsProvider).valueOrNull ?? const [];
+    // Callers only need to see what's still waiting or was just answered.
+    final items = companion
+        ? all
+        : all.where((r) => r.status != ChatRequestStatusEnum.accepted).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+    final shown = _all ? items : items.take(3).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            companion ? 'Message requests · ${items.length}' : 'Your requests',
+            style: AppText.heading(15),
+          ),
+          const SizedBox(height: 8),
+          for (final r in shown)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Avatar(
+                        name: r.other.displayName,
+                        avatarId: r.other.avatarId,
+                        size: 34,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          r.other.displayName,
+                          style: AppText.body(15, weight: FontWeight.w700),
+                        ),
+                      ),
+                      if (!companion)
+                        Text(
+                          r.status == ChatRequestStatusEnum.pending
+                              ? 'Waiting'
+                              : 'Not accepted',
+                          style: AppText.body(
+                            12.5,
+                            color: r.status == ChatRequestStatusEnum.pending
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    r.body,
+                    style: AppText.body(
+                      14,
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                  if (companion) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _busy.contains(r.id)
+                                ? null
+                                : () => _answer(r, false),
+                            child: const Text('Decline'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                            ),
+                            onPressed: _busy.contains(r.id)
+                                ? null
+                                : () => _answer(r, true),
+                            child: const Text('Accept'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          if (items.length > 3 && !_all)
+            TextButton(
+              onPressed: () => setState(() => _all = true),
+              child: Text('Show all ${items.length}'),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -140,9 +415,13 @@ class ChatsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const _RequestsSection(),
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(chatsProvider),
+                  onRefresh: () async {
+                    ref.invalidate(chatsProvider);
+                    ref.invalidate(chatRequestsProvider);
+                  },
                   child: list.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
@@ -173,7 +452,7 @@ class ChatsScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'After a call, you can keep talking here.',
+                                'After a call — or when she accepts your message request — you can talk here.',
                                 textAlign: TextAlign.center,
                                 style: AppText.body(
                                   14,
@@ -389,6 +668,81 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  Future<void> _report() async {
+    final other = _conv?.other;
+    if (other == null) return;
+    final reason = await showModalBottomSheet<ReportUserRequestReasonEnum>(
+      context: context,
+      backgroundColor: const Color(0xFF16142C),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Text(
+                'Report ${other.displayName}',
+                style: AppText.heading(18),
+              ),
+            ),
+            for (final (r, label) in const [
+              (
+                ReportUserRequestReasonEnum.offPlatform,
+                'Asked for my number / to pay outside the app',
+              ),
+              (ReportUserRequestReasonEnum.abuse, 'Abusive or rude'),
+              (ReportUserRequestReasonEnum.sexualContent, 'Sexual messages'),
+              (ReportUserRequestReasonEnum.fraud, 'Asking for money'),
+              (ReportUserRequestReasonEnum.spam, 'Spam or selling'),
+              (ReportUserRequestReasonEnum.other, 'Something else'),
+            ])
+              ListTile(title: Text(label), onTap: () => Navigator.pop(ctx, r)),
+          ],
+        ),
+      ),
+    );
+    if (reason == null || !mounted) return;
+    final api = ref.read(apiProvider);
+    try {
+      await api.call(
+        () => api.safety.reportUser(
+          ReportUserRequest(userId: other.id, reason: reason, alsoBlock: true),
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Thanks — we'll review it. They can't message you now.",
+          ),
+        ),
+      );
+      ref.invalidate(chatsProvider);
+      context.pop();
+    } catch (e) {
+      if (mounted) showError(context, friendlyError(e));
+    }
+  }
+
+  Future<void> _block() async {
+    final other = _conv?.other;
+    if (other == null) return;
+    final api = ref.read(apiProvider);
+    try {
+      await api.send(
+        () => api.safety.blockUser(BlockUserRequest(userId: other.id)),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Blocked ${other.displayName}')));
+      ref.invalidate(chatsProvider);
+      context.pop();
+    } catch (e) {
+      if (mounted) showError(context, friendlyError(e));
+    }
+  }
+
   Future<void> _call(bool video) async {
     final other = _conv?.other;
     if (other == null) return;
@@ -467,6 +821,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ],
                       ),
                     ),
+                    if (other != null)
+                      PopupMenuButton<String>(
+                        tooltip: 'More',
+                        icon: const Icon(Icons.more_vert_rounded),
+                        onSelected: (v) => v == 'report' ? _report() : _block(),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 'report', child: Text('Report')),
+                          PopupMenuItem(value: 'block', child: Text('Block')),
+                        ],
+                      ),
                     if (canCall && other != null) ...[
                       CircleIconButton(
                         icon: Icons.call_rounded,

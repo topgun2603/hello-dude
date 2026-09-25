@@ -371,6 +371,59 @@ class AdminApi {
     return null;
   }
 
+  /// Create a festival event
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [AdminCreateEventRequest] adminCreateEventRequest (required):
+  Future<Response> adminCreateEventWithHttpInfo(AdminCreateEventRequest adminCreateEventRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/admin/events';
+
+    // ignore: prefer_final_locals
+    Object? postBody = adminCreateEventRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Create a festival event
+  ///
+  /// Parameters:
+  ///
+  /// * [AdminCreateEventRequest] adminCreateEventRequest (required):
+  Future<AdminEvent?> adminCreateEvent(AdminCreateEventRequest adminCreateEventRequest, { Future<void>? abortTrigger, }) async {
+    final response = await adminCreateEventWithHttpInfo(adminCreateEventRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'AdminEvent',) as AdminEvent;
+    
+    }
+    return null;
+  }
+
   /// Add a gift. Its code is made from the name and never changes (the app and ledger refer to it).
   ///
   /// Note: This method returns the HTTP [Response].
@@ -1449,6 +1502,54 @@ class AdminApi {
     return null;
   }
 
+  /// Caller levels (by lifetime coins spent)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> adminListCallerLevelsWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/admin/caller-levels';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Caller levels (by lifetime coins spent)
+  Future<List<CallerLevel>?> adminListCallerLevels({ Future<void>? abortTrigger, }) async {
+    final response = await adminListCallerLevelsWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final responseBody = await _decodeBodyBytes(response);
+      return (await apiClient.deserializeAsync(responseBody, 'List<CallerLevel>') as List)
+        .cast<CallerLevel>()
+        .toList(growable: false);
+
+    }
+    return null;
+  }
+
   /// Companion levels
   ///
   /// Note: This method returns the HTTP [Response].
@@ -1491,6 +1592,54 @@ class AdminApi {
       final responseBody = await _decodeBodyBytes(response);
       return (await apiClient.deserializeAsync(responseBody, 'List<CompanionLevel>') as List)
         .cast<CompanionLevel>()
+        .toList(growable: false);
+
+    }
+    return null;
+  }
+
+  /// Festival events, newest first
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> adminListEventsWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/admin/events';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Festival events, newest first
+  Future<List<AdminEvent>?> adminListEvents({ Future<void>? abortTrigger, }) async {
+    final response = await adminListEventsWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final responseBody = await _decodeBodyBytes(response);
+      return (await apiClient.deserializeAsync(responseBody, 'List<AdminEvent>') as List)
+        .cast<AdminEvent>()
         .toList(growable: false);
 
     }
@@ -3007,6 +3156,64 @@ class AdminApi {
     return null;
   }
 
+  /// Edit a caller level
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [int] level (required):
+  ///
+  /// * [AdminUpdateCallerLevelRequest] adminUpdateCallerLevelRequest (required):
+  Future<Response> adminUpdateCallerLevelWithHttpInfo(int level, AdminUpdateCallerLevelRequest adminUpdateCallerLevelRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/admin/caller-levels/{level}'
+      .replaceAll('{level}', level.toString());
+
+    // ignore: prefer_final_locals
+    Object? postBody = adminUpdateCallerLevelRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Edit a caller level
+  ///
+  /// Parameters:
+  ///
+  /// * [int] level (required):
+  ///
+  /// * [AdminUpdateCallerLevelRequest] adminUpdateCallerLevelRequest (required):
+  Future<CallerLevel?> adminUpdateCallerLevel(int level, AdminUpdateCallerLevelRequest adminUpdateCallerLevelRequest, { Future<void>? abortTrigger, }) async {
+    final response = await adminUpdateCallerLevelWithHttpInfo(level, adminUpdateCallerLevelRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'CallerLevel',) as CallerLevel;
+    
+    }
+    return null;
+  }
+
   /// Change a level's name, thresholds or earnings boost (applies to calls that start after this)
   ///
   /// Note: This method returns the HTTP [Response].
@@ -3060,6 +3267,64 @@ class AdminApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'CompanionLevel',) as CompanionLevel;
+    
+    }
+    return null;
+  }
+
+  /// Edit an event
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [AdminCreateEventRequest] adminCreateEventRequest (required):
+  Future<Response> adminUpdateEventWithHttpInfo(String id, AdminCreateEventRequest adminCreateEventRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/admin/events/{id}'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody = adminCreateEventRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Edit an event
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [AdminCreateEventRequest] adminCreateEventRequest (required):
+  Future<AdminEvent?> adminUpdateEvent(String id, AdminCreateEventRequest adminCreateEventRequest, { Future<void>? abortTrigger, }) async {
+    final response = await adminUpdateEventWithHttpInfo(id, adminCreateEventRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'AdminEvent',) as AdminEvent;
     
     }
     return null;

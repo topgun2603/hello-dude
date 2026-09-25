@@ -14,30 +14,38 @@ class ListLives200Response {
   /// Returns a new [ListLives200Response] instance.
   ListLives200Response({
     this.lives = const [],
+    required this.total,
     required this.pricing,
   });
 
   List<LiveCard> lives;
+
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int total;
 
   LivePricing pricing;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is ListLives200Response &&
     _deepEquality.equals(other.lives, lives) &&
+    other.total == total &&
     other.pricing == pricing;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (lives.hashCode) +
+    (total.hashCode) +
     (pricing.hashCode);
 
   @override
-  String toString() => 'ListLives200Response[lives=$lives, pricing=$pricing]';
+  String toString() => 'ListLives200Response[lives=$lives, total=$total, pricing=$pricing]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'lives'] = this.lives;
+      json[r'total'] = this.total;
       json[r'pricing'] = this.pricing;
     return json;
   }
@@ -55,6 +63,8 @@ class ListLives200Response {
       assert(() {
         assert(json.containsKey(r'lives'), 'Required key "ListLives200Response[lives]" is missing from JSON.');
         assert(json[r'lives'] != null, 'Required key "ListLives200Response[lives]" has a null value in JSON.');
+        assert(json.containsKey(r'total'), 'Required key "ListLives200Response[total]" is missing from JSON.');
+        assert(json[r'total'] != null, 'Required key "ListLives200Response[total]" has a null value in JSON.');
         assert(json.containsKey(r'pricing'), 'Required key "ListLives200Response[pricing]" is missing from JSON.');
         assert(json[r'pricing'] != null, 'Required key "ListLives200Response[pricing]" has a null value in JSON.');
         return true;
@@ -62,6 +72,7 @@ class ListLives200Response {
 
       return ListLives200Response(
         lives: LiveCard.listFromJson(json[r'lives']),
+        total: mapValueOfType<int>(json, r'total')!,
         pricing: LivePricing.fromJson(json[r'pricing'])!,
       );
     }
@@ -111,6 +122,7 @@ class ListLives200Response {
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
     'lives',
+    'total',
     'pricing',
   };
 }

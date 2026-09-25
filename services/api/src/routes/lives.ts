@@ -26,7 +26,9 @@ import { numberSetting } from "../settings.js";
 import { giftPaise } from "./gifts.js";
 import { base64File } from "./companion.js";
 import { REACTIONS } from "./rooms.js";
-import { PHOTO_V_SQL, photoUrl } from "./photos.js";
+import { PHOTO_V_SQL, checkSigned, photoUrl, signedQuery } from "./photos.js";
+import sharp from "sharp";
+import { onLiveGift } from "./pk.js";
 
 const HOST_STALE_S = 60;    // host app heartbeats every 15 s
 const VIEWER_STALE_S = 60;  // viewers heartbeat every 20 s
@@ -34,6 +36,7 @@ const NOTIFY_COOLDOWN_S = 30 * 60;
 const FLAG_COOLDOWN_S = 30;
 const MAX_FRAME_BYTES = 400 * 1024;
 const LIMIT_WARNING_MIN = 5; // warn the host this long before the maximum length
+const SNAPSHOT_EVERY_S = 45;  // card stills: at most one per live this often
 
 type Deps = { db: Db; events: UserEvents; rooms: RoomControl; push?: PushSender };
 
@@ -93,7 +96,7 @@ async function chargeMinute(c: DbClient, live: { id: string; host_id: string }, 
   return left;
 }
 
-async function broadcastLive(db: Db | DbClient, events: UserEvents, liveId: string, event: Record<string, unknown>) {
+export async function broadcastLive(db: Db | DbClient, events: UserEvents, liveId: string, event: Record<string, unknown>) {
   const ids = (await db.query<{ user_id: string }>(
     `SELECT user_id FROM live_viewers WHERE live_id = $1 AND left_at IS NULL
      UNION SELECT host_id FROM lives WHERE id = $1`, [liveId])).rows;
@@ -219,6 +222,8 @@ const Host = z.object({
 });
 const LiveCard = z.object({
   id: z.uuid(), title: z.string(), language: z.string(), host: Host, viewers: z.number().int(), startedAt: z.date(),
+  snapshotUrl: z.string().nullable().describe("Recent still from the host's camera (signed path); null = use the host's photo/avatar"),
+  pkBattleId: z.uuid().nullable().describe("An active PK battle this live is in (GET /pk/{id})"),
 }).meta({ id: "LiveCard" });
 const AccessZ = z.object({
   kind: z.enum(["host", "preview", "paying", "none"]),
@@ -253,22 +258,41 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     if (!r) throw notFound("LIVE_NOT_FOUND");
     return r;
   };
-  const cards = async (viewerId: string, where: string, args: unknown[]) => (await db.query<{
+  type Order = "for_you" | "popular" | "new";
+  const ORDER_SQL: Record<Order, string> = {
+    // Favourites, then the viewer's own language, then the busiest.
+    for_you: `fav DESC, (l.language_code = (SELECT primary_language FROM users WHERE id = $1)) DESC, viewers DESC, l.started_at DESC`,
+    popular: `viewers DESC, l.started_at DESC`,
+    new: `l.started_at DESC`,
+  };
+  const FROM = `FROM lives l JOIN users h ON h.id = l.host_id LEFT JOIN companion_profiles p ON p.user_id = h.id`;
+  const NOT_BLOCKED = `NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = $1 AND b.blocked_id = h.id) OR (b.blocker_id = h.id AND b.blocked_id = $1))`;
+  /** Signed path to a live's latest snapshot; the time in the path busts the cache when a new one arrives. */
+  const snapshotUrl = (liveId: string, at: Date | null) => {
+    if (!at) return null;
+    const t = Math.floor(at.getTime() / 1000);
+    return `/v1/lives/${liveId}/snapshot/${t}.jpg?${signedQuery(app.deps.kycKey, `live-snapshot.${liveId}.${t}`)}`;
+  };
+  const cards = async (viewerId: string, where: string, args: unknown[], opts: { order?: Order; limit?: number; offset?: number } = {}) => (await db.query<{
     id: string; title: string; language_code: string; started_at: Date; host_id: string; host_name: string; host_avatar: number; host_photo_v: number | null;
-    rating_sum: number | null; rating_count: number | null; languages: string[]; fav: boolean; viewers: number;
+    rating_sum: number | null; rating_count: number | null; languages: string[]; fav: boolean; viewers: number; snapshot_at: Date | null; pk_id: string | null;
   }>(
     `SELECT l.id, l.title, l.language_code, l.started_at, h.id AS host_id, h.display_name AS host_name, h.avatar_id AS host_avatar, ${PHOTO_V_SQL("h")} AS host_photo_v,
             p.rating_sum, p.rating_count,
             COALESCE((SELECT array_agg(language_code ORDER BY language_code) FROM user_languages WHERE user_id = h.id), ARRAY[h.primary_language]) AS languages,
             EXISTS (SELECT 1 FROM favourites f WHERE f.user_id = $1 AND f.companion_id = h.id) AS fav,
-            (SELECT count(*) FROM live_viewers v WHERE v.live_id = l.id AND v.left_at IS NULL)::int AS viewers
-       FROM lives l JOIN users h ON h.id = l.host_id LEFT JOIN companion_profiles p ON p.user_id = h.id
-      WHERE ${where}
-        AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = $1 AND b.blocked_id = h.id) OR (b.blocker_id = h.id AND b.blocked_id = $1))
-      ORDER BY fav DESC, viewers DESC, l.started_at DESC LIMIT 100`, [viewerId, ...args])).rows.map((r) => ({
+            (SELECT count(*) FROM live_viewers v WHERE v.live_id = l.id AND v.left_at IS NULL)::int AS viewers,
+            CASE WHEN l.snapshot_key IS NOT NULL THEN l.snapshot_at END AS snapshot_at,
+            (SELECT pk.id FROM pk_battles pk WHERE pk.status = 'active' AND l.id IN (pk.live_a, pk.live_b) LIMIT 1) AS pk_id
+       ${FROM}
+      WHERE ${where} AND ${NOT_BLOCKED}
+      ORDER BY ${ORDER_SQL[opts.order ?? "for_you"]}
+      LIMIT ${Math.min(opts.limit ?? 100, 100)} OFFSET ${Math.max(opts.offset ?? 0, 0)}`, [viewerId, ...args])).rows.map((r) => ({
     id: r.id, title: r.title, language: r.language_code, startedAt: r.started_at, viewers: r.viewers,
+    snapshotUrl: snapshotUrl(r.id, r.snapshot_at), pkBattleId: r.pk_id,
     host: {
-      id: r.host_id, displayName: r.host_name, avatarId: r.host_avatar, photoUrl: photoUrl(app.deps.kycKey, r.host_id, r.host_photo_v), languages: r.languages, isFavourite: r.fav,
+      id: r.host_id, displayName: r.host_name, avatarId: r.host_avatar, photoUrl: photoUrl(app.deps.kycKey, r.host_id, r.host_photo_v),
+      languages: r.languages, isFavourite: r.fav,
       rating: r.rating_count ? Math.round(((r.rating_sum ?? 0) / r.rating_count) * 10) / 10 : null,
     },
   }));
@@ -283,14 +307,34 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     preHandler: requireAuth("caller", "companion"),
     schema: {
       ...base,
-      summary: "Live now (favourites first, then the busiest), with the price per minute",
-      querystring: z.object({ language: z.string().optional() }),
-      response: { 200: z.object({ lives: z.array(LiveCard), pricing: Pricing }) },
+      summary: "Live now, a page at a time, with the total and the price per minute. " +
+        "sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.",
+      querystring: z.object({
+        language: z.string().optional(),
+        sort: z.enum(["for_you", "popular", "new"]).optional(),
+        favourites: z.enum(["true", "false"]).optional(),
+        q: z.string().trim().max(40).optional(),
+        limit: z.coerce.number().int().min(1).max(100).optional(),
+        offset: z.coerce.number().int().min(0).max(10_000).optional(),
+      }),
+      response: { 200: z.object({ lives: z.array(LiveCard), total: z.number().int(), pricing: Pricing }) },
     },
-  }, async (req) => ({
-    lives: await cards(me(req).userId, `l.status = 'live' AND ($2::text IS NULL OR l.language_code = $2)`, [req.query.language ?? null]),
-    pricing: await pricing(),
-  }));
+  }, async (req) => {
+    const userId = me(req).userId;
+    const { language, sort, favourites, q, limit, offset } = req.query;
+    const like = q ? `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+    const where = `l.status = 'live' AND ($2::text IS NULL OR l.language_code = $2)
+      AND (NOT $3::boolean OR EXISTS (SELECT 1 FROM favourites f WHERE f.user_id = $1 AND f.companion_id = h.id))
+      AND ($4::text IS NULL OR h.display_name ILIKE $4 OR l.title ILIKE $4)`;
+    const args = [language ?? null, favourites === "true", like];
+    const total = (await db.query<{ n: number }>(
+      `SELECT count(*)::int AS n ${FROM} WHERE ${where} AND ${NOT_BLOCKED}`, [userId, ...args])).rows[0]!.n;
+    return {
+      lives: await cards(userId, where, args, { order: sort ?? "for_you", limit: limit ?? 30, offset: offset ?? 0 }),
+      total,
+      pricing: await pricing(),
+    };
+  });
 
   // --- host ------------------------------------------------------------------------
   app.post("/lives", {
@@ -376,6 +420,53 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     if (l.host_id !== me(req).userId) throw forbidden("NOT_THE_HOST");
     await endLive(deps, l.id, "host_ended");
     return reply.status(204).send(null);
+  });
+
+  app.post("/lives/:id/snapshot", {
+    preHandler: host,
+    bodyLimit: 1024 * 1024,
+    schema: {
+      ...base,
+      summary: "Host: a still for the live's card (about once a minute, already safety-checked on the phone)",
+      params: z.object({ id: z.uuid() }),
+      body: z.object({ frameBase64: base64File(MAX_FRAME_BYTES) }),
+      response: { 204: z.null() },
+    },
+  }, async (req, reply) => {
+    const l = await loadLive(req.params.id);
+    if (l.host_id !== me(req).userId) throw forbidden("NOT_THE_HOST");
+    if (l.status !== "live") throw new ApiError(410, "LIVE_ENDED", "This live has ended");
+    if (await rateLimited(redis, `live:snap:${l.id}`, SNAPSHOT_EVERY_S)) return reply.status(204).send(null);
+    let jpeg: Buffer;
+    try {
+      // Portrait card, metadata dropped.
+      jpeg = await sharp(req.body.frameBase64).rotate().resize(360, 480, { fit: "cover", position: "attention" })
+        .jpeg({ quality: 72, mozjpeg: true }).toBuffer();
+    } catch {
+      throw new ApiError(400, "NOT_AN_IMAGE", "The frame must be a JPEG or PNG");
+    }
+    const key = `live-snapshots/${l.id}`;
+    await app.deps.store.put(key, jpeg);
+    await db.query(`UPDATE lives SET snapshot_key = $2, snapshot_at = now() WHERE id = $1`, [l.id, key]);
+    return reply.status(204).send(null);
+  });
+
+  // Signed link from GET /lives; served only while the live is on.
+  app.get("/lives/:id/snapshot/:file", {
+    schema: {
+      tags: ["lives"],
+      summary: "A live's card snapshot, through a signed URL from GET /lives",
+      params: z.object({ id: z.uuid(), file: z.string().regex(/^\d+\.jpg$/) }),
+      querystring: z.object({ exp: z.coerce.number().int(), sig: z.string().max(64) }),
+    },
+  }, async (req, reply) => {
+    const t = req.params.file.replace(/\.jpg$/, "");
+    if (!checkSigned(app.deps.kycKey, `live-snapshot.${req.params.id}.${t}`, req.query.exp, req.query.sig)) throw notFound("SNAPSHOT_NOT_FOUND");
+    const l = (await db.query<{ status: string; snapshot_key: string | null }>(
+      `SELECT status, snapshot_key FROM lives WHERE id = $1`, [req.params.id])).rows[0];
+    if (!l || l.status !== "live" || !l.snapshot_key) throw notFound("SNAPSHOT_NOT_FOUND");
+    const bytes = await app.deps.store.get(l.snapshot_key);
+    return reply.header("cache-control", "private, max-age=300").type("image/jpeg").send(bytes);
   });
 
   // --- viewers ---------------------------------------------------------------------
@@ -496,9 +587,9 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     preHandler: viewer,
     schema: {
       ...base,
-      summary: "Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.",
+      summary: "Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.",
       params: z.object({ id: z.uuid() }),
-      body: z.object({ giftId: z.number().int(), clientRef: z.uuid() }),
+      body: z.object({ giftId: z.number().int(), clientRef: z.uuid(), toHostId: z.uuid().nullish().describe("PK battle: gift the other side's host") }),
       response: { 201: z.object({ coinsLeft: z.number().int() }) },
     },
   }, async (req, reply) => {
@@ -508,23 +599,32 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     const gift = (await db.query<{ id: number; name: string; emoji: string; coins: number }>(
       `SELECT id, name, emoji, coins FROM gifts WHERE id = $1 AND is_active`, [req.body.giftId])).rows[0];
     if (!gift) throw notFound("GIFT_NOT_FOUND");
+    let receiver = l.host_id;
+    if (req.body.toHostId && req.body.toHostId !== l.host_id) {
+      const pk = (await db.query(
+        `SELECT 1 FROM pk_battles WHERE status = 'active' AND ((live_a = $1 AND host_b = $2) OR (live_b = $1 AND host_a = $2))`,
+        [l.id, req.body.toHostId])).rowCount;
+      if (!pk) throw new ApiError(409, "NOT_IN_BATTLE", "That host isn't battling this live");
+      receiver = req.body.toHostId;
+    }
     const paise = await giftPaise(db, gift.coins);
     const result = await tx(db, async (c) => {
       const ins = await c.query<{ id: string }>(
         `INSERT INTO live_gifts (live_id, sender_id, receiver_id, gift_id, coins, paise_credited, client_ref)
          VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (client_ref) DO NOTHING RETURNING id`,
-        [l.id, userId, l.host_id, gift.id, gift.coins, paise, req.body.clientRef]);
+        [l.id, userId, receiver, gift.id, gift.coins, paise, req.body.clientRef]);
       const bal = async () => (await c.query<{ balance: number }>(`SELECT balance FROM wallets WHERE user_id = $1 AND kind = 'coins'`, [userId])).rows[0]?.balance ?? 0;
       if (!ins.rowCount) return { duplicate: true, coinsLeft: await bal() };
       const id = ins.rows[0]!.id;
       const left = await post(c, userId, "coins", "gift_debit", -gift.coins, `livegift:${id}:debit`, { liveId: l.id, note: `${gift.name} gift in a live` });
       if (left === null) throw new ApiError(402, "INSUFFICIENT_BALANCE", `You need ${gift.coins} coins for a ${gift.name}`);
-      if (paise > 0) await post(c, l.host_id, "earnings", "gift_credit", paise, `livegift:${id}:credit`, { liveId: l.id, note: `${gift.name} gift in a live` });
+      if (paise > 0) await post(c, receiver, "earnings", "gift_credit", paise, `livegift:${id}:credit`, { liveId: l.id, note: `${gift.name} gift in a live` });
       return { duplicate: false, coinsLeft: left };
     });
     if (!result.duplicate) {
       const from = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [userId])).rows[0]!.display_name;
-      await broadcastLive(db, events, l.id, { kind: "gift", userId, displayName: from, gift: { name: gift.name, emoji: gift.emoji } });
+      await broadcastLive(db, events, l.id, { kind: "gift", userId, displayName: from, gift: { name: gift.name, emoji: gift.emoji }, toHostId: receiver });
+      await onLiveGift({ db, events, rooms }, l.id);
     }
     reply.status(201);
     return { coinsLeft: result.coinsLeft };

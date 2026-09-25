@@ -18,6 +18,8 @@ class VideoModerator extends ChangeNotifier {
     this.interval = const Duration(seconds: 3),
     this.threshold = 0.7,
     this.clearAfter = 3,
+    this.hitsNeeded = 2,
+    this.silent = false,
     this.reportCooldown = const Duration(seconds: 30),
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
@@ -29,6 +31,13 @@ class VideoModerator extends ChangeNotifier {
   final Duration interval;
   final double threshold;
   final int clearAfter;
+
+  /// Flagged frames in a row before blurring (one-off misreads are common).
+  final int hitsNeeded;
+
+  /// Silent mode (1:1 calls, owner 2026-09-24): never blur — flagged frames only
+  /// go to the admin Moderation queue, so false alarms are invisible to users.
+  final bool silent;
   final Duration reportCooldown;
   final DateTime Function() _now;
 
@@ -39,6 +48,7 @@ class VideoModerator extends ChangeNotifier {
   bool _busy = false;
   bool _disposed = false;
   int _cleanStreak = 0;
+  int _hitStreak = 0;
   DateTime? _lastReport;
 
   void start() {
@@ -61,7 +71,10 @@ class VideoModerator extends ChangeNotifier {
       if (_disposed) return;
       if (score >= threshold) {
         _cleanStreak = 0;
-        _setHidden(true);
+        // Wait for a second flagged frame in a row before acting.
+        if (!_hidden && ++_hitStreak < hitsNeeded) return;
+        _hitStreak = 0;
+        if (!silent) _setHidden(true);
         final now = _now();
         if (_lastReport == null ||
             now.difference(_lastReport!) >= reportCooldown) {
@@ -73,9 +86,12 @@ class VideoModerator extends ChangeNotifier {
             ),
           );
         }
-      } else if (_hidden && ++_cleanStreak >= clearAfter) {
-        _cleanStreak = 0;
-        _setHidden(false);
+      } else {
+        _hitStreak = 0; // a clean frame breaks the run
+        if (_hidden && ++_cleanStreak >= clearAfter) {
+          _cleanStreak = 0;
+          _setHidden(false);
+        }
       }
     } catch (e) {
       // A failed capture or inference must never break the call.

@@ -145,6 +145,7 @@ enum ReportInGroupRequestReasonEnum {
   spam._(r'spam'),
   underage._(r'underage'),
   fraud._(r'fraud'),
+  offPlatform._(r'off_platform'),
   ;
 
   /// Instantiate a new enum with the provided value.
@@ -208,6 +209,7 @@ class ReportInGroupRequestReasonEnumTypeTransformer {
         case r'spam': return ReportInGroupRequestReasonEnum.spam;
         case r'underage': return ReportInGroupRequestReasonEnum.underage;
         case r'fraud': return ReportInGroupRequestReasonEnum.fraud;
+        case r'off_platform': return ReportInGroupRequestReasonEnum.offPlatform;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');

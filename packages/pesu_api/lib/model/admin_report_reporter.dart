@@ -18,7 +18,7 @@ class AdminReportReporter {
     required this.role,
   });
 
-  String id;
+  String? id;
 
   String displayName;
 
@@ -33,7 +33,7 @@ class AdminReportReporter {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (id.hashCode) +
+    (id == null ? 0 : id!.hashCode) +
     (displayName.hashCode) +
     (role.hashCode);
 
@@ -42,7 +42,11 @@ class AdminReportReporter {
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.id != null) {
       json[r'id'] = this.id;
+    } else {
+      json[r'id'] = null;
+    }
       json[r'displayName'] = this.displayName;
       json[r'role'] = this.role;
     return json;
@@ -60,7 +64,6 @@ class AdminReportReporter {
       // Note 2: this code is stripped in release mode!
       assert(() {
         assert(json.containsKey(r'id'), 'Required key "AdminReportReporter[id]" is missing from JSON.');
-        assert(json[r'id'] != null, 'Required key "AdminReportReporter[id]" has a null value in JSON.');
         assert(json.containsKey(r'displayName'), 'Required key "AdminReportReporter[displayName]" is missing from JSON.');
         assert(json[r'displayName'] != null, 'Required key "AdminReportReporter[displayName]" has a null value in JSON.');
         assert(json.containsKey(r'role'), 'Required key "AdminReportReporter[role]" is missing from JSON.');
@@ -69,7 +72,7 @@ class AdminReportReporter {
       }());
 
       return AdminReportReporter(
-        id: mapValueOfType<String>(json, r'id')!,
+        id: mapValueOfType<String>(json, r'id'),
         displayName: mapValueOfType<String>(json, r'displayName')!,
         role: mapValueOfType<String>(json, r'role')!,
       );

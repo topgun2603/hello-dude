@@ -51,31 +51,39 @@ export const growthRoutes: FastifyPluginAsyncZod = async (app) => {
   });
 
   app.get("/referral", {
-    preHandler: requireAuth("caller"),
+    preHandler: requireAuth("caller", "companion"),
     schema: {
       ...base,
-      summary: "Invite friends: my code, the reward and how many friends joined",
+      summary: "Invite friends: my code, the reward and how many joined. Callers earn coins; companions earn ₹ in earnings " +
+        "(referrerPaise) — both when the invited caller makes their first recharge.",
       response: {
         200: z.object({
           code: z.string(), link: z.string(),
-          referrerCoins: z.number().int(), refereeCoins: z.number().int(),
-          joined: z.number().int(), rewarded: z.number().int(), coinsEarned: z.number().int(),
+          referrerCoins: z.number().int().describe("Callers: coins per friend"),
+          referrerPaise: z.number().int().describe("Companions: earnings per invited caller"),
+          refereeCoins: z.number().int(),
+          joined: z.number().int(), rewarded: z.number().int(), coinsEarned: z.number().int(), paiseEarned: z.number().int(),
         }),
       },
     },
   }, async (req) => {
-    const userId = me(req).userId;
+    const { userId, role } = me(req);
     const code = await referralCode(db, userId);
-    const [referrerCoins, refereeCoins, stats] = await Promise.all([
+    const [referrerCoins, referrerPaise, refereeCoins, stats] = await Promise.all([
       numberSetting(db, "referral.referrer_coins", 50),
+      numberSetting(db, "referral.companion_bonus_paise", 2500),
       numberSetting(db, "referral.referee_coins", 50),
-      db.query<{ joined: number; rewarded: number; earned: number }>(
+      db.query<{ joined: number; rewarded: number; earned: number; paise: number }>(
         `SELECT count(*)::int AS joined, count(*) FILTER (WHERE status = 'rewarded')::int AS rewarded,
-                COALESCE(sum(referrer_coins), 0)::int AS earned
+                COALESCE(sum(referrer_coins), 0)::int AS earned, COALESCE(sum(referrer_paise), 0)::int AS paise
            FROM referrals WHERE referrer_id = $1`, [userId]),
     ]);
     const s = stats.rows[0]!;
-    return { code, link: inviteLink(code), referrerCoins, refereeCoins, joined: s.joined, rewarded: s.rewarded, coinsEarned: s.earned };
+    const companion = role === "companion";
+    return {
+      code, link: inviteLink(code), referrerCoins: companion ? 0 : referrerCoins, referrerPaise: companion ? referrerPaise : 0,
+      refereeCoins, joined: s.joined, rewarded: s.rewarded, coinsEarned: s.earned, paiseEarned: s.paise,
+    };
   });
 
   app.get("/share-card", {

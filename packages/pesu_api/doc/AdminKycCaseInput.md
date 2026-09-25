@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **status** | **String** |  | 
 **submittedAt** | **Object** |  | 
 **aadhaar** | [**AdminKycCaseInputAadhaar**](AdminKycCaseInputAadhaar.md) |  | 
+**declared** | [**AdminKycCaseInputDeclared**](AdminKycCaseInputDeclared.md) |  | 
 **selfieBlinks** | **int** |  | 
 **panLast4** | **String** |  | 
 **upi** | **String** |  | 
@@ -23,6 +24,8 @@ Name | Type | Description | Notes
 **videoEnabled** | **bool** |  | 
 **academy** | [**AdminKycCaseInputAcademy**](AdminKycCaseInputAcademy.md) |  | 
 **documents** | **List<String>** |  | [default to const []]
+**redo** | **List<String>** | Items the last rejection asked them to send again | [default to const []]
+**voice** | [**AdminKycCaseInputVoice**](AdminKycCaseInputVoice.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

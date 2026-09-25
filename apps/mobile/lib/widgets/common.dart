@@ -182,11 +182,15 @@ class GradientButton extends StatelessWidget {
     required this.onPressed,
     this.loading = false,
     this.icon,
+    this.gradient = AppColors.brand,
   });
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
   final IconData? icon;
+
+  /// Brand by default; the companion side passes its green.
+  final Gradient gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +203,7 @@ class GradientButton extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            gradient: AppColors.brand,
+            gradient: gradient,
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(28),

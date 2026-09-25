@@ -192,6 +192,11 @@ enum NotificationItemTypeEnum {
   groupReminder._(r'group_reminder'),
   groupCancelled._(r'group_cancelled'),
   photoDecided._(r'photo_decided'),
+  chatRequest._(r'chat_request'),
+  chatRequestAccepted._(r'chat_request_accepted'),
+  callInvite._(r'call_invite'),
+  badgeWon._(r'badge_won'),
+  levelUp._(r'level_up'),
   vip._(r'vip'),
   bonusEarned._(r'bonus_earned'),
   ;
@@ -275,6 +280,11 @@ class NotificationItemTypeEnumTypeTransformer {
         case r'group_reminder': return NotificationItemTypeEnum.groupReminder;
         case r'group_cancelled': return NotificationItemTypeEnum.groupCancelled;
         case r'photo_decided': return NotificationItemTypeEnum.photoDecided;
+        case r'chat_request': return NotificationItemTypeEnum.chatRequest;
+        case r'chat_request_accepted': return NotificationItemTypeEnum.chatRequestAccepted;
+        case r'call_invite': return NotificationItemTypeEnum.callInvite;
+        case r'badge_won': return NotificationItemTypeEnum.badgeWon;
+        case r'level_up': return NotificationItemTypeEnum.levelUp;
         case r'vip': return NotificationItemTypeEnum.vip;
         case r'bonus_earned': return NotificationItemTypeEnum.bonusEarned;
         default:

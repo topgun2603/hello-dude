@@ -26,6 +26,7 @@ class OnlineCompanionInput {
     required this.busy,
     required this.isFavourite,
     required this.rates,
+    required this.badge,
   });
 
   String id;
@@ -62,6 +63,9 @@ class OnlineCompanionInput {
 
   CompanionRatesInput rates;
 
+  /// Best active badge, e.g. '#1 companion this week'
+  UserBadgeInput? badge;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is OnlineCompanionInput &&
     other.id == id &&
@@ -76,7 +80,8 @@ class OnlineCompanionInput {
     other.videoEnabled == videoEnabled &&
     other.busy == busy &&
     other.isFavourite == isFavourite &&
-    other.rates == rates;
+    other.rates == rates &&
+    other.badge == badge;
 
   @override
   int get hashCode =>
@@ -93,10 +98,11 @@ class OnlineCompanionInput {
     (videoEnabled.hashCode) +
     (busy.hashCode) +
     (isFavourite.hashCode) +
-    (rates.hashCode);
+    (rates.hashCode) +
+    (badge == null ? 0 : badge!.hashCode);
 
   @override
-  String toString() => 'OnlineCompanionInput[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates]';
+  String toString() => 'OnlineCompanionInput[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates, badge=$badge]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -121,6 +127,11 @@ class OnlineCompanionInput {
       json[r'busy'] = this.busy;
       json[r'isFavourite'] = this.isFavourite;
       json[r'rates'] = this.rates;
+    if (this.badge != null) {
+      json[r'badge'] = this.badge;
+    } else {
+      json[r'badge'] = null;
+    }
     return json;
   }
 
@@ -159,6 +170,7 @@ class OnlineCompanionInput {
         assert(json[r'isFavourite'] != null, 'Required key "OnlineCompanionInput[isFavourite]" has a null value in JSON.');
         assert(json.containsKey(r'rates'), 'Required key "OnlineCompanionInput[rates]" is missing from JSON.');
         assert(json[r'rates'] != null, 'Required key "OnlineCompanionInput[rates]" has a null value in JSON.');
+        assert(json.containsKey(r'badge'), 'Required key "OnlineCompanionInput[badge]" is missing from JSON.');
         return true;
       }());
 
@@ -180,6 +192,7 @@ class OnlineCompanionInput {
         busy: mapValueOfType<bool>(json, r'busy')!,
         isFavourite: mapValueOfType<bool>(json, r'isFavourite')!,
         rates: CompanionRatesInput.fromJson(json[r'rates'])!,
+        badge: UserBadgeInput.fromJson(json[r'badge']),
       );
     }
     return null;
@@ -240,6 +253,7 @@ class OnlineCompanionInput {
     'busy',
     'isFavourite',
     'rates',
+    'badge',
   };
 }
 

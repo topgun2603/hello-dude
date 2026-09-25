@@ -72,7 +72,8 @@ export interface CoinPackage {
 
 export interface Report {
   id: string; createdAt: string; reason: string; details: string | null; status: string; callId: string | null;
-  reporter: { id: string; displayName: string; role: string };
+  /** id null = the automatic safety check (repeated contact-sharing attempts in chat). */
+  reporter: { id: string | null; displayName: string; role: string };
   reported: { id: string; displayName: string; role: string; status: string; reportsAgainst: number };
   resolutionNote: string | null; resolvedAt: string | null;
   recording: "recording" | "ready" | "failed" | "deleted" | "disabled" | null;
@@ -93,12 +94,21 @@ export interface AdminUser {
   avatarId: number;
 }
 
+export type KycItem = "age" | "selfie" | "voice" | "pan" | "upi";
+
 export interface KycCase {
   userId: string; displayName: string; phone: string; gender: string; primaryLanguage: string;
   status: "submitted" | "approved" | "rejected" | "in_progress"; submittedAt: string | null;
+  /** Only for companions verified before Aadhaar was dropped (2026-09-24). */
   aadhaar: { name: string | null; dob: string | null; age: number | null; gender: string | null; last4: string | null; generatedAt: string | null };
+  /** Date of birth the companion entered (18+ confirmed). */
+  declared: { birthDate: string | null; age: number | null };
   selfieBlinks: number | null; panLast4: string | null; upi: string | null; rejectReason: string | null; videoEnabled: boolean;
-  documents: ("aadhaar_photo" | "selfie" | "pan")[];
+  documents: ("aadhaar_photo" | "selfie" | "pan" | "voice")[];
+  /** Women companions: a voice intro reading `sentence`; deleted after the decision. */
+  voice: { needed: boolean; sentence: string | null; submittedAt: string | null; checkedAt: string | null };
+  /** What the last rejection asked them to send again. */
+  redo: KycItem[];
   academy: { passed: number; total: number };
 }
 
@@ -146,7 +156,7 @@ export interface UserPayout {
   failureReason: string | null; processedAt: string | null;
 }
 export interface UserReport {
-  id: string; createdAt: string; direction: "against" | "by"; other: Party; reason: string; details: string | null;
+  id: string; createdAt: string; direction: "against" | "by"; other: { id: string | null; displayName: string }; reason: string; details: string | null;
   status: string; callId: string | null;
 }
 export interface UserRefund {
@@ -191,6 +201,12 @@ export interface ModerationFlag {
 
 // --- v2 engagement (routes/rewards.ts, routes/vip.ts, routes/rooms.ts) ---------
 export interface CompanionLevel { level: number; name: string; minHours: number; minRating: number; boostPct: number }
+export type EventTheme = "festive" | "pongal" | "diwali" | "onam" | "holi" | "love" | "cricket";
+export interface AdminEvent {
+  id: string; name: string; tagline: string | null; theme: EventTheme; startsAt: string; endsAt: string; giftIds: number[];
+  active: boolean; badgesAwarded: boolean;
+}
+export interface CallerLevel { level: number; name: string; minCoins: number; perk: string | null }
 export interface BonusCampaign {
   id: number; title: string; rewardPaise: number; requiredMinutes: number; windowStart: number; windowEnd: number;
   weekdays: number[]; startsOn: string; endsOn: string | null; isActive: boolean;
@@ -234,7 +250,7 @@ export interface AdminStaff {
 // --- Analytics (services/api/src/routes/analytics.ts) ---
 export interface AnalyticsTotals {
   connectedCalls: number; missedCalls: number; minutes: number; avgCallSeconds: number;
-  coinsSpent: number; coinsOnCalls: number; coinsOnGifts: number; coinsOnLives: number; coinsRefunded: number;
+  coinsSpent: number; coinsOnCalls: number; coinsOnGifts: number; coinsOnLives: number; coinsOnGroups: number; coinsRefunded: number;
   salesPaise: number; purchases: number; companionEarningsPaise: number;
   newCallers: number; newCompanions: number; activeCallers: number; payingCallers: number;
   avgRating: number | null; ratings: number; companionOnlineMinutes: number;
@@ -246,7 +262,7 @@ export interface AdminAnalytics {
   totals: AnalyticsTotals;
   previousTotals: AnalyticsTotals;
   margin: { gstPct: number; storeFeePct: number; netRevenuePaise: number; companionCostPaise: number; infraPaise: number; marginPaise: number; marginPct: number | null; targetPct: number };
-  daily: { date: string; calls: number; minutes: number; coinsSpent: number; salesPaise: number; earningsPaise: number; newCallers: number; newCompanions: number; activeCallers: number }[];
+  daily: { date: string; calls: number; minutes: number; coinsSpent: number; salesPaise: number; earningsPaise: number; newCallers: number; newCompanions: number; activeCallers: number; missedCalls: number; avgRating: number | null }[];
   byLanguage: { code: string; name: string; calls: number; minutes: number; coins: number }[];
   byType: { type: "audio" | "video"; calls: number; minutes: number; coins: number }[];
   byHour: { hour: number; calls: number; minutes: number }[];

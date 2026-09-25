@@ -179,9 +179,24 @@ class _Body extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'TDS is deducted before payout.',
+                d.panOnFile
+                    ? 'TDS of ${d.tdsBps / 100}% is deducted before payout.'
+                    : 'No PAN on file: ${d.tdsNoPanBps / 100}% TDS is deducted (${d.tdsWithPanBps / 100}% with a PAN).',
                 style: AppText.body(12.5, color: const Color(0xFFD1FAE5)),
               ),
+              if (!d.panOnFile)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: () => context.push('/kyc'),
+                    icon: const Icon(Icons.badge_outlined, size: 18),
+                    label: const Text('Add PAN to pay less TDS'),
+                  ),
+                ),
             ],
           ),
         ),

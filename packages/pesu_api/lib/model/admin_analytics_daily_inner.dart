@@ -22,6 +22,8 @@ class AdminAnalyticsDailyInner {
     required this.newCallers,
     required this.newCompanions,
     required this.activeCallers,
+    required this.missedCalls,
+    required this.avgRating,
   });
 
   String date;
@@ -58,6 +60,13 @@ class AdminAnalyticsDailyInner {
   /// Maximum value: 9007199254740991
   int activeCallers;
 
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int missedCalls;
+
+  /// Callers' average stars that day
+  num? avgRating;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminAnalyticsDailyInner &&
     other.date == date &&
@@ -68,7 +77,9 @@ class AdminAnalyticsDailyInner {
     other.earningsPaise == earningsPaise &&
     other.newCallers == newCallers &&
     other.newCompanions == newCompanions &&
-    other.activeCallers == activeCallers;
+    other.activeCallers == activeCallers &&
+    other.missedCalls == missedCalls &&
+    other.avgRating == avgRating;
 
   @override
   int get hashCode =>
@@ -81,10 +92,12 @@ class AdminAnalyticsDailyInner {
     (earningsPaise.hashCode) +
     (newCallers.hashCode) +
     (newCompanions.hashCode) +
-    (activeCallers.hashCode);
+    (activeCallers.hashCode) +
+    (missedCalls.hashCode) +
+    (avgRating == null ? 0 : avgRating!.hashCode);
 
   @override
-  String toString() => 'AdminAnalyticsDailyInner[date=$date, calls=$calls, minutes=$minutes, coinsSpent=$coinsSpent, salesPaise=$salesPaise, earningsPaise=$earningsPaise, newCallers=$newCallers, newCompanions=$newCompanions, activeCallers=$activeCallers]';
+  String toString() => 'AdminAnalyticsDailyInner[date=$date, calls=$calls, minutes=$minutes, coinsSpent=$coinsSpent, salesPaise=$salesPaise, earningsPaise=$earningsPaise, newCallers=$newCallers, newCompanions=$newCompanions, activeCallers=$activeCallers, missedCalls=$missedCalls, avgRating=$avgRating]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -97,6 +110,12 @@ class AdminAnalyticsDailyInner {
       json[r'newCallers'] = this.newCallers;
       json[r'newCompanions'] = this.newCompanions;
       json[r'activeCallers'] = this.activeCallers;
+      json[r'missedCalls'] = this.missedCalls;
+    if (this.avgRating != null) {
+      json[r'avgRating'] = this.avgRating;
+    } else {
+      json[r'avgRating'] = null;
+    }
     return json;
   }
 
@@ -129,6 +148,9 @@ class AdminAnalyticsDailyInner {
         assert(json[r'newCompanions'] != null, 'Required key "AdminAnalyticsDailyInner[newCompanions]" has a null value in JSON.');
         assert(json.containsKey(r'activeCallers'), 'Required key "AdminAnalyticsDailyInner[activeCallers]" is missing from JSON.');
         assert(json[r'activeCallers'] != null, 'Required key "AdminAnalyticsDailyInner[activeCallers]" has a null value in JSON.');
+        assert(json.containsKey(r'missedCalls'), 'Required key "AdminAnalyticsDailyInner[missedCalls]" is missing from JSON.');
+        assert(json[r'missedCalls'] != null, 'Required key "AdminAnalyticsDailyInner[missedCalls]" has a null value in JSON.');
+        assert(json.containsKey(r'avgRating'), 'Required key "AdminAnalyticsDailyInner[avgRating]" is missing from JSON.');
         return true;
       }());
 
@@ -142,6 +164,10 @@ class AdminAnalyticsDailyInner {
         newCallers: mapValueOfType<int>(json, r'newCallers')!,
         newCompanions: mapValueOfType<int>(json, r'newCompanions')!,
         activeCallers: mapValueOfType<int>(json, r'activeCallers')!,
+        missedCalls: mapValueOfType<int>(json, r'missedCalls')!,
+        avgRating: json[r'avgRating'] == null
+            ? null
+            : num.parse('${json[r'avgRating']}'),
       );
     }
     return null;
@@ -198,6 +224,8 @@ class AdminAnalyticsDailyInner {
     'newCallers',
     'newCompanions',
     'activeCallers',
+    'missedCalls',
+    'avgRating',
   };
 }
 

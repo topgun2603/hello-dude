@@ -8,6 +8,7 @@ import 'package:pesu_api/api.dart';
 
 final _companion = OnlineCompanion(
   id: 'c1',
+  badge: null,
   displayName: 'Priya',
   avatarId: 1,
   photoUrl: null,

@@ -135,7 +135,8 @@ const AdminUserDetail = z.object({
     upiId: z.string().describe("Masked"), status: z.string(), failureReason: z.string().nullable(), processedAt: z.date().nullable(),
   })),
   reports: z.array(z.object({
-    id: z.uuid(), createdAt: z.date(), direction: z.enum(["against", "by"]), other: Party, reason: z.string(),
+    id: z.uuid(), createdAt: z.date(), direction: z.enum(["against", "by"]),
+    other: z.object({ id: z.uuid().nullable(), displayName: z.string() }).describe("id null = the automatic safety check"), reason: z.string(),
     details: z.string().nullable(), status: z.string(), callId: z.uuid().nullable(),
   })),
   refunds: z.array(z.object({
@@ -156,7 +157,8 @@ const Report = z.object({
   details: z.string().nullable(),
   status: z.string(),
   callId: z.uuid().nullable(),
-  reporter: z.object({ id: z.uuid(), displayName: z.string(), role: z.string() }),
+  reporter: z.object({ id: z.uuid().nullable(), displayName: z.string(), role: z.string() })
+    .describe("id null = the automatic safety check (repeated contact-sharing attempts in chat)"),
   reported: z.object({ id: z.uuid(), displayName: z.string(), role: z.string(), status: z.string(), reportsAgainst: z.number().int() }),
   resolutionNote: z.string().nullable(),
   resolvedAt: z.date().nullable(),
@@ -213,7 +215,16 @@ const SETTINGS: Record<string, { min: number; max: number; label: string }> = {
   "refund.window_days": { min: 1, max: 30, label: "Days a caller can ask for a refund" },
   "payout.min_paise": { min: 1000, max: 1_000_000, label: "Minimum withdrawal (paise)" },
   "payout.tds_bps": { min: 0, max: 3000, label: "TDS on withdrawals (basis points)" },
-  "kyc.aadhaar_max_age_hours": { min: 1, max: 720, label: "Max age of an Aadhaar offline ZIP (hours)" },
+  "payout.tds_no_pan_bps": { min: 0, max: 3000, label: "TDS on withdrawals without a PAN (basis points)" },
+  "referral.companion_bonus_paise": { min: 0, max: 100000, label: "Companion referral: bonus when an invited caller first recharges (paise)" },
+  "chat.strikes_to_pause": { min: 1, max: 20, label: "Chat: blocked attempts in 24 h that pause chat" },
+  "chat.pause_hours": { min: 1, max: 720, label: "Chat: how long a pause lasts (hours)" },
+  "chat.strikes_to_review": { min: 1, max: 100, label: "Chat: blocked attempts in 30 days that file an automatic report" },
+  "chat.requests_per_day": { min: 0, max: 100, label: "Chat: message requests a caller can send per day" },
+  "chat.request_retry_days": { min: 0, max: 90, label: "Chat: days before asking again after a decline" },
+  "invite.can_pay_minutes": { min: 1, max: 60, label: "Invites: minutes of voice a caller must afford to show 'Ready to call'" },
+  "invite.per_companion_hour": { min: 0, max: 500, label: "Invites: max a companion can send per hour" },
+  "invite.per_caller_hour": { min: 0, max: 100, label: "Invites: max a caller can receive per hour" },
   "checkin.day1": { min: 0, max: 100, label: "Daily bonus: Day 1 (coins)" },
   "checkin.day2": { min: 0, max: 100, label: "Daily bonus: Day 2 (coins)" },
   "checkin.day3": { min: 0, max: 100, label: "Daily bonus: Day 3 (coins)" },
@@ -535,7 +546,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     const rows = (await db.query<{
       id: string; created_at: Date; reason: string; details: string | null; status: string; call_id: string | null;
       resolution_note: string | null; resolved_at: Date | null;
-      r_id: string; r_name: string; r_role: string; t_id: string; t_name: string; t_role: string; t_status: string; t_reports: number;
+      r_id: string | null; r_name: string | null; r_role: string | null; t_id: string; t_name: string; t_role: string; t_status: string; t_reports: number;
       rec: "recording" | "ready" | "failed" | "deleted" | "disabled" | null;
     }>(
       `SELECT rp.id, rp.created_at, rp.reason, rp.details, rp.status, rp.call_id, rp.resolution_note, rp.resolved_at,
@@ -543,13 +554,13 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
               t.id AS t_id, t.display_name AS t_name, t.role AS t_role, t.status AS t_status,
               (SELECT rr.status FROM report_recordings rr WHERE rr.report_id = rp.id ORDER BY rr.started_at DESC LIMIT 1) AS rec,
               (SELECT count(*) FROM reports x WHERE x.reported_id = t.id)::int AS t_reports
-         FROM reports rp JOIN users r ON r.id = rp.reporter_id JOIN users t ON t.id = rp.reported_id
+         FROM reports rp LEFT JOIN users r ON r.id = rp.reporter_id JOIN users t ON t.id = rp.reported_id
         WHERE rp.status = $1 ORDER BY rp.created_at DESC LIMIT $2`,
       [req.query.status, req.query.limit],
     )).rows;
     return rows.map((r) => ({
       id: r.id, createdAt: r.created_at, reason: r.reason, details: r.details, status: r.status, callId: r.call_id,
-      reporter: { id: r.r_id, displayName: r.r_name, role: r.r_role },
+      reporter: r.r_id ? { id: r.r_id, displayName: r.r_name!, role: r.r_role! } : { id: null, displayName: "Safety check (automatic)", role: "system" },
       reported: { id: r.t_id, displayName: r.t_name, role: r.t_role, status: r.t_status, reportsAgainst: r.t_reports },
       resolutionNote: r.resolution_note, resolvedAt: r.resolved_at, recording: r.rec,
     }));
@@ -666,7 +677,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   }, async (req, reply) => {
     const { decision, note } = req.body;
     const { reported, reporter } = await tx(db, async (c) => {
-      const r = (await c.query<{ reported_id: string; reporter_id: string; status: string }>(
+      const r = (await c.query<{ reported_id: string; reporter_id: string | null; status: string }>(
         `SELECT reported_id, reporter_id, status FROM reports WHERE id = $1 FOR UPDATE`, [req.params.id],
       )).rows[0];
       if (!r) throw notFound("REPORT_NOT_FOUND");
@@ -680,7 +691,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       return { reported: r.reported_id, reporter: r.reporter_id };
     });
     if (decision === "suspend") await afterSuspend(reported);
-    await notify(app.deps, reporter, decision === "suspend"
+    if (reporter) await notify(app.deps, reporter, decision === "suspend"
       ? { type: "report_actioned", title: "We acted on your report", body: "Thanks for keeping Hello Dude! safe." }
       : { type: "report_actioned", title: "We reviewed your report", body: "We didn't find a rule break this time. Thanks for telling us." });
     // Kit rule: the recording is deleted once the report is closed.
@@ -893,11 +904,11 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
           status: string; failure_reason: string | null; processed_at: Date | null }>(
         `SELECT id, created_at, gross_paise, tds_paise, net_paise, upi_id, status::text AS status, failure_reason, processed_at
            FROM payouts WHERE companion_id = $1 ORDER BY created_at DESC LIMIT 500`),
-      q<{ id: string; created_at: Date; against: boolean; other_id: string; other_name: string; reason: string;
+      q<{ id: string; created_at: Date; against: boolean; other_id: string | null; other_name: string | null; reason: string;
           details: string | null; status: string; call_id: string | null }>(
         `SELECT r.id, r.created_at, r.reported_id = $1 AS against, o.id AS other_id, o.display_name AS other_name,
                 r.reason, r.details, r.status, r.call_id
-           FROM reports r JOIN users o ON o.id = CASE WHEN r.reported_id = $1 THEN r.reporter_id ELSE r.reported_id END
+           FROM reports r LEFT JOIN users o ON o.id = CASE WHEN r.reported_id = $1 THEN r.reporter_id ELSE r.reported_id END
           WHERE r.reported_id = $1 OR r.reporter_id = $1 ORDER BY r.created_at DESC LIMIT 500`),
       q<{ id: string; created_at: Date; call_id: string; reason: string; status: string; coins_eligible: number;
           coins_refunded: number; by_user: boolean }>(
@@ -970,7 +981,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       payouts: payouts.map((p) => ({ id: p.id, createdAt: p.created_at, grossPaise: p.gross_paise, tdsPaise: p.tds_paise,
         netPaise: p.net_paise, upiId: maskUpi(p.upi_id), status: p.status, failureReason: p.failure_reason, processedAt: p.processed_at })),
       reports: reports.map((r) => ({ id: r.id, createdAt: r.created_at, direction: r.against ? "against" as const : "by" as const,
-        other: { id: r.other_id, displayName: r.other_name }, reason: r.reason, details: r.details, status: r.status, callId: r.call_id })),
+        other: { id: r.other_id, displayName: r.other_name ?? "Safety check (automatic)" }, reason: r.reason, details: r.details, status: r.status, callId: r.call_id })),
       refunds: refunds.map((f) => ({ id: f.id, createdAt: f.created_at, callId: f.call_id, reason: f.reason, status: f.status,
         coinsEligible: f.coins_eligible, coinsRefunded: f.coins_refunded, byUser: f.by_user })),
       audit: auditRows.map((a) => ({ id: a.id, createdAt: a.created_at, actor: a.actor, action: a.action, details: a.details })),

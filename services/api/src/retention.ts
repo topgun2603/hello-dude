@@ -10,6 +10,7 @@
  * - Flagged video frames: 30 days after an admin reviewed them.
  * - Notifications: 90 days after they were read.
  * - Chat messages: 1 year after the conversation's last message.
+ * - Live snapshots (card thumbnails): as soon as the live has ended.
  */
 import type { Db } from "./db/pool.js";
 import type { Recorder } from "./recording.js";
@@ -30,6 +31,7 @@ export interface RetentionResult {
   frames: number;
   notifications: number;
   chatMessages: number;
+  liveSnapshots: number;
 }
 
 export async function runRetention(deps: { db: Db; store: ObjectStore; recorder: Recorder }): Promise<RetentionResult> {
@@ -87,5 +89,13 @@ export async function runRetention(deps: { db: Db; store: ObjectStore; recorder:
     `DELETE FROM messages m USING conversations cv
       WHERE m.conversation_id = cv.id AND cv.last_message_at < now() - make_interval(days => $1)`, [RETENTION.chatDays])).rowCount ?? 0;
 
-  return { sessions, recordings: recs.length, rejectedKyc: rejected.length, frames: frames.length, notifications, chatMessages };
+  const snaps = (await db.query<{ id: string; snapshot_key: string }>(
+    `SELECT id, snapshot_key FROM lives WHERE status = 'ended' AND snapshot_key IS NOT NULL`)).rows;
+  for (const l of snaps) {
+    await store.delete(l.snapshot_key);
+    await db.query(`UPDATE lives SET snapshot_key = NULL WHERE id = $1`, [l.id]);
+  }
+
+  return { sessions, recordings: recs.length, rejectedKyc: rejected.length, frames: frames.length, notifications, chatMessages,
+    liveSnapshots: snaps.length };
 }

@@ -361,7 +361,7 @@ const REPORT_TABS = [
   { key: "all", label: "All", reasons: null },
   { key: "harassment", label: "Harassment", reasons: ["abuse", "sexual_content"] },
   { key: "spam", label: "Spam", reasons: ["spam"] },
-  { key: "fraud", label: "Fraud", reasons: ["fraud"] },
+  { key: "fraud", label: "Fraud", reasons: ["fraud", "off_platform"] },
 ] as const;
 
 function OpenReports({ d }: { d?: Dashboard }) {

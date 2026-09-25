@@ -106,7 +106,166 @@ class GrowthApi {
     return null;
   }
 
-  /// Invite friends: my code, the reward and how many friends joined
+  /// The festival event running now, if any
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getCurrentEventWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/events/current';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// The festival event running now, if any
+  Future<GetCurrentEvent200Response?> getCurrentEvent({ Future<void>? abortTrigger, }) async {
+    final response = await getCurrentEventWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetCurrentEvent200Response',) as GetCurrentEvent200Response;
+    
+    }
+    return null;
+  }
+
+  /// Top companions (coins spent on them) or top fans (gift coins sent): this week, last week, or an event
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] board (required):
+  ///
+  /// * [String] period:
+  ///
+  /// * [String] eventId:
+  Future<Response> getLeaderboardWithHttpInfo(String board, { String? period, String? eventId, Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/leaderboards';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+      queryParams.addAll(_queryParams('', 'board', board));
+    if (period != null) {
+      queryParams.addAll(_queryParams('', 'period', period));
+    }
+    if (eventId != null) {
+      queryParams.addAll(_queryParams('', 'eventId', eventId));
+    }
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Top companions (coins spent on them) or top fans (gift coins sent): this week, last week, or an event
+  ///
+  /// Parameters:
+  ///
+  /// * [String] board (required):
+  ///
+  /// * [String] period:
+  ///
+  /// * [String] eventId:
+  Future<GetLeaderboard200Response?> getLeaderboard(String board, { String? period, String? eventId, Future<void>? abortTrigger, }) async {
+    final response = await getLeaderboardWithHttpInfo(board, period: period, eventId: eventId, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetLeaderboard200Response',) as GetLeaderboard200Response;
+    
+    }
+    return null;
+  }
+
+  /// My caller level, from lifetime coins spent
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getMyLevelWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/me/level';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// My caller level, from lifetime coins spent
+  Future<GetMyLevel200Response?> getMyLevel({ Future<void>? abortTrigger, }) async {
+    final response = await getMyLevelWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetMyLevel200Response',) as GetMyLevel200Response;
+    
+    }
+    return null;
+  }
+
+  /// Invite friends: my code, the reward and how many joined. Callers earn coins; companions earn ₹ in earnings (referrerPaise) — both when the invited caller makes their first recharge.
   ///
   /// Note: This method returns the HTTP [Response].
   Future<Response> getReferralWithHttpInfo({ Future<void>? abortTrigger, }) async {
@@ -135,7 +294,7 @@ class GrowthApi {
     );
   }
 
-  /// Invite friends: my code, the reward and how many friends joined
+  /// Invite friends: my code, the reward and how many joined. Callers earn coins; companions earn ₹ in earnings (referrerPaise) — both when the invited caller makes their first recharge.
   Future<GetReferral200Response?> getReferral({ Future<void>? abortTrigger, }) async {
     final response = await getReferralWithHttpInfo(abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pesu_api/api.dart';
 
+import '../growth/leaderboard_screen.dart' show CallerLevelCard;
 import '../../app/theme.dart';
 import '../../data/errors.dart';
 import '../../data/languages.dart';
@@ -10,7 +11,6 @@ import '../../data/session.dart';
 import '../../widgets/common.dart';
 import '../vip/vip_screen.dart';
 import '../../widgets/love_loader.dart';
-import '../history/call_history.dart' show CallHistoryBody;
 import '../history/coin_history.dart'
     show CoinHistoryPreview, coinHistoryPreviewProvider;
 import 'coin_shop.dart';
@@ -51,17 +51,6 @@ BoxDecoration _card() => BoxDecoration(
 );
 
 // ---------------------------------------------------------------------------
-class CallsTab extends ConsumerWidget {
-  const CallsTab({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => _TabPage(
-    title: 'Calls',
-    onRefresh: () async => ref.invalidate(callHistoryProvider),
-    children: const [CallHistoryBody()],
-  );
-}
-
 // ---------------------------------------------------------------------------
 class WalletTab extends ConsumerWidget {
   const WalletTab({super.key});
@@ -250,6 +239,7 @@ class ProfileTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
+        if (p.role == ProfileRoleEnum.caller) const CallerLevelCard(),
         Container(
           decoration: _card(),
           child: Column(
@@ -258,6 +248,17 @@ class ProfileTab extends ConsumerWidget {
                 leading: const Icon(Icons.translate_rounded),
                 title: const Text('Languages'),
                 subtitle: Text(languageNames(p.languages)),
+              ),
+              const Divider(height: 1, color: AppColors.cardBorder),
+              ListTile(
+                leading: const Icon(
+                  Icons.emoji_events_outlined,
+                  color: Color(0xFFFCD34D),
+                ),
+                title: const Text('Leaderboards'),
+                subtitle: const Text('Top companions and fans this week'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/leaderboards'),
               ),
               const Divider(height: 1, color: AppColors.cardBorder),
               if (p.role == ProfileRoleEnum.caller)
@@ -285,6 +286,17 @@ class ProfileTab extends ConsumerWidget {
                 ),
               ],
               if (p.role == ProfileRoleEnum.caller) ...[
+                const Divider(height: 1, color: AppColors.cardBorder),
+                ListTile(
+                  leading: const Icon(
+                    Icons.history_rounded,
+                    color: AppColors.lilac,
+                  ),
+                  title: const Text('Call history'),
+                  subtitle: const Text('Every call, with dates and filters'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/call-history'),
+                ),
                 const Divider(height: 1, color: AppColors.cardBorder),
                 ListTile(
                   leading: const Icon(

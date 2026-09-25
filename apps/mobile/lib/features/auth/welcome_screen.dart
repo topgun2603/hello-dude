@@ -245,6 +245,33 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             ],
           ],
         ),
+        // Women (and "Other") join as companions: they take calls and earn.
+        if (_gender != SignUpRequestGenderEnum.male)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.record_voice_over_outlined,
+                  size: 18,
+                  color: Color(0xFF6EE7B7),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "You'll join as a companion: take calls in your language and earn. "
+                    'A quick check (age, selfie and a short voice intro), then a ₹10 joining bonus.',
+                    style: AppText.body(
+                      13,
+                      color: const Color(0xFF6EE7B7),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     ),
   );

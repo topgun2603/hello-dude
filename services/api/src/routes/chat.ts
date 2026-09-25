@@ -1,15 +1,18 @@
 /**
- * Chat (design: Chat.dc.html). Free, 1:1, only between a caller and a companion
- * who have had a connected call; blocked pairs can't chat. Messages pass the
- * safety filter (chat-filter.ts). Calls between the pair appear in the thread.
+ * Chat (design: Chat.dc.html). Free, 1:1, between a caller and a companion who
+ * have had a connected call — or whose message request she accepted (owner,
+ * 2026-09-24); blocked pairs can't chat. Messages pass the safety filter and
+ * strikes (chat-safety.ts). Calls between the pair appear in the thread.
  */
 import { z } from "zod";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { bearer, me, requireAuth } from "../auth/guard.js";
 import { ApiError, forbidden, notFound } from "../errors.js";
 import { ONLINE_SET } from "../billing/engine.js";
-import { BLOCK_MESSAGES, checkMessage } from "../chat-filter.js";
+import { assertChatOpen, screenMessage } from "../chat-safety.js";
+import { tx } from "../db/pool.js";
 import { notify } from "../notifications.js";
+import { numberSetting } from "../settings.js";
 
 const Party = z.object({ id: z.uuid(), displayName: z.string(), avatarId: z.number().int(), role: z.enum(["caller", "companion"]), online: z.boolean() });
 
@@ -32,10 +35,11 @@ const ThreadItem = z.object({
   at: z.date(),
 }).meta({ id: "ChatItem" });
 
-/** Blocks the pair must not have, and the call they need to have had. */
+/** Blocks the pair must not have, and the call (or accepted request) they need to have had. */
 const ELIGIBLE = `
   u_caller.status = 'active' AND u_comp.status = 'active'
-  AND EXISTS (SELECT 1 FROM calls x WHERE x.caller_id = cv.caller_id AND x.companion_id = cv.companion_id AND x.started_at IS NOT NULL)
+  AND (EXISTS (SELECT 1 FROM calls x WHERE x.caller_id = cv.caller_id AND x.companion_id = cv.companion_id AND x.started_at IS NOT NULL)
+       OR EXISTS (SELECT 1 FROM chat_requests q WHERE q.caller_id = cv.caller_id AND q.companion_id = cv.companion_id AND q.status = 'accepted'))
   AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = cv.caller_id AND b.blocked_id = cv.companion_id)
                                           OR (b.blocker_id = cv.companion_id AND b.blocked_id = cv.caller_id))`;
 
@@ -85,7 +89,8 @@ export const chatRoutes: FastifyPluginAsyncZod = async (app) => {
     preHandler: auth,
     schema: {
       ...base,
-      summary: "Open the chat with someone (created on first use). Needs a connected call between you and no blocks.",
+      summary: "Open the chat with someone (created on first use). Needs a connected call or an accepted message request, and no blocks. " +
+        "A caller without either gets CHAT_NEEDS_REQUEST: send one with POST /chats/requests.",
       params: z.object({ userId: z.uuid() }),
       response: { 200: Conversation },
     },
@@ -99,9 +104,15 @@ export const chatRoutes: FastifyPluginAsyncZod = async (app) => {
       throw new ApiError(400, "CHAT_NOT_ALLOWED", "Chat is between a caller and a companion");
     }
     const [callerId, companionId] = myRole === "caller" ? [meId, other.id] : [other.id, meId];
-    const talked = (await db.query(`SELECT 1 FROM calls WHERE caller_id = $1 AND companion_id = $2 AND started_at IS NOT NULL LIMIT 1`,
+    const talked = (await db.query(
+      `SELECT 1 FROM calls WHERE caller_id = $1 AND companion_id = $2 AND started_at IS NOT NULL
+       UNION ALL SELECT 1 FROM chat_requests WHERE caller_id = $1 AND companion_id = $2 AND status = 'accepted' LIMIT 1`,
       [callerId, companionId])).rowCount;
-    if (!talked) throw new ApiError(403, "CHAT_NEEDS_CALL", "You can message someone after your first call together");
+    if (!talked) {
+      throw myRole === "caller"
+        ? new ApiError(403, "CHAT_NEEDS_REQUEST", "Send a message request first — she can accept it, or you can call her")
+        : new ApiError(403, "CHAT_NEEDS_CALL", "You can message a caller after your first call together");
+    }
     const blocked = (await db.query(
       `SELECT 1 FROM blocks WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)`, [callerId, companionId])).rowCount;
     if (blocked) throw new ApiError(403, "CHAT_BLOCKED", "You can't message this person");
@@ -155,11 +166,8 @@ export const chatRoutes: FastifyPluginAsyncZod = async (app) => {
     const userId = me(req).userId;
     const cv = await load(req.params.id, userId);
     if (!cv.eligible) throw new ApiError(403, "CHAT_CLOSED", "You can't message this person any more");
-    const reason = checkMessage(req.body.body);
-    if (reason) {
-      await db.query(`INSERT INTO chat_violations (conversation_id, sender_id, reason) VALUES ($1, $2, $3)`, [cv.id, userId, reason]);
-      throw new ApiError(422, "MESSAGE_BLOCKED", BLOCK_MESSAGES[reason]);
-    }
+    // Filter + strikes (pause after repeated attempts); throws MESSAGE_BLOCKED / CHAT_PAUSED.
+    await screenMessage(db, userId, req.body.body, { conversationId: cv.id });
     // A retried send (same clientRef) returns the original message.
     const inserted = (await db.query<{ id: string; created_at: Date; fresh: boolean }>(
       `WITH ins AS (
@@ -197,6 +205,146 @@ export const chatRoutes: FastifyPluginAsyncZod = async (app) => {
   }, async (req, reply) => {
     const cv = await load(req.params.id, me(req).userId);
     await db.query(`UPDATE conversations SET ${cv.asCaller ? "caller_last_read_at" : "companion_last_read_at"} = now() WHERE id = $1`, [cv.id]);
+    return reply.status(204).send(null);
+  });
+
+  // --- message requests (a caller who hasn't called her yet) -------------------------
+  const Request = z.object({
+    id: z.uuid(),
+    other: Party,
+    body: z.string(),
+    status: z.enum(["pending", "accepted", "declined"]),
+    createdAt: z.date(),
+    conversationId: z.uuid().nullable().describe("Set once accepted"),
+  }).meta({ id: "ChatRequest" });
+
+  type ReqRow = { id: string; caller_id: string; companion_id: string; body: string; status: "pending" | "accepted" | "declined";
+    created_at: Date; other_id: string; other_name: string; other_avatar: number; other_role: "caller" | "companion"; conversation_id: string | null };
+  const requestRows = async (where: string, args: unknown[], viewer: string) => (await db.query<ReqRow>(
+    `SELECT q.*, o.id AS other_id, o.display_name AS other_name, o.avatar_id AS other_avatar, o.role AS other_role,
+            (SELECT id FROM conversations cv WHERE cv.caller_id = q.caller_id AND cv.companion_id = q.companion_id) AS conversation_id
+       FROM chat_requests q JOIN users o ON o.id = CASE WHEN q.caller_id = $1 THEN q.companion_id ELSE q.caller_id END
+      WHERE ${where} ORDER BY q.created_at DESC LIMIT 100`, [viewer, ...args])).rows;
+  const toRequest = async (r: ReqRow) => ({
+    id: r.id, body: r.body, status: r.status, createdAt: r.created_at,
+    conversationId: r.status === "accepted" ? r.conversation_id : null,
+    other: { id: r.other_id, displayName: r.other_name, avatarId: r.other_avatar, role: r.other_role,
+      online: (await redis.sismember(ONLINE_SET, r.other_id)) === 1 },
+  });
+
+  app.post("/chats/requests", {
+    preHandler: requireAuth("caller"),
+    schema: {
+      ...base,
+      summary: "Send a companion you haven't called yet one message request (she accepts or declines). Same safety filter and strikes as chat; " +
+        "a few a day; after a decline you can ask again in 7 days.",
+      body: z.object({ companionId: z.uuid(), body: z.string().trim().min(1).max(300) }),
+      response: { 201: Request },
+    },
+  }, async (req, reply) => {
+    const callerId = me(req).userId;
+    const { companionId, body } = req.body;
+    const c = (await db.query<{ ok: boolean }>(
+      `SELECT (u.role = 'companion' AND u.status = 'active' AND p.kyc_status = 'approved') AS ok
+         FROM users u JOIN companion_profiles p ON p.user_id = u.id WHERE u.id = $1`, [companionId])).rows[0];
+    if (!c?.ok) throw notFound("COMPANION_NOT_FOUND");
+    if ((await db.query(`SELECT 1 FROM blocks WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)`,
+      [callerId, companionId])).rowCount) throw new ApiError(403, "CHAT_BLOCKED", "You can't message this person");
+    if ((await db.query(
+      `SELECT 1 FROM calls WHERE caller_id = $1 AND companion_id = $2 AND started_at IS NOT NULL
+       UNION ALL SELECT 1 FROM chat_requests WHERE caller_id = $1 AND companion_id = $2 AND status = 'accepted' LIMIT 1`,
+      [callerId, companionId])).rowCount) throw new ApiError(409, "CHAT_OPEN", "You can already chat — open the chat");
+    if ((await db.query(`SELECT 1 FROM chat_requests WHERE caller_id = $1 AND companion_id = $2 AND status = 'pending'`,
+      [callerId, companionId])).rowCount) throw new ApiError(409, "REQUEST_PENDING", "Your request is waiting for her answer");
+    const retryDays = await numberSetting(db, "chat.request_retry_days", 7);
+    if ((await db.query(
+      `SELECT 1 FROM chat_requests WHERE caller_id = $1 AND companion_id = $2 AND status = 'declined'
+          AND decided_at > now() - make_interval(days => $3)`, [callerId, companionId, retryDays])).rowCount) {
+      throw new ApiError(409, "REQUEST_DECLINED", `She didn't accept your last request. You can ask again after ${retryDays} days, or call her.`);
+    }
+    const perDay = await numberSetting(db, "chat.requests_per_day", 5);
+    const today = (await db.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM chat_requests WHERE caller_id = $1 AND created_at > now() - interval '24 hours'`, [callerId])).rows[0]!.n;
+    if (today >= perDay) throw new ApiError(429, "REQUEST_LIMIT", `You can send ${perDay} message requests a day`);
+    await screenMessage(db, callerId, body);
+    const id = (await db.query<{ id: string }>(
+      `INSERT INTO chat_requests (caller_id, companion_id, body) VALUES ($1, $2, $3) RETURNING id`, [callerId, companionId, body])).rows[0]!.id;
+    const name = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [callerId])).rows[0]!.display_name;
+    await notify(app.deps, companionId, {
+      type: "chat_request", title: `${name} wants to chat`, body: body.length > 80 ? `${body.slice(0, 80)}…` : body, data: { requestId: id },
+    });
+    reply.status(201);
+    return toRequest((await requestRows(`q.id = $2`, [id], callerId))[0]!);
+  });
+
+  app.get("/chats/requests", {
+    preHandler: auth,
+    schema: {
+      ...base,
+      summary: "Companions: requests waiting for an answer. Callers: the requests they sent (last 30 days).",
+      response: { 200: z.object({ items: z.array(Request) }) },
+    },
+  }, async (req) => {
+    const { userId, role } = me(req);
+    const rows = role === "companion"
+      ? await requestRows(`q.companion_id = $1 AND q.status = 'pending'
+          AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = q.caller_id AND b.blocked_id = q.companion_id)
+                                                OR (b.blocker_id = q.companion_id AND b.blocked_id = q.caller_id))`, [], userId)
+      : await requestRows(`q.caller_id = $1 AND q.created_at > now() - interval '30 days'`, [], userId);
+    return { items: await Promise.all(rows.map(toRequest)) };
+  });
+
+  const decide = async (requestId: string, companionId: string, accept: boolean) => {
+    const r = (await db.query<{ caller_id: string; companion_id: string; body: string; status: string; created_at: Date }>(
+      `SELECT caller_id, companion_id, body, status, created_at FROM chat_requests WHERE id = $1`, [requestId])).rows[0];
+    if (!r || r.companion_id !== companionId) throw notFound("REQUEST_NOT_FOUND");
+    if (r.status !== "pending") throw new ApiError(409, "REQUEST_DECIDED", "You already answered this request");
+    return r;
+  };
+
+  app.post("/chats/requests/:id/accept", {
+    preHandler: requireAuth("companion"),
+    schema: {
+      ...base,
+      summary: "Accept: the chat opens with their request as the first message",
+      params: z.object({ id: z.uuid() }),
+      response: { 200: Conversation },
+    },
+  }, async (req) => {
+    const companionId = me(req).userId;
+    const r = await decide(req.params.id, companionId, true);
+    await assertChatOpen(db, companionId);
+    const conversationId = await tx(db, async (c) => {
+      const upd = await c.query(`UPDATE chat_requests SET status = 'accepted', decided_at = now() WHERE id = $1 AND status = 'pending'`, [req.params.id]);
+      if (!upd.rowCount) throw new ApiError(409, "REQUEST_DECIDED", "You already answered this request");
+      const id = (await c.query<{ id: string }>(
+        `INSERT INTO conversations (caller_id, companion_id) VALUES ($1, $2)
+         ON CONFLICT (caller_id, companion_id) DO UPDATE SET caller_id = EXCLUDED.caller_id RETURNING id`, [r.caller_id, companionId])).rows[0]!.id;
+      await c.query(`INSERT INTO messages (conversation_id, sender_id, body, client_ref, created_at) VALUES ($1, $2, $3, $4, $5)`,
+        [id, r.caller_id, r.body, req.params.id, r.created_at]);
+      await c.query(`UPDATE conversations SET last_message_at = now(), companion_last_read_at = now() WHERE id = $1`, [id]);
+      return id;
+    });
+    const name = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [companionId])).rows[0]!.display_name;
+    await notify(app.deps, r.caller_id, {
+      type: "chat_request_accepted", title: `${name} accepted your message`, body: "You can chat now.", data: { conversationId },
+    });
+    const o = (await db.query<{ display_name: string; avatar_id: number }>(
+      `SELECT display_name, avatar_id FROM users WHERE id = $1`, [r.caller_id])).rows[0]!;
+    return {
+      id: conversationId, other: { id: r.caller_id, displayName: o.display_name, avatarId: o.avatar_id, role: "caller" as const,
+        online: (await redis.sismember(ONLINE_SET, r.caller_id)) === 1 },
+      lastMessage: r.body, lastMessageAt: new Date(), unread: 0, canMessage: true,
+    };
+  });
+
+  app.post("/chats/requests/:id/decline", {
+    preHandler: requireAuth("companion"),
+    schema: { ...base, summary: "Decline (they aren't told directly; they can ask again after 7 days)", params: z.object({ id: z.uuid() }),
+      response: { 204: z.null() } },
+  }, async (req, reply) => {
+    await decide(req.params.id, me(req).userId, false);
+    await db.query(`UPDATE chat_requests SET status = 'declined', decided_at = now() WHERE id = $1 AND status = 'pending'`, [req.params.id]);
     return reply.status(204).send(null);
   });
 };

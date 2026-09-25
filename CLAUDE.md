@@ -22,17 +22,29 @@ A Hima-style companion calling app for India (reference: Play Store `com.gmwapp.
 - **Android only at launch** (Flutter). iOS later — don't add iOS-only work now.
 - **Voice and video from day one.** Video defaults to **480p**. Video is unlocked per
   companion only after KYC approval + academy lessons + a clean record.
-- **Companion KYC is done in-house ("offline")**, no KYC vendor:
-  1. Companion uploads the UIDAI **Aadhaar Paperless Offline e-KYC ZIP** + share code.
-  2. Server verifies UIDAI's digital signature on the XML; extracts name, DOB,
-     gender, photo. Auto-reject if under 18.
-  3. **Never store the full Aadhaar number** (the offline XML only has the last 4 digits).
-  4. Companion takes a live selfie in the app (ML Kit face detection for the
-     "blink twice" prompt only).
-  5. An admin compares Aadhaar photo vs selfie in the admin **KYC review queue**
-     and approves / rejects with a reason.
-  6. PAN collected (number + photo) and checked manually — needed for TDS.
-  All KYC files stored encrypted in private object storage.
+- **Companion verification — no Aadhaar** (owner, 2026-09-24; replaces the in-house Aadhaar
+  offline e-KYC): the companion enters a **date of birth + "I am 18+"** (under 18 auto-rejected),
+  takes the **live selfie** (ML Kit blink check) and adds a **UPI ID**; an admin approves from the
+  selfie in the KYC review queue. **PAN is optional** and can be added any time (even after
+  approval): **without a PAN on file, TDS on withdrawals is 20%** (`payout.tds_no_pan_bps`, s.206AA),
+  with a PAN the normal `payout.tds_bps`; the app says so on the KYC and Earnings screens. Older
+  companions keep their Aadhaar data until retention/deletion removes it; the UIDAI verifier
+  (`kyc/aadhaar.ts`) stays in the code but no route uses it. All KYC files stored encrypted.
+- **Women are companions only** (owner, 2026-09-24): sign-up with gender female **or other
+  (transgender, treated as women)** creates a companion account, never a caller; men sign up as
+  callers and can still apply to be companions (unchanged). Existing women callers were converted
+  (migration 0028). Women companions add a **voice intro** to verification: the app shows a random
+  sentence (in her language) with 4 random digits, she records 3–15 s, an **admin listens** to it next to the selfie
+  (checks a woman's voice reading that sentence). The clip is **deleted after the decision**; a
+  rejection that ticks "voice" asks for a new recording with a new sentence. On first approval a **₹10 joining
+  bonus** (`companion.joining_bonus_paise`) goes to her earnings (once). No automatic voice-gender
+  detection — the admin decides.
+  The sentence is in **her own language** (native script, per primary language; placeholder
+  wording to be checked by native speakers). **Rejections name what to redo** (owner report
+  2026-09-24): the admin ticks items (date of birth / selfie / voice / PAN / UPI); only those reset,
+  and once the companion sends them all the case **goes back to the review queue by itself**. A
+  voice intro not asked for again counts as checked (clip still deleted). Rejecting with nothing
+  ticked = they fix things and press Submit.
 - **Calls:** LiveKit. Start on LiveKit Cloud (paid starter plan), move to
   self-hosted LiveKit on an India VPS when volume justifies it.
 - **Coin purchases and VIP subscription: Google Play Billing + User Choice Billing
@@ -113,6 +125,15 @@ Reference implementation: `services/api/src/billing/billing-engine.reference.ts`
 - Video moderation: on-device TFLite nudity check every few seconds → blur
   immediately + upload that single frame for review. Cloud vision API only for
   flagged/reported frames (per-image cost).
+  **Tuned 2026-09-24 (owner: ~90% false alarms):** frames too blurry (Laplacian variance < 80
+  on the 224×224 grey image) or too dark (mean < 30) are skipped — the model scored blurry room
+  shots 0.86–0.98; and the phone blurs/pauses + reports only after **2 flagged frames in a row**
+  (~4–8 s) instead of the first. Applies to calls, live viewers, live hosts and group video.
+  Next step if still noisy: replace the classifier with NudeNet (detects exposed body parts).
+  **1:1 calls use silent mode** (owner, 2026-09-24): the check still runs on the other person's
+  video but never blurs — flagged frames (2 in a row, max one per 30 s) only go to the admin
+  Moderation queue; the companion still has report, block and call recording. **Lives and group
+  video keep blurring/pausing** (public, many viewers).
 - Chat: block/flag phone numbers, UPI IDs and payment requests (regex); LLM
   moderation for abusive Tamil/Indic text later.
 - Fraud rules (jobs + SQL): many sub-70-second calls, UPI change right before
@@ -141,11 +162,25 @@ referrals + share card, companion levels/academy video hosting, A/B pricing UI.
 - **Referrals:** each user gets a code; entered at sign-up; referrer +50 and friend +50 coins
   only after the friend's **first credited recharge**; max 50 rewarded referrals per referrer
   (same-device abuse is left to the fraud checks).
+  **Companions have codes too** (owner, 2026-09-24): a caller who signs up with a companion's code
+  gets the same welcome coins, and the companion gets `referral.companion_bonus_paise` (₹25,
+  placeholder) in **earnings** on that caller's first credited recharge (same cap). Watch for
+  companions farming their own callers (fraud checks).
 - **Share card:** rendered on the phone; shows today's talk minutes + language + referral code;
   never the phone number or who they talked to.
 - **Chat:** free; only between a caller and a companion who have had at least one connected
   call; messages with phone numbers / UPI IDs / payment requests are blocked (regex); calls and
   gifts appear in the thread.
+  **Owner, 2026-09-24:** (D) a caller who hasn't called her yet can send **one message request**
+  (≤300 chars, filtered, 5/day); she **accepts** (chat opens with it as the first message) or
+  **declines** (they can ask again after 7 days). (A) The filter now undoes tricks: Indian-script /
+  emoji / look-alike digits, number words in the launch languages, padding between digits, and a
+  number **split over the last 5 messages (10 min)**. (B) Every blocked attempt is a **strike**:
+  3 in 24 h pause the sender's chat for 24 h (`chat.*` settings), 5 in 30 days file one automatic
+  report (reason off_platform, source system, no reporter) for admin review, and companions with
+  3+ strikes in 30 days get a `contact_sharing` payout flag. (C) New report reason **off_platform**
+  ("Asked for my number / to pay outside the app") in calls, chat (new Report / Block menu) and
+  group video. Voice calls can't be filtered — reports + call recording cover them.
 - **Scheduled calls:** favourites only; next 5 days; 30-min slots 7–11 PM IST; 10/20/30 min;
   coins = rate × minutes **held** at booking; companion must confirm within 12 h or it's
   cancelled and refunded; cancelled / no-show-by-companion = full refund; reminder 10 min before;
@@ -222,8 +257,45 @@ referrals + share card, companion levels/academy video hosting, A/B pricing UI.
   used everywhere the avatar shows (cards, lives, groups). Server strips EXIF and re-encodes;
   photos are served only to signed-in users. **Callers stay avatar-only.** The illustrated
   avatars (ids 1–3 by gender) remain the fallback.
+- **Live tab** (owner, 2026-09-24): caller bottom nav is Home · Online · **Live** · Wallet · Profile
+  (Live replaced Calls; call history moved to Profile → Call history). 2-column grid of live
+  cards with server-side sort (For you = favourites, own language, busiest / Popular / New),
+  Favourites filter, language chips, name/title search and paging (20 at a time); a red dot on
+  the tab while anyone is live; Home keeps a top-10 "Live now" row with "See all N". Tapping a
+  card opens the swipe feed in the same order and it keeps loading more. Card picture = a
+  **snapshot from the host's phone** (one checked-clean camera frame about once a minute,
+  re-encoded 360×480, signed URL, served only while live, deleted by retention) — never live
+  video previews on cards (LiveKit minutes + data); falls back to the host photo/avatar.
+- **Callers tab for companions** (owner, 2026-09-24): companion bottom nav is Home · **Callers** ·
+  Earnings · Profile. It lists every caller with the app open (Redis `presence:app`; no opt-out),
+  with name, avatar, language and badges — Ready to call (coins ≥ `invite.can_pay_minutes` × her
+  voice rate), VIP, New (joined ≤7 days), In a call — plus "Talked N× · last …" and whether he
+  favourited her; fans and regulars first. **She can't call him — she invites**: he gets a
+  `call_invite` event + notification ("Priya wants to talk") and starts the call himself, so
+  billing is unchanged. Limits: she must be online and free; one invite per caller per hour;
+  `invite.per_companion_hour` (30) and `invite.per_caller_hour` (5).
 - **Online tab** (caller bottom nav): everyone online in any language, with search, language
   chips, free-now / video / favourites filters and sort; the Random button is a FAB there.
+- **Growth features** (owner chose 2026-09-25; all numbers admin-editable placeholders):
+  - **Leaderboards — badges only, no cash.** Weekly (IST, Mon–Sun) Top companions (gift coins
+    received) and Top fans (gift coins sent), across calls, lives, groups and voice rooms (VIEW
+    `all_gifts`). The worker gives the top `leaderboard.badge_top_n` (10) a badge for the next week
+    (`user_badges`); the best active badge shows on companion cards and caller rows.
+  - **Festival events:** admin → Engagement → Events (name, theme, dates). While one runs, Home
+    shows its banner and it has its own leaderboard; when it ends, the top 10 get event badges.
+  - **Caller levels:** 8 levels by lifetime coins spent (`users.coins_spent`, kept by a ledger
+    trigger; refunds subtract); level-up notification; companions see the level in the Callers tab.
+    Admin → Engagement → Caller levels (kept in order).
+  - **Companion invites companion** uses the existing referral code: the inviter gets
+    `referral.companion_invite_paise` (₹100) once the new companion completes
+    `referral.companion_invite_hours` (10) paid talk hours.
+  - **PK battles** (routes/pk.ts): a live host challenges another live host (30 s to accept);
+    **5 minutes** (`pk.seconds`) side by side, **gift coins decide** (gifts to each host from either
+    live during the window); viewers pick a side when gifting (`toHostId`, only the opponent of an
+    active battle); winner gets a 24 h "PK winner" badge; tie = draw. Nobody pays extra: viewers
+    keep paying only their own live, and the other side's video is a listen-only second LiveKit
+    room (identity `<user>:pk`, not billed). Ends early if either live ends or a host ends it.
+  - **Faster payouts:** via RazorpayX (owner will connect the account); not built yet.
 
 ## Designs
 `design/screens/*.dc.html` — 31 screens (mobile 390×844, admin 1440×900).

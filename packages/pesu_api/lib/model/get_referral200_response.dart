@@ -16,19 +16,29 @@ class GetReferral200Response {
     required this.code,
     required this.link,
     required this.referrerCoins,
+    required this.referrerPaise,
     required this.refereeCoins,
     required this.joined,
     required this.rewarded,
     required this.coinsEarned,
+    required this.paiseEarned,
   });
 
   String code;
 
   String link;
 
+  /// Callers: coins per friend
+  ///
   /// Minimum value: -9007199254740991
   /// Maximum value: 9007199254740991
   int referrerCoins;
+
+  /// Companions: earnings per invited caller
+  ///
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int referrerPaise;
 
   /// Minimum value: -9007199254740991
   /// Maximum value: 9007199254740991
@@ -46,15 +56,21 @@ class GetReferral200Response {
   /// Maximum value: 9007199254740991
   int coinsEarned;
 
+  /// Minimum value: -9007199254740991
+  /// Maximum value: 9007199254740991
+  int paiseEarned;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is GetReferral200Response &&
     other.code == code &&
     other.link == link &&
     other.referrerCoins == referrerCoins &&
+    other.referrerPaise == referrerPaise &&
     other.refereeCoins == refereeCoins &&
     other.joined == joined &&
     other.rewarded == rewarded &&
-    other.coinsEarned == coinsEarned;
+    other.coinsEarned == coinsEarned &&
+    other.paiseEarned == paiseEarned;
 
   @override
   int get hashCode =>
@@ -62,23 +78,27 @@ class GetReferral200Response {
     (code.hashCode) +
     (link.hashCode) +
     (referrerCoins.hashCode) +
+    (referrerPaise.hashCode) +
     (refereeCoins.hashCode) +
     (joined.hashCode) +
     (rewarded.hashCode) +
-    (coinsEarned.hashCode);
+    (coinsEarned.hashCode) +
+    (paiseEarned.hashCode);
 
   @override
-  String toString() => 'GetReferral200Response[code=$code, link=$link, referrerCoins=$referrerCoins, refereeCoins=$refereeCoins, joined=$joined, rewarded=$rewarded, coinsEarned=$coinsEarned]';
+  String toString() => 'GetReferral200Response[code=$code, link=$link, referrerCoins=$referrerCoins, referrerPaise=$referrerPaise, refereeCoins=$refereeCoins, joined=$joined, rewarded=$rewarded, coinsEarned=$coinsEarned, paiseEarned=$paiseEarned]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'code'] = this.code;
       json[r'link'] = this.link;
       json[r'referrerCoins'] = this.referrerCoins;
+      json[r'referrerPaise'] = this.referrerPaise;
       json[r'refereeCoins'] = this.refereeCoins;
       json[r'joined'] = this.joined;
       json[r'rewarded'] = this.rewarded;
       json[r'coinsEarned'] = this.coinsEarned;
+      json[r'paiseEarned'] = this.paiseEarned;
     return json;
   }
 
@@ -99,6 +119,8 @@ class GetReferral200Response {
         assert(json[r'link'] != null, 'Required key "GetReferral200Response[link]" has a null value in JSON.');
         assert(json.containsKey(r'referrerCoins'), 'Required key "GetReferral200Response[referrerCoins]" is missing from JSON.');
         assert(json[r'referrerCoins'] != null, 'Required key "GetReferral200Response[referrerCoins]" has a null value in JSON.');
+        assert(json.containsKey(r'referrerPaise'), 'Required key "GetReferral200Response[referrerPaise]" is missing from JSON.');
+        assert(json[r'referrerPaise'] != null, 'Required key "GetReferral200Response[referrerPaise]" has a null value in JSON.');
         assert(json.containsKey(r'refereeCoins'), 'Required key "GetReferral200Response[refereeCoins]" is missing from JSON.');
         assert(json[r'refereeCoins'] != null, 'Required key "GetReferral200Response[refereeCoins]" has a null value in JSON.');
         assert(json.containsKey(r'joined'), 'Required key "GetReferral200Response[joined]" is missing from JSON.');
@@ -107,6 +129,8 @@ class GetReferral200Response {
         assert(json[r'rewarded'] != null, 'Required key "GetReferral200Response[rewarded]" has a null value in JSON.');
         assert(json.containsKey(r'coinsEarned'), 'Required key "GetReferral200Response[coinsEarned]" is missing from JSON.');
         assert(json[r'coinsEarned'] != null, 'Required key "GetReferral200Response[coinsEarned]" has a null value in JSON.');
+        assert(json.containsKey(r'paiseEarned'), 'Required key "GetReferral200Response[paiseEarned]" is missing from JSON.');
+        assert(json[r'paiseEarned'] != null, 'Required key "GetReferral200Response[paiseEarned]" has a null value in JSON.');
         return true;
       }());
 
@@ -114,10 +138,12 @@ class GetReferral200Response {
         code: mapValueOfType<String>(json, r'code')!,
         link: mapValueOfType<String>(json, r'link')!,
         referrerCoins: mapValueOfType<int>(json, r'referrerCoins')!,
+        referrerPaise: mapValueOfType<int>(json, r'referrerPaise')!,
         refereeCoins: mapValueOfType<int>(json, r'refereeCoins')!,
         joined: mapValueOfType<int>(json, r'joined')!,
         rewarded: mapValueOfType<int>(json, r'rewarded')!,
         coinsEarned: mapValueOfType<int>(json, r'coinsEarned')!,
+        paiseEarned: mapValueOfType<int>(json, r'paiseEarned')!,
       );
     }
     return null;
@@ -168,10 +194,12 @@ class GetReferral200Response {
     'code',
     'link',
     'referrerCoins',
+    'referrerPaise',
     'refereeCoins',
     'joined',
     'rewarded',
     'coinsEarned',
+    'paiseEarned',
   };
 }
 

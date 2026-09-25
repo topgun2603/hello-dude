@@ -26,6 +26,7 @@ class OnlineCompanion {
     required this.busy,
     required this.isFavourite,
     required this.rates,
+    required this.badge,
   });
 
   String id;
@@ -62,6 +63,9 @@ class OnlineCompanion {
 
   CompanionRates rates;
 
+  /// Best active badge, e.g. '#1 companion this week'
+  UserBadge? badge;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is OnlineCompanion &&
     other.id == id &&
@@ -76,7 +80,8 @@ class OnlineCompanion {
     other.videoEnabled == videoEnabled &&
     other.busy == busy &&
     other.isFavourite == isFavourite &&
-    other.rates == rates;
+    other.rates == rates &&
+    other.badge == badge;
 
   @override
   int get hashCode =>
@@ -93,10 +98,11 @@ class OnlineCompanion {
     (videoEnabled.hashCode) +
     (busy.hashCode) +
     (isFavourite.hashCode) +
-    (rates.hashCode);
+    (rates.hashCode) +
+    (badge == null ? 0 : badge!.hashCode);
 
   @override
-  String toString() => 'OnlineCompanion[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates]';
+  String toString() => 'OnlineCompanion[id=$id, displayName=$displayName, avatarId=$avatarId, photoUrl=$photoUrl, primaryLanguage=$primaryLanguage, languages=$languages, rating=$rating, ratingCount=$ratingCount, audioEnabled=$audioEnabled, videoEnabled=$videoEnabled, busy=$busy, isFavourite=$isFavourite, rates=$rates, badge=$badge]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -121,6 +127,11 @@ class OnlineCompanion {
       json[r'busy'] = this.busy;
       json[r'isFavourite'] = this.isFavourite;
       json[r'rates'] = this.rates;
+    if (this.badge != null) {
+      json[r'badge'] = this.badge;
+    } else {
+      json[r'badge'] = null;
+    }
     return json;
   }
 
@@ -159,6 +170,7 @@ class OnlineCompanion {
         assert(json[r'isFavourite'] != null, 'Required key "OnlineCompanion[isFavourite]" has a null value in JSON.');
         assert(json.containsKey(r'rates'), 'Required key "OnlineCompanion[rates]" is missing from JSON.');
         assert(json[r'rates'] != null, 'Required key "OnlineCompanion[rates]" has a null value in JSON.');
+        assert(json.containsKey(r'badge'), 'Required key "OnlineCompanion[badge]" is missing from JSON.');
         return true;
       }());
 
@@ -180,6 +192,7 @@ class OnlineCompanion {
         busy: mapValueOfType<bool>(json, r'busy')!,
         isFavourite: mapValueOfType<bool>(json, r'isFavourite')!,
         rates: CompanionRates.fromJson(json[r'rates'])!,
+        badge: UserBadge.fromJson(json[r'badge']),
       );
     }
     return null;
@@ -240,6 +253,7 @@ class OnlineCompanion {
     'busy',
     'isFavourite',
     'rates',
+    'badge',
   };
 }
 

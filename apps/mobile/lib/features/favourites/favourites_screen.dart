@@ -205,7 +205,7 @@ class _Row extends ConsumerWidget {
             color: const Color(0xFF1E1B3A),
             onSelected: (v) => v == 'book'
                 ? context.push('/schedule/${f.id}')
-                : openChatWith(context, ref, f.id),
+                : openChatWith(context, ref, f.id, name: f.displayName),
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'message',
@@ -259,6 +259,7 @@ class _Row extends ConsumerWidget {
                         languages: f.languages,
                         rating: null,
                         ratingCount: 0,
+                        badge: null,
                         audioEnabled: f.audioEnabled,
                         videoEnabled: f.videoEnabled,
                         busy: f.busy,

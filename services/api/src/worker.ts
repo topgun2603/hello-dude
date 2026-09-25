@@ -17,7 +17,9 @@ import { sweepBookings } from "./bookings.js";
 import { payBonuses } from "./rewards.js";
 import { sweepRooms } from "./routes/rooms.js";
 import { sweepLives } from "./routes/lives.js";
+import { sweepBattles } from "./routes/pk.js";
 import { sweepGroups } from "./routes/groups.js";
+import { announceLevelUps, awardBadges, rewardCompanionInvites } from "./routes/leaderboards.js";
 import { fcmPushSender, logPushSender } from "./push.js";
 import { localEncryptedStore, parseKey } from "./storage.js";
 
@@ -66,6 +68,11 @@ async function reminders() {
     const rate = await sendRateReminders({ db, push, events });
     const bonus = await sendDailyBonusReminders({ db, push, events });
     if (rate || bonus) console.log(`reminders: ${rate} rate-your-call, ${bonus} daily bonus`);
+    // Growth: weekly/event badges, caller level-ups, companion-invite rewards (all run-once safe).
+    const badges = await awardBadges({ db, push, events });
+    const levels = await announceLevelUps({ db, push, events });
+    const invites = await rewardCompanionInvites({ db, push, events });
+    if (badges || levels || invites) console.log(`growth: ${badges} badges, ${levels} level-ups, ${invites} invite bonuses`);
   } catch (err) {
     console.error("reminders failed", err);
   }
@@ -77,6 +84,8 @@ const livesTimer = setInterval(async () => {
   try {
     const r = await sweepLives({ db, events: redisUserEvents(redis), rooms, push });
     if (r.ended || r.removed) console.log("lives:", r);
+    const pk = await sweepBattles({ db, events: redisUserEvents(redis), rooms });
+    if (pk) console.log("pk battles ended:", pk);
   } catch (err) {
     console.error("lives sweep failed", err);
   }

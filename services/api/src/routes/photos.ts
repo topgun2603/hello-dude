@@ -25,6 +25,19 @@ const signingKey = (kycKey: Buffer) => createHmac("sha256", kycKey).update("phot
 const sign = (kycKey: Buffer, payload: string) =>
   createHmac("sha256", signingKey(kycKey)).update(payload).digest("base64url").slice(0, 32);
 
+/** Signs `payload` for a URL that expires at `exp` (unix seconds, rounded to the day). */
+export function signedQuery(kycKey: Buffer, payload: string) {
+  const exp = (Math.floor(Date.now() / 86_400_000) + 2) * 86_400;
+  return `exp=${exp}&sig=${sign(kycKey, `${payload}.${exp}`)}`;
+}
+
+/** Checks a signature made by signedQuery (constant time; expired = invalid). */
+export function checkSigned(kycKey: Buffer, payload: string, exp: number, sig: string) {
+  const want = Buffer.from(sign(kycKey, `${payload}.${exp}`));
+  const got = Buffer.from(sig);
+  return exp * 1000 >= Date.now() && want.length === got.length && timingSafeEqual(want, got);
+}
+
 /**
  * A signed, expiring URL path for a user's approved photo (`version`), or the
  * pending one. Expiry is rounded to the day so the same URL (and the phone's

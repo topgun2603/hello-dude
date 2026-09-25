@@ -11,7 +11,10 @@ Name | Type | Description | Notes
 **availablePaise** | **int** |  | 
 **upi** | **String** |  | 
 **minWithdrawalPaise** | **int** |  | 
-**tdsBps** | **int** |  | 
+**tdsBps** | **int** | TDS on your withdrawals now (higher without a PAN) | 
+**panOnFile** | **bool** |  | 
+**tdsWithPanBps** | **int** |  | 
+**tdsNoPanBps** | **int** |  | 
 **canWithdraw** | **bool** |  | 
 **blockedReason** | **String** |  | 
 **week** | [**List<CompanionEarnings200ResponseWeekInner>**](CompanionEarnings200ResponseWeekInner.md) |  | [default to const []]

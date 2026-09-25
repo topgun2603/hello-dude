@@ -73,10 +73,12 @@ void main() {
             code: 'KARTHIK50',
             link: 'https://hellodude.app/r/KARTHIK50',
             referrerCoins: 50,
+            referrerPaise: 0,
             refereeCoins: 50,
             joined: 3,
             rewarded: 2,
             coinsEarned: 100,
+            paiseEarned: 0,
           ),
         ),
       ]);

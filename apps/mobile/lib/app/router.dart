@@ -22,6 +22,7 @@ import '../features/home/shell.dart';
 import '../features/legal/legal_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/growth/checkin_screen.dart';
+import '../features/growth/leaderboard_screen.dart';
 import '../features/growth/referral_screen.dart';
 import '../features/growth/share_card_screen.dart';
 import '../features/chat/chat_screens.dart';
@@ -32,6 +33,7 @@ import '../features/rooms/rooms_screens.dart';
 import '../features/history/call_history.dart' show CallHistoryScreen;
 import '../features/history/coin_history.dart' show CoinHistoryScreen;
 import '../features/live/live_feed_screen.dart' show LiveFeedScreen;
+import '../features/live/live_data.dart' show LiveFeedArgs;
 import '../features/live/live_host_screen.dart' show LiveHostScreen;
 import '../features/group/group_data.dart' show GroupsScreen;
 import '../features/group/group_room_screen.dart' show GroupRoomScreen;
@@ -58,6 +60,7 @@ const callerPaths = {
   '/notifications',
   '/checkin',
   '/referral',
+  '/leaderboards',
   '/share',
   '/schedule',
   '/vip',
@@ -80,6 +83,8 @@ const companionPaths = {
   '/call-details',
   '/live-host',
   '/group-host',
+  '/referral',
+  '/leaderboards',
 };
 
 /// Whether `path` (a matched location like `/schedule/123`) is one of `allowed`,
@@ -146,6 +151,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/checkin', builder: (_, _) => const CheckInScreen()),
       GoRoute(path: '/referral', builder: (_, _) => const ReferralScreen()),
+      GoRoute(
+        path: '/leaderboards',
+        builder: (_, s) => LeaderboardScreen(eventId: s.uri.queryParameters['event']),
+      ),
       GoRoute(path: '/share', builder: (_, _) => const ShareCardScreen()),
       GoRoute(path: '/chats', builder: (_, _) => const ChatsScreen()),
       GoRoute(path: '/bookings', builder: (_, _) => const BookingsScreen()),
@@ -154,7 +163,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/rooms', builder: (_, _) => const RoomsScreen()),
       GoRoute(
         path: '/live',
-        builder: (_, s) => LiveFeedScreen(startId: s.extra as String?),
+        builder: (_, s) => LiveFeedScreen(
+          args: s.extra is LiveFeedArgs
+              ? s.extra! as LiveFeedArgs
+              : LiveFeedArgs(startId: s.extra as String?),
+        ),
       ),
       GoRoute(
         path: '/live-host',

@@ -223,7 +223,7 @@ class AuthApi {
     return null;
   }
 
-  /// Create the account after OTP (Main + Language screens)
+  /// Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as companions, men as callers.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -256,7 +256,7 @@ class AuthApi {
     );
   }
 
-  /// Create the account after OTP (Main + Language screens)
+  /// Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as companions, men as callers.
   ///
   /// Parameters:
   ///

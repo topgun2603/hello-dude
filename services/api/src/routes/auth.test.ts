@@ -55,6 +55,19 @@ describe("OTP sign-up and sign-in", () => {
     expect([female.profile, other.profile]).toMatchObject([{ avatarId: 1 }, { avatarId: 3 }]);
   });
 
+  it("women (and transgender sign-ups) join as companions; men as callers", async () => {
+    const woman = await signUp(h, "9876500011", { gender: "female" });
+    const trans = await signUp(h, "9876500012", { gender: "other" });
+    const man = await signUp(h, "9876500013", { gender: "male" });
+    expect(woman.profile).toMatchObject({ role: "companion", companion: { kycStatus: "pending" } });
+    expect(trans.profile).toMatchObject({ role: "companion" });
+    expect(man.profile).toMatchObject({ role: "caller" });
+    // Their token is a companion token: companion routes work, caller-only ones don't.
+    expect((await call(h, "GET", "/v1/companion/kyc", { token: woman.accessToken })).statusCode).toBe(200);
+    expect((await call(h, "GET", "/v1/companions/online", { token: man.accessToken })).statusCode).toBe(200);
+    expect((await call(h, "POST", "/v1/companion/apply", { token: woman.accessToken, body: { firstName: "Priya" } })).statusCode).toBe(403);
+  });
+
   it("existing number: OTP signs straight in", async () => {
     await signUp(h, "9876543210");
     await h.redis.flushdb(); // clear the resend cooldown

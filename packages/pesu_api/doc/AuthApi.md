@@ -13,7 +13,7 @@ Method | HTTP request | Description
 [**refreshTokens**](AuthApi.md#refreshtokens) | **POST** /v1/auth/refresh | Swap a refresh token for a new token pair (the old one stops working)
 [**sendOtp**](AuthApi.md#sendotp) | **POST** /v1/auth/otp/send | Send a 6-digit code to a mobile number
 [**signInWithFirebase**](AuthApi.md#signinwithfirebase) | **POST** /v1/auth/firebase | Mobile app sign-in: the app verified the number with Firebase Auth and sends its ID token. Indian (+91) mobiles only. Same result as otp/verify.
-[**signUp**](AuthApi.md#signup) | **POST** /v1/auth/signup | Create the account after OTP (Main + Language screens)
+[**signUp**](AuthApi.md#signup) | **POST** /v1/auth/signup | Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as companions, men as callers.
 [**verifyOtp**](AuthApi.md#verifyotp) | **POST** /v1/auth/otp/verify | Verify the code. Existing users get tokens; new numbers get a signup token.
 
 
@@ -184,7 +184,7 @@ No authorization required
 # **signUp**
 > SignUp201Response signUp(signUpRequest)
 
-Create the account after OTP (Main + Language screens)
+Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as companions, men as callers.
 
 ### Example
 ```dart

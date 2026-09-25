@@ -54,7 +54,7 @@ class AdminModerationFlagInput {
 
   AdminModerationFlagInputSubject subject;
 
-  AdminReportInputReporter detectedBy;
+  AdminModerationFlagInputDetectedBy detectedBy;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is AdminModerationFlagInput &&
@@ -184,7 +184,7 @@ class AdminModerationFlagInput {
         liveId: mapValueOfType<String>(json, r'liveId'),
         groupId: mapValueOfType<String>(json, r'groupId'),
         subject: AdminModerationFlagInputSubject.fromJson(json[r'subject'])!,
-        detectedBy: AdminReportInputReporter.fromJson(json[r'detectedBy'])!,
+        detectedBy: AdminModerationFlagInputDetectedBy.fromJson(json[r'detectedBy'])!,
       );
     }
     return null;

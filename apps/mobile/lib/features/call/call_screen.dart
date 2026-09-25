@@ -113,6 +113,8 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   }
 
   /// On-device nudity check of the other person's video (see lib/moderation).
+  /// Silent in 1:1 calls: nothing changes on screen; flagged frames go to the
+  /// admin Moderation queue (the companion also has report, block and recording).
   Future<void> _startModeration() async {
     if (!a.video || _moderator != null) return;
     final NudityDetector detector;
@@ -127,6 +129,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     _moderator =
         VideoModerator(
             detector: detector,
+            silent: true,
             capture: () async {
               final track = _remoteVideo;
               if (track == null) return null;
@@ -888,9 +891,10 @@ class _ReportSheetState extends State<_ReportSheet> {
                     'Abusive or threatening language',
                   ),
                   (
-                    ReportUserRequestReasonEnum.fraud,
-                    'Asking for money or contact details',
+                    ReportUserRequestReasonEnum.offPlatform,
+                    'Asked for my number / to pay outside the app',
                   ),
+                  (ReportUserRequestReasonEnum.fraud, 'Asking for money'),
                   (ReportUserRequestReasonEnum.underage, 'Seems under 18'),
                   (ReportUserRequestReasonEnum.other, 'Something else'),
                 ])

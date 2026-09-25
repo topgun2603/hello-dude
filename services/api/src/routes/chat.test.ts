@@ -32,7 +32,7 @@ async function connectAndEnd(callerToken: string, caller: string, companion: str
 describe("chat", () => {
   it("needs a connected call first", async () => {
     const { companion, callerToken } = await pairWithCall();
-    expect(errorCode(await call(h, "POST", `/v1/chats/with/${companion}`, { token: callerToken }))).toBe("CHAT_NEEDS_CALL");
+    expect(errorCode(await call(h, "POST", `/v1/chats/with/${companion}`, { token: callerToken }))).toBe("CHAT_NEEDS_REQUEST");
   });
 
   it("messages flow both ways with unread counts, live events, one push per burst, and calls in the thread", async () => {
@@ -103,5 +103,76 @@ describe("chat", () => {
     expect(r).toMatchObject({ online: true, companion: { id: companion, rates: { audioCoinsPerMin: 10 } } });
     await h.db.query(`INSERT INTO blocks (blocker_id, blocked_id) VALUES ($1, $2)`, [caller, companion]);
     expect(errorCode(await call(h, "GET", `/v1/companions/${companion}`, { token: callerToken }))).toBe("COMPANION_NOT_FOUND");
+  });
+});
+
+describe("message requests (no call yet)", () => {
+  type Req = { id: string; status: string; body: string; conversationId: string | null; other: { id: string } };
+  const request = (token: string, companionId: string, body: string) =>
+    call(h, "POST", "/v1/chats/requests", { token, body: { companionId, body } });
+
+  it("caller asks, companion accepts: the chat opens with the request as the first message", async () => {
+    const { caller, companion, callerToken, companionToken } = await pairWithCall();
+    const sent = json<Req>(await request(callerToken, companion, "Hi! I liked your intro, can we talk sometime?"));
+    expect(sent.status).toBe("pending");
+    expect(errorCode(await request(callerToken, companion, "Again?"))).toBe("REQUEST_PENDING");
+    expect((await h.db.query(`SELECT 1 FROM notifications WHERE user_id = $1 AND type = 'chat_request'`, [companion])).rowCount).toBe(1);
+
+    const inbox = json<{ items: Req[] }>(await call(h, "GET", "/v1/chats/requests", { token: companionToken }));
+    expect(inbox.items.map((r) => r.other.id)).toEqual([caller]);
+    const conv = json<Conv>(await call(h, "POST", `/v1/chats/requests/${sent.id}/accept`, { token: companionToken }));
+    expect(conv).toMatchObject({ canMessage: true, lastMessage: "Hi! I liked your intro, can we talk sometime?" });
+    // Now both can chat, and the request shows as accepted for the caller.
+    expect(json<Conv>(await call(h, "POST", `/v1/chats/with/${companion}`, { token: callerToken })).id).toBe(conv.id);
+    const mine = json<{ items: Req[] }>(await call(h, "GET", "/v1/chats/requests", { token: callerToken }));
+    expect(mine.items[0]).toMatchObject({ status: "accepted", conversationId: conv.id });
+    expect((await h.db.query(`SELECT 1 FROM notifications WHERE user_id = $1 AND type = 'chat_request_accepted'`, [caller])).rowCount).toBe(1);
+  });
+
+  it("declined: no chat, and no new request for 7 days; requests pass the same filter", async () => {
+    const { companion, callerToken, companionToken } = await pairWithCall();
+    expect(errorCode(await request(callerToken, companion, "call me on 98765 43210"))).toBe("MESSAGE_BLOCKED");
+    const sent = json<Req>(await request(callerToken, companion, "Hello!"));
+    expect((await call(h, "POST", `/v1/chats/requests/${sent.id}/decline`, { token: companionToken })).statusCode).toBe(204);
+    expect(errorCode(await call(h, "POST", `/v1/chats/with/${companion}`, { token: callerToken }))).toBe("CHAT_NEEDS_REQUEST");
+    expect(errorCode(await request(callerToken, companion, "Please?"))).toBe("REQUEST_DECLINED");
+    // Only companions answer requests.
+    expect((await call(h, "POST", `/v1/chats/requests/${sent.id}/accept`, { token: callerToken })).statusCode).toBe(403);
+  });
+
+  it("a few requests a day", async () => {
+    const { callerToken } = await pairWithCall();
+    for (let i = 0; i < 5; i++) expect((await request(callerToken, await createCompanion(h), `Hi ${i}`)).statusCode).toBe(201);
+    expect(errorCode(await request(callerToken, await createCompanion(h), "One more"))).toBe("REQUEST_LIMIT");
+  });
+});
+
+describe("strikes for trying to share contact details", () => {
+  it("a number split over messages is caught; 3 strikes pause chat; 5 in a month file a report; companions get a payout flag", async () => {
+    const { caller, companion, callerToken, companionToken } = await pairWithCall();
+    await connectAndEnd(callerToken, caller, companion);
+    const conv = json<Conv>(await call(h, "POST", `/v1/chats/with/${caller}`, { token: companionToken }));
+    const send = (body: string) => call(h, "POST", `/v1/chats/${conv.id}/messages`, { token: companionToken, body: { body, clientRef: randomUUID() } });
+
+    expect((await send("98765")).statusCode).toBe(201);
+    const split = await send("43210");
+    expect(errorCode(split)).toBe("MESSAGE_BLOCKED"); // strike 1
+    expect(errorCode(await send("add me on whatsapp"))).toBe("MESSAGE_BLOCKED"); // strike 2
+    expect(json<{ error: { message: string } }>(await send("my gpay is priya@okaxis")).error.message).toContain("paused"); // strike 3
+    expect(errorCode(await send("hello?"))).toBe("CHAT_PAUSED");
+
+    // The payout risk check sees the strikes.
+    const { riskFlags } = await import("./companion.js");
+    const { tx } = await import("../db/pool.js");
+    expect(await tx(h.db, (c) => riskFlags(c, companion))).toContain("contact_sharing");
+
+    // Two more strikes this month (after the pause) → one automatic report.
+    await h.db.query(`UPDATE users SET chat_paused_until = NULL WHERE id = $1`, [companion]);
+    await h.db.query(`UPDATE chat_violations SET created_at = now() - interval '2 days' WHERE sender_id = $1`, [companion]);
+    await send("telegram me");
+    await send("send money on paytm");
+    const reports = (await h.db.query<{ reason: string; source: string; reporter_id: string | null }>(
+      `SELECT reason, source, reporter_id FROM reports WHERE reported_id = $1`, [companion])).rows;
+    expect(reports).toEqual([{ reason: "off_platform", source: "system", reporter_id: null }]);
   });
 });

@@ -326,7 +326,7 @@ class _OnlineTabState extends ConsumerState<OnlineTab> {
         const SizedBox(height: 14),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _SearchField(
+          child: SearchField(
             controller: _search,
             onChanged: (v) => _set(_f.copyWith(query: v)),
           ),
@@ -338,26 +338,26 @@ class _OnlineTabState extends ConsumerState<OnlineTab> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
-              _Pill(
+              FilterPill(
                 icon: Icons.swap_vert_rounded,
                 label: _f.sort.label,
                 selected: _f.sort != OnlineSort.recommended,
                 trailing: Icons.expand_more_rounded,
                 onTap: _pickSort,
               ),
-              _Pill(
+              FilterPill(
                 icon: Icons.bolt_rounded,
                 label: 'Free now',
                 selected: _f.freeOnly,
                 onTap: () => _set(_f.copyWith(freeOnly: !_f.freeOnly)),
               ),
-              _Pill(
+              FilterPill(
                 icon: Icons.videocam_outlined,
                 label: 'Video',
                 selected: _f.videoOnly,
                 onTap: () => _set(_f.copyWith(videoOnly: !_f.videoOnly)),
               ),
-              _Pill(
+              FilterPill(
                 icon: Icons.favorite_border_rounded,
                 label: 'Favourites',
                 selected: _f.favouritesOnly,
@@ -374,14 +374,14 @@ class _OnlineTabState extends ConsumerState<OnlineTab> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
-              _Pill(
+              FilterPill(
                 label: 'All languages',
                 count: all.length,
                 selected: _f.language == null,
                 onTap: () => _set(_f.copyWith(language: () => null)),
               ),
               for (final l in langs)
-                _Pill(
+                FilterPill(
                   label: languageInfo(l).english,
                   count: counts[l] ?? 0,
                   selected: _f.language == l,
@@ -507,10 +507,16 @@ class _OnlineTabState extends ConsumerState<OnlineTab> {
   }
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onChanged});
+class SearchField extends StatelessWidget {
+  const SearchField({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+    this.hint = 'Search by name or language',
+  });
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final String hint;
 
   @override
   Widget build(BuildContext context) =>
@@ -522,7 +528,7 @@ class _SearchField extends StatelessWidget {
           textInputAction: TextInputAction.search,
           style: AppText.body(15),
           decoration: InputDecoration(
-            hintText: 'Search by name or language',
+            hintText: hint,
             hintStyle: AppText.body(15, color: AppColors.hint),
             prefixIcon: const Icon(
               Icons.search_rounded,
@@ -559,8 +565,9 @@ class _SearchField extends StatelessWidget {
       );
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({
+class FilterPill extends StatelessWidget {
+  const FilterPill({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
