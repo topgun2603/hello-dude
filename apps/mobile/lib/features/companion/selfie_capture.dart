@@ -63,7 +63,10 @@ class _SelfieCaptureState extends State<SelfieCapture> {
         imageFormatGroup: ImageFormatGroup.nv21,
       );
       await cam.initialize();
-      if (!mounted) return cam.dispose();
+      if (!mounted) {
+        await cam.dispose();
+        return;
+      }
       setState(() => _cam = cam);
       await cam.startImageStream(_onFrame);
     } catch (e) {
