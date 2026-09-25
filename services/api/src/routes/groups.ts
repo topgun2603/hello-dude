@@ -709,7 +709,7 @@ export const groupRoutes: FastifyPluginAsyncZod = async (app) => {
       params: z.object({ id: z.uuid() }),
       body: z.object({
         userId: z.uuid(),
-        reason: z.enum(["abuse", "sexual_content", "spam", "underage", "fraud"]),
+        reason: z.enum(["abuse", "sexual_content", "spam", "underage", "fraud", "off_platform"]),
         details: z.string().trim().max(500).nullish(),
         remove: z.boolean().nullish().describe("Host only: remove them from the group"),
       }),

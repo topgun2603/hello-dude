@@ -159,7 +159,7 @@ class ProfileApi {
     return null;
   }
 
-  /// Register this phone's FCM token for call and message pushes
+  /// Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -192,7 +192,7 @@ class ProfileApi {
     );
   }
 
-  /// Register this phone's FCM token for call and message pushes
+  /// Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)
   ///
   /// Parameters:
   ///

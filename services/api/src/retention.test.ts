@@ -74,7 +74,7 @@ describe("retention", () => {
     await frame("actioned", 5, "moderation/recent");
     await frame("open", null, "moderation/open");
 
-    expect(await run()).toEqual({ sessions: 2, recordings: 1, rejectedKyc: 2, frames: 1, notifications: 0, chatMessages: 0 });
+    expect(await run()).toEqual({ sessions: 2, recordings: 1, rejectedKyc: 2, frames: 1, notifications: 0, chatMessages: 0, liveSnapshots: 0 });
 
     expect((await h.db.query(`SELECT count(*)::int AS n FROM sessions`)).rows[0]).toEqual({ n: 2 });
     expect(h.store.keys().sort()).toEqual([
@@ -89,6 +89,6 @@ describe("retention", () => {
       .toEqual({ n: 1 });
 
     // Running again finds nothing new.
-    expect(await run()).toEqual({ sessions: 0, recordings: 0, rejectedKyc: 0, frames: 0, notifications: 0, chatMessages: 0 });
+    expect(await run()).toEqual({ sessions: 0, recordings: 0, rejectedKyc: 0, frames: 0, notifications: 0, chatMessages: 0, liveSnapshots: 0 });
   });
 });

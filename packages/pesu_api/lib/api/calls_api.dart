@@ -124,7 +124,7 @@ class CallsApi {
     return null;
   }
 
-  /// Report a video frame the app's on-device check flagged as nudity (the other person's video)
+  /// Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -160,7 +160,7 @@ class CallsApi {
     );
   }
 
-  /// Report a video frame the app's on-device check flagged as nudity (the other person's video)
+  /// Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)
   ///
   /// Parameters:
   ///

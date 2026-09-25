@@ -20,11 +20,20 @@ final _frame = Uint8List.fromList([0xff, 0xd8, 1, 2, 3]);
 
 void main() {
   test(
-    'blurs on the first nudity frame, reports once per cooldown, clears after 3 clean frames',
+    'blurs after 2 flagged frames in a row, reports once per cooldown, clears after 3 clean frames',
     () async {
       var now = DateTime(2026, 9, 23, 12);
       final reports = <double>[];
-      final detector = _FakeDetector([0.95, 0.9, 0.1, 0.1, 0.1, 0.2]);
+      final detector = _FakeDetector([
+        0.95,
+        0.1,
+        0.9,
+        0.95,
+        0.9,
+        0.1,
+        0.1,
+        0.1,
+      ]);
       final m = VideoModerator(
         capture: () async => _frame,
         detector: detector,
@@ -34,7 +43,13 @@ void main() {
       var changes = 0;
       m.addListener(() => changes++);
 
-      await m.check(); // 0.95 → hidden + report
+      await m.check(); // 0.95 alone: could be a misread, nothing happens
+      expect(m.hidden, isFalse);
+      await m.check(); // clean frame resets the count
+      await m.check(); // 0.9 → first of a run
+      expect(m.hidden, isFalse);
+      expect(reports, isEmpty);
+      await m.check(); // 0.95 → second in a row: hidden + report
       expect(m.hidden, isTrue);
       expect(reports, [0.95]);
 
@@ -53,9 +68,55 @@ void main() {
       detector.scores
         ..clear()
         ..add(0.8);
-      await m.check(); // after the cooldown a new frame is reported
+      await m.check();
+      await m.check(); // two in a row after the cooldown → reported again
       expect(reports, [0.95, 0.8]);
       m.dispose();
+    },
+  );
+
+  test(
+    'silent mode (1:1 calls) never blurs but still reports two in a row',
+    () async {
+      final reports = <double>[];
+      final m = VideoModerator(
+        capture: () async => _frame,
+        detector: _FakeDetector([0.9, 0.95, 0.9]),
+        report: (_, score) async => reports.add(score),
+        silent: true,
+      );
+      var changes = 0;
+      m.addListener(() => changes++);
+      await m.check();
+      expect(reports, isEmpty); // one flagged frame is not enough
+      await m.check();
+      expect(reports, [0.95]);
+      expect(m.hidden, isFalse);
+      expect(changes, 0); // the screen never changes
+      m.dispose();
+    },
+  );
+
+  test(
+    'blurry or dark frames are not judged (they caused most false alarms)',
+    () {
+      img.Image scene({bool blur = false, int light = 255}) {
+        final im = img.Image(width: 320, height: 240);
+        for (var y = 0; y < 240; y++) {
+          for (var x = 0; x < 320; x++) {
+            final on = ((x ~/ 8) + (y ~/ 8)).isEven; // sharp checkerboard
+            final v = on ? light : light ~/ 5;
+            im.setPixelRgb(x, y, v, v, v);
+          }
+        }
+        return blur ? img.gaussianBlur(im, radius: 12) : im;
+      }
+
+      PreparedFrame prep(img.Image i) =>
+          prepareFrame(Uint8List.fromList(img.encodeJpg(i)))!;
+      expect(usableFrame(prep(scene())), isTrue);
+      expect(usableFrame(prep(scene(blur: true))), isFalse); // motion blur
+      expect(usableFrame(prep(scene(light: 20))), isFalse); // dark room
     },
   );
 

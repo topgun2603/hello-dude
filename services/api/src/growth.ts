@@ -90,12 +90,15 @@ export const normaliseCode = (code: string) => code.trim().toUpperCase().replace
 
 /**
  * Called in the same transaction that credits a purchase: on the referee's
- * first credited recharge, both sides get their coins (once; capped per referrer).
+ * first credited recharge, both sides get their reward (once; capped per
+ * referrer). A caller who invited gets coins; a companion who invited gets a
+ * bonus in their earnings (referral.companion_bonus_paise).
  */
 export async function rewardReferral(c: DbClient, refereeId: string):
-  Promise<{ referrerId: string; referrerCoins: number; refereeCoins: number; refereeName: string } | null> {
-  const r = (await c.query<{ id: string; referrer_id: string; referee_name: string }>(
-    `SELECT r.id, r.referrer_id, u.display_name AS referee_name FROM referrals r JOIN users u ON u.id = r.referee_id
+  Promise<{ referrerId: string; referrerCoins: number; referrerPaise: number; refereeCoins: number; refereeName: string } | null> {
+  const r = (await c.query<{ id: string; referrer_id: string; referrer_role: string; referee_name: string }>(
+    `SELECT r.id, r.referrer_id, ref.role AS referrer_role, u.display_name AS referee_name
+       FROM referrals r JOIN users u ON u.id = r.referee_id JOIN users ref ON ref.id = r.referrer_id
       WHERE r.referee_id = $1 AND r.status = 'joined' FOR UPDATE OF r`, [refereeId])).rows[0];
   if (!r) return null;
   const firstRecharge = (await c.query<{ n: number }>(
@@ -105,16 +108,23 @@ export async function rewardReferral(c: DbClient, refereeId: string):
   const max = await numberSetting(c, "referral.max_rewarded", 50);
   const rewarded = (await c.query<{ n: number }>(
     `SELECT count(*)::int AS n FROM referrals WHERE referrer_id = $1 AND status = 'rewarded'`, [r.referrer_id])).rows[0]!.n;
-  const referrerCoins = rewarded < max ? await numberSetting(c, "referral.referrer_coins", 50) : 0;
+  const companion = r.referrer_role === "companion";
+  const underCap = rewarded < max;
+  const referrerCoins = underCap && !companion ? await numberSetting(c, "referral.referrer_coins", 50) : 0;
+  const referrerPaise = underCap && companion ? await numberSetting(c, "referral.companion_bonus_paise", 2500) : 0;
   const refereeCoins = await numberSetting(c, "referral.referee_coins", 50);
   if (referrerCoins > 0) {
     await post(c, r.referrer_id, "coins", "referral_bonus", referrerCoins, `referral:${r.id}:referrer`, { note: `Invite bonus: ${r.referee_name} joined` });
+  }
+  if (referrerPaise > 0) {
+    await post(c, r.referrer_id, "earnings", "referral_bonus", referrerPaise, `referral:${r.id}:referrer`,
+      { note: `Invite bonus: ${r.referee_name} made their first recharge` });
   }
   if (refereeCoins > 0) {
     await post(c, refereeId, "coins", "referral_bonus", refereeCoins, `referral:${r.id}:referee`, { note: "Welcome bonus for joining with an invite code" });
   }
   await c.query(
-    `UPDATE referrals SET status = $2, referrer_coins = $3, referee_coins = $4, rewarded_at = now() WHERE id = $1`,
-    [r.id, referrerCoins > 0 ? "rewarded" : "capped", referrerCoins, refereeCoins]);
-  return { referrerId: r.referrer_id, referrerCoins, refereeCoins, refereeName: r.referee_name };
+    `UPDATE referrals SET status = $2, referrer_coins = $3, referrer_paise = $4, referee_coins = $5, rewarded_at = now() WHERE id = $1`,
+    [r.id, referrerCoins > 0 || referrerPaise > 0 ? "rewarded" : "capped", referrerCoins, referrerPaise, refereeCoins]);
+  return { referrerId: r.referrer_id, referrerCoins, referrerPaise, refereeCoins, refereeName: r.referee_name };
 }

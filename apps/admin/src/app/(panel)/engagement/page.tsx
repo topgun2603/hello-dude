@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Crown, Gift, Pencil, Plus, Radio, Trophy, Users, Video } from "lucide-react";
+import { CalendarHeart, Crown, Gift, Medal, Pencil, Plus, Radio, Trophy, Users, Video } from "lucide-react";
+import { CallerLevels, Events } from "@/components/engagement-events";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -39,12 +40,14 @@ export default function EngagementPage() {
   const growth = can("engagement.manage"), rooms = can("rooms.manage");
   return (
     <>
-      <PageHeader title="Engagement" description="Companion levels and bonuses, VIP plans, lives, group video and voice rooms. Changes apply to new calls straight away." />
+      <PageHeader title="Engagement" description="Companion levels and bonuses, VIP plans, festival events, caller levels, lives, group video and voice rooms. Changes apply to new calls straight away." />
       <Tabs key={growth ? "all" : "rooms"} defaultValue={growth ? "levels" : "rooms"}>
         <TabsList className="mb-4">
           {growth && <TabsTrigger value="levels"><Trophy /> Companion levels</TabsTrigger>}
           {growth && <TabsTrigger value="bonuses"><Gift /> Bonuses</TabsTrigger>}
           {growth && <TabsTrigger value="vip"><Crown /> VIP plans</TabsTrigger>}
+          {growth && <TabsTrigger value="events"><CalendarHeart /> Events</TabsTrigger>}
+          {growth && <TabsTrigger value="caller-levels"><Medal /> Caller levels</TabsTrigger>}
           {rooms && <TabsTrigger value="lives"><Video /> Lives</TabsTrigger>}
           {rooms && <TabsTrigger value="groups"><Users /> Group video</TabsTrigger>}
           {rooms && <TabsTrigger value="rooms"><Radio /> Voice rooms</TabsTrigger>}
@@ -52,6 +55,8 @@ export default function EngagementPage() {
         {growth && <TabsContent value="levels"><Levels /></TabsContent>}
         {growth && <TabsContent value="bonuses"><Bonuses /></TabsContent>}
         {growth && <TabsContent value="vip"><VipPlans /></TabsContent>}
+        {growth && <TabsContent value="events"><Events /></TabsContent>}
+        {growth && <TabsContent value="caller-levels"><CallerLevels /></TabsContent>}
         {rooms && <TabsContent value="lives"><Lives /></TabsContent>}
         {rooms && <TabsContent value="groups"><Groups /></TabsContent>}
         {rooms && <TabsContent value="rooms"><Rooms /></TabsContent>}

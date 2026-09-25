@@ -4,7 +4,8 @@ export type WalletKind = "coins" | "earnings";
 export type LedgerType =
   | "purchase" | "call_debit" | "call_credit" | "refund" | "refund_reversal"
   | "bonus" | "payout" | "payout_reversal" | "adjustment" | "gift_debit" | "gift_credit"
-  | "daily_bonus" | "referral_bonus" | "booking_hold" | "booking_release" | "live_pass_debit" | "live_pass_credit" | "live_debit" | "live_credit" | "group_debit" | "group_credit";
+  | "daily_bonus" | "referral_bonus" | "booking_hold" | "booking_release" | "live_pass_debit" | "live_pass_credit" | "live_debit" | "live_credit" | "group_debit" | "group_credit"
+  | "purchase_reversal";
 
 export interface LedgerRefs {
   callId?: string;

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 
@@ -16,18 +15,20 @@ import '../../data/errors.dart';
 import '../../data/ids.dart';
 import '../../data/realtime.dart';
 import '../../data/session.dart';
-import '../../moderation/nudity_detector.dart';
 import '../../moderation/video_moderator.dart';
 import '../../widgets/common.dart';
 import '../call/gift_sheet.dart' show giftsProvider;
 import '../home/home_data.dart' show walletProvider;
 import 'live_data.dart';
+import 'pk.dart';
 
 /// Reels-style feed of lives: swipe up/down. Only the live on screen plays (and
-/// is joined); the others are a still card, which keeps data use low.
+/// is joined); the others are a still card, which keeps data use low. Follows
+/// the list the caller came from (same filters and order) and loads more near
+/// the end.
 class LiveFeedScreen extends ConsumerStatefulWidget {
-  const LiveFeedScreen({super.key, this.startId});
-  final String? startId;
+  const LiveFeedScreen({super.key, this.args = const LiveFeedArgs()});
+  final LiveFeedArgs args;
 
   @override
   ConsumerState<LiveFeedScreen> createState() => _LiveFeedScreenState();
@@ -36,13 +37,17 @@ class LiveFeedScreen extends ConsumerStatefulWidget {
 class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
   PageController? _pages;
   int _current = 0;
-  List<LiveCard>? _lives; // frozen while swiping, so pages don't jump
+  List<LiveCard>? _lives; // only grows while swiping, so pages don't jump
+  int _total = 0;
   LivePricing? _pricing;
+  bool _loadingMore = false;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    _load();
   }
 
   @override
@@ -52,23 +57,61 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
     super.dispose();
   }
 
+  Future<void> _load() async {
+    final api = ref.read(apiProvider);
+    try {
+      final first = await fetchLives(api, widget.args.query);
+      final lives = [...?widget.args.initial];
+      for (final l in first.lives) {
+        if (!lives.any((x) => x.id == l.id)) lives.add(l);
+      }
+      if (!mounted) return;
+      final i = lives.indexWhere((l) => l.id == widget.args.startId);
+      setState(() {
+        _lives = lives;
+        _total = first.total;
+        _pricing = first.pricing;
+        _current = i < 0 ? 0 : i;
+        _pages = PageController(initialPage: _current);
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = e);
+    }
+  }
+
+  Future<void> _more() async {
+    final lives = _lives;
+    if (lives == null || _loadingMore || lives.length >= _total) return;
+    _loadingMore = true;
+    try {
+      final page = await fetchLives(
+        ref.read(apiProvider),
+        widget.args.query,
+        offset: lives.length,
+      );
+      if (!mounted) return;
+      setState(() {
+        for (final l in page.lives) {
+          if (!lives.any((x) => x.id == l.id)) lives.add(l);
+        }
+        _total = page.total;
+      });
+    } catch (_) {
+      /* try again on the next swipe */
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final feed = ref.watch(livesProvider);
-    if (_lives == null && feed.hasValue) {
-      _lives = feed.value!.lives;
-      _pricing = feed.value!.pricing;
-      final i = _lives!.indexWhere((l) => l.id == widget.startId);
-      _current = i < 0 ? 0 : i;
-      _pages = PageController(initialPage: _current);
-    }
     final lives = _lives;
     return Scaffold(
       backgroundColor: Colors.black,
       body: lives == null
           ? Center(
-              child: feed.hasError
-                  ? Text(friendlyError(feed.error!), style: AppText.body(14))
+              child: _error != null
+                  ? Text(friendlyError(_error!), style: AppText.body(14))
                   : const CircularProgressIndicator(color: AppColors.pink),
             )
           : lives.isEmpty
@@ -77,7 +120,10 @@ class _LiveFeedScreenState extends ConsumerState<LiveFeedScreen> {
               controller: _pages,
               scrollDirection: Axis.vertical,
               itemCount: lives.length,
-              onPageChanged: (i) => setState(() => _current = i),
+              onPageChanged: (i) {
+                setState(() => _current = i);
+                if (i >= lives.length - 3) _more();
+              },
               itemBuilder: (_, i) => LivePage(
                 key: ValueKey(lives[i].id),
                 card: lives[i],
@@ -176,6 +222,7 @@ class _LivePageState extends ConsumerState<LivePage> {
   int? _coinsLeft;
   int _minutes = 0;
   int _heartSeq = 0;
+  PkController? _pk;
 
   LiveCard get c => widget.card;
 
@@ -203,6 +250,10 @@ class _LivePageState extends ConsumerState<LivePage> {
   // --- lifecycle -------------------------------------------------------------------
 
   Future<void> _start() async {
+    _pk ??= PkController(api: ref.read(apiProvider), fromLiveId: c.id)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
     _events ??= ref.read(realtimeProvider).forLive(c.id).listen(_onEvent);
     _tick ??= Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     await _join();
@@ -215,6 +266,8 @@ class _LivePageState extends ConsumerState<LivePage> {
     _heartbeat = null;
     _events?.cancel();
     _events = null;
+    _pk?.dispose();
+    _pk = null;
     _disconnect();
     if (leave) {
       final api = ref.read(apiProvider);
@@ -249,6 +302,8 @@ class _LivePageState extends ConsumerState<LivePage> {
       _noCoins = false;
       _viewers = max(_viewers, j.live.viewers);
       await _connect(j);
+      final battle = j.live.pkBattleId;
+      if (battle != null && _pk?.showing != true) unawaited(_pk?.load(battle));
       _heartbeat ??= Timer.periodic(
         const Duration(seconds: 20),
         (_) => _beat(),
@@ -279,11 +334,14 @@ class _LivePageState extends ConsumerState<LivePage> {
       roomOptions: const RoomOptions(adaptiveStream: true, dynacast: true),
     );
     _room = room;
+    unawaited(_loadChatHistory());
     _roomEvents = room.createListener()
       ..on<TrackSubscribedEvent>((e) {
         if (e.track is VideoTrack && mounted) {
           setState(() => _video = e.track as VideoTrack);
-          _startModeration();
+          // No viewer-side nudity check: grabbing frames of a remote track makes
+          // flutter_webrtc dispose LiveKit's transceivers and crash the app. The
+          // host's phone checks its own camera (pauses it + flags the frame).
         }
       })
       ..on<TrackUnsubscribedEvent>((e) {
@@ -327,6 +385,24 @@ class _LivePageState extends ConsumerState<LivePage> {
     }
   }
 
+  /// Recent chat from before this viewer joined (the server keeps the last 50).
+  Future<void> _loadChatHistory() async {
+    final api = ref.read(apiProvider);
+    try {
+      final h = await api.call(() => api.lives.liveChatHistory(c.id));
+      if (!mounted || h.messages.isEmpty) return;
+      final seen = {for (final l in _chat) '${l.name}|${l.body}'};
+      final older = [
+        for (final m in h.messages)
+          if (!seen.contains('${m.displayName}|${m.body}'))
+            _ChatLine(m.displayName, m.body, host: m.isHost),
+      ];
+      setState(() => _chat.insertAll(0, older));
+    } catch (_) {
+      /* chat history is a nicety; live chat still works */
+    }
+  }
+
   void _lock() {
     _disconnect();
     if (mounted && _phase != _Phase.ended)
@@ -335,6 +411,7 @@ class _LivePageState extends ConsumerState<LivePage> {
 
   void _onEvent(Map<String, dynamic> e) {
     if (!mounted) return;
+    if (_pk?.handle(e) == true) return;
     switch (e['kind']) {
       case 'chat':
         setState(() {
@@ -345,7 +422,7 @@ class _LivePageState extends ConsumerState<LivePage> {
               host: e['isHost'] == true,
             ),
           );
-          if (_chat.length > 40) _chat.removeAt(0);
+          if (_chat.length > 200) _chat.removeAt(0);
         });
       case 'gift':
         final g = (e['gift'] as Map?) ?? const {};
@@ -384,44 +461,6 @@ class _LivePageState extends ConsumerState<LivePage> {
     Timer(const Duration(milliseconds: 1800), () {
       if (mounted) setState(() => _hearts.remove(id));
     });
-  }
-
-  /// Same on-device check as video calls: blur at once and send that one frame.
-  Future<void> _startModeration() async {
-    if (_moderator != null) return;
-    final NudityDetector detector;
-    try {
-      detector = await sharedNudityDetector();
-    } catch (_) {
-      return;
-    }
-    if (!mounted || _moderator != null) return;
-    final api = ref.read(apiProvider);
-    _moderator =
-        VideoModerator(
-            detector: detector,
-            capture: () async {
-              final t = _video;
-              if (t == null) return null;
-              return (await t.mediaStreamTrack.captureFrame()).asUint8List();
-            },
-            report: (jpeg, score) async {
-              final small = await compute(shrinkForUpload, jpeg);
-              await api.call(
-                () => api.lives.flagLiveFrame(
-                  c.id,
-                  FlagLiveFrameRequest(
-                    frameBase64: base64Encode(small),
-                    score: score,
-                  ),
-                ),
-              );
-            },
-          )
-          ..addListener(() {
-            if (mounted) setState(() {});
-          })
-          ..start();
   }
 
   // --- actions ---------------------------------------------------------------------
@@ -524,13 +563,24 @@ class _LivePageState extends ConsumerState<LivePage> {
         ),
       ),
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
+    // In a PK battle the viewer picks a side (either host can get it).
+    String? toHost;
+    final pk = _pk;
+    if (pk != null && pk.active) {
+      toHost = await pickPkSide(context, pk);
+      if (toHost == null) return;
+    }
     final api = ref.read(apiProvider);
     try {
       await api.call(
         () => api.lives.sendLiveGift(
           c.id,
-          SendGiftRequest(giftId: picked.id, clientRef: uuidV4()),
+          SendLiveGiftRequest(
+            giftId: picked.id,
+            clientRef: uuidV4(),
+            toHostId: toHost,
+          ),
         ),
       );
       ref.invalidate(walletProvider);
@@ -610,7 +660,9 @@ class _LivePageState extends ConsumerState<LivePage> {
       fit: StackFit.expand,
       children: [
         // Video, or a card while joining / locked / not on screen.
-        if (watching && _video != null && !hidden)
+        if (watching && _pk?.showing == true)
+          const ColoredBox(color: Color(0xFF0A0A18))
+        else if (watching && _video != null && !hidden)
           VideoTrackRenderer(_video!, fit: VideoViewFit.cover)
         else
           _Backdrop(card: c, blur: _phase == _Phase.locked || hidden),
@@ -639,6 +691,18 @@ class _LivePageState extends ConsumerState<LivePage> {
             ),
           ),
         ),
+        if (watching && _pk?.showing == true)
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 96,
+            left: 0,
+            right: 0,
+            child: PkBattleView(
+              pk: _pk!,
+              myVideo: _video != null && !hidden
+                  ? VideoTrackRenderer(_video!, fit: VideoViewFit.cover)
+                  : _Backdrop(card: c, blur: hidden),
+            ),
+          ),
         SafeArea(
           child: Column(
             children: [
@@ -737,19 +801,31 @@ class _Backdrop extends StatelessWidget {
         colors: [Color(0xFF3B0764), Color(0xFF831843), Color(0xFF0A0A18)],
       ),
     ),
-    child: Center(
-      child: ImageFiltered(
-        imageFilter: ImageFilter.blur(
-          sigmaX: blur ? 12 : 0,
-          sigmaY: blur ? 12 : 0,
-        ),
-        child: Avatar(
-          name: card.host.displayName,
-          avatarId: card.host.avatarId,
-          photoUrl: card.host.photoUrl,
-          size: 150,
-        ),
+    child: ImageFiltered(
+      imageFilter: ImageFilter.blur(
+        sigmaX: blur ? 12 : 0,
+        sigmaY: blur ? 12 : 0,
       ),
+      child: card.snapshotUrl != null
+          // The latest still from the live, full screen, until the video starts.
+          ? Image.network(
+              Avatar.photoSrc(card.snapshotUrl!),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) => _avatar(),
+            )
+          : _avatar(),
+    ),
+  );
+
+  Widget _avatar() => Center(
+    child: Avatar(
+      name: card.host.displayName,
+      avatarId: card.host.avatarId,
+      photoUrl: card.host.photoUrl,
+      size: 150,
     ),
   );
 }
@@ -898,7 +974,6 @@ class _ChatList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shown = lines.length > 6 ? lines.sublist(lines.length - 6) : lines;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 90, 8),
       child: Column(
@@ -911,45 +986,50 @@ class _ChatList extends StatelessWidget {
             style: AppText.heading(16),
           ),
           const SizedBox(height: 8),
-          for (final l in shown)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${l.name} ',
-                        style: AppText.body(
-                          13,
-                          weight: FontWeight.w800,
-                          color: l.host
-                              ? const Color(0xFFFDE68A)
-                              : const Color(0xFFF9A8D4),
+          LiveChatOverlay(
+            count: lines.length,
+            itemBuilder: (context, i) {
+              final l = lines[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${l.name} ',
+                          style: AppText.body(
+                            13,
+                            weight: FontWeight.w800,
+                            color: l.host
+                                ? const Color(0xFFFDE68A)
+                                : const Color(0xFFF9A8D4),
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: l.body,
-                        style: AppText.body(
-                          13,
-                          color: l.system
-                              ? const Color(0xFFFDE68A)
-                              : Colors.white,
+                        TextSpan(
+                          text: l.body,
+                          style: AppText.body(
+                            13,
+                            color: l.system
+                                ? const Color(0xFFFDE68A)
+                                : Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );

@@ -8,6 +8,7 @@ import type { IncomingCallPush, Notice, PushSender } from "../src/push.js";
 import { createHarness, type Harness } from "./fixtures.js";
 import { memoryStore } from "../src/storage.js";
 import { simulatedPayouts } from "../src/payouts/provider.js";
+import { checkoutSignature, hmacHex, type RazorpayGateway, type RazorpayOrder, type RazorpayPayment } from "../src/payments/razorpay.js";
 import type { Recorder } from "../src/recording.js";
 import type { PhoneVerifier } from "../src/auth/firebase-auth.js";
 import { ApiError } from "../src/errors.js";
@@ -62,6 +63,49 @@ export interface AppHarness extends Harness {
   store: ReturnType<typeof memoryStore>;
   uidai: TestSigner;
   recorder: FakeRecorder;
+  razorpay: FakeRazorpay;
+}
+
+export const RZP_TEST_SECRET = "rzp_test_secret_for_tests";
+export const RZP_WEBHOOK_SECRET = "rzp_webhook_secret_for_tests";
+
+/** In-memory Razorpay: orders get ids, tests decide what each payment looks like. */
+export class FakeRazorpay implements RazorpayGateway {
+  readonly keyId = "rzp_test_key";
+  orders: RazorpayOrder[] = [];
+  payments = new Map<string, RazorpayPayment>();
+  captured: string[] = [];
+  private n = 0;
+  async createOrder(amount: number): Promise<RazorpayOrder> {
+    const o = { id: `order_${++this.n}`, amount, currency: "INR", status: "created" };
+    this.orders.push(o);
+    return o;
+  }
+  async fetchPayment(id: string): Promise<RazorpayPayment> {
+    const p = this.payments.get(id);
+    if (!p) throw new Error(`no payment ${id}`);
+    return p;
+  }
+  async capture(id: string): Promise<RazorpayPayment> {
+    this.captured.push(id);
+    const p = { ...(await this.fetchPayment(id)), status: "captured" as const };
+    this.payments.set(id, p);
+    return p;
+  }
+  checkoutSignatureOk(orderId: string, paymentId: string, signature: string): boolean {
+    return checkoutSignature(RZP_TEST_SECRET, orderId, paymentId) === signature;
+  }
+  webhookSignatureOk(raw: string, signature: string | undefined): boolean {
+    return hmacHex(RZP_WEBHOOK_SECRET, raw) === signature;
+  }
+  /** A payment Razorpay would report for [orderId]. */
+  pay(orderId: string, overrides: Partial<RazorpayPayment> = {}): RazorpayPayment {
+    const order = this.orders.find((o) => o.id === orderId)!;
+    const p: RazorpayPayment = { id: `pay_${++this.n}`, order_id: orderId, amount: order.amount, currency: "INR",
+      status: "captured", amount_refunded: 0, ...overrides };
+    this.payments.set(p.id, p);
+    return p;
+  }
 }
 
 export async function createAppHarness(): Promise<AppHarness> {
@@ -72,17 +116,18 @@ export async function createAppHarness(): Promise<AppHarness> {
   const store = memoryStore();
   const uidai = await makeTestSigner();
   const recorder = new FakeRecorder();
+  const razorpay = new FakeRazorpay();
   const app = await buildApp({
     db: h.db, redis: h.redis, engine: h.engine, rooms: h.rooms, events: h.events, tokens, push,
     otp: new OtpService(h.redis, otpCodes, TEST_JWT_SECRET),
     phoneAuth: fakeFirebase,
     webhooks: fakeWebhooks,
-    store, kycKey: randomBytes(32), uidaiCerts: [uidai.certPem], payouts: simulatedPayouts(), recorder,
+    store, kycKey: randomBytes(32), uidaiCerts: [uidai.certPem], payouts: simulatedPayouts(), recorder, razorpay,
     liveKitUrl: "wss://livekit.test",
     logger: false,
   });
   await app.ready();
-  return { ...h, app, tokens, otpCodes, push, store, uidai, recorder };
+  return { ...h, app, tokens, otpCodes, push, store, uidai, recorder, razorpay };
 }
 
 /** Access token for a user created by the fixtures. */

@@ -28,6 +28,11 @@ export const NOTICE_TYPES = [
   "group_reminder",
   "group_cancelled",
   "photo_decided",
+  "chat_request",
+  "chat_request_accepted",
+  "call_invite",
+  "badge_won",
+  "level_up",
   "vip",
   "bonus_earned",
 ] as const;

@@ -10,8 +10,10 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **status** | **String** |  | 
 **rejectReason** | **String** |  | 
-**aadhaar** | [**KycStateInputAadhaar**](KycStateInputAadhaar.md) |  | 
+**redo** | **List<String>** | After a rejection: what to send again. Once all are sent, it goes back to review by itself. | [default to const []]
+**age** | [**KycStateInputAge**](KycStateInputAge.md) |  | 
 **selfie** | [**KycStateInputSelfie**](KycStateInputSelfie.md) |  | 
+**voice** | [**KycStateInputVoice**](KycStateInputVoice.md) |  | 
 **pan** | [**KycStateInputPan**](KycStateInputPan.md) |  | 
 **upi** | [**KycStateInputUpi**](KycStateInputUpi.md) |  | 
 **videoEnabled** | **bool** |  | 

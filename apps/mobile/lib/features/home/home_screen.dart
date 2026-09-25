@@ -15,15 +15,25 @@ import 'package:go_router/go_router.dart';
 import '../favourites/favourites_screen.dart';
 import 'home_data.dart';
 import 'offer_banner.dart';
+import '../growth/leaderboard_screen.dart' show BadgeChip, CurrentEventBanner;
 import '../live/live_data.dart' show LiveNowRow;
 import '../group/group_data.dart' show GroupVideoCard;
 import '../notifications/notifications_screen.dart';
 import '../rooms/rooms_screens.dart';
+import '../chat/chat_screens.dart' show openChatWith;
 
 /// Design: Home.dc.html — coin chip, greeting, Instant match, Online now.
 class HomeTab extends ConsumerStatefulWidget {
-  const HomeTab({super.key, required this.onOpenWallet, this.onSeeAllOnline});
+  const HomeTab({
+    super.key,
+    required this.onOpenWallet,
+    this.onSeeAllOnline,
+    this.onSeeAllLive,
+  });
   final VoidCallback onOpenWallet;
+
+  /// Opens the Live tab.
+  final VoidCallback? onSeeAllLive;
 
   /// Opens the Online tab (search, filters, sort).
   final VoidCallback? onSeeAllOnline;
@@ -108,7 +118,8 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                 ),
                 const SizedBox(height: 18),
                 const OfferBanner(),
-                const LiveNowRow(),
+                const CurrentEventBanner(),
+                LiveNowRow(onSeeAll: widget.onSeeAllLive),
                 _InstantMatchCard(language: lang),
                 const SizedBox(height: 14),
                 const GroupVideoCard(),
@@ -600,6 +611,11 @@ class CompanionRow extends ConsumerWidget {
                     ],
                   ],
                 ),
+                if (c.badge != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: BadgeChip(badge: c.badge!),
+                  ),
                 const SizedBox(height: 2),
                 Text(
                   busy
@@ -626,6 +642,15 @@ class CompanionRow extends ConsumerWidget {
             name: c.displayName,
             initial: c.isFavourite,
           ),
+          // Chat if you've talked; otherwise a message request.
+          _roundCall(
+            context,
+            Icons.chat_bubble_outline_rounded,
+            'Message ${c.displayName}',
+            gradient: false,
+            onTap: () => openChatWith(context, ref, c.id, name: c.displayName),
+          ),
+          const SizedBox(width: 8),
           _roundCall(
             context,
             Icons.call_rounded,

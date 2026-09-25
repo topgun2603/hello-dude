@@ -59,6 +59,7 @@ const Analytics = z.object({
     date: day, calls: z.number().int(), minutes: z.number().int(), coinsSpent: z.number().int(),
     salesPaise: z.number().int(), earningsPaise: z.number().int(), newCallers: z.number().int(),
     newCompanions: z.number().int(), activeCallers: z.number().int(),
+    missedCalls: z.number().int(), avgRating: z.number().nullable().describe("Callers' average stars that day"),
   })),
   byLanguage: z.array(z.object({ code: z.string(), name: z.string(), calls: z.number().int(), minutes: z.number().int(), coins: z.number().int() })),
   byType: z.array(z.object({ type: z.enum(["audio", "video"]), calls: z.number().int(), minutes: z.number().int(), coins: z.number().int() })),
@@ -99,7 +100,7 @@ async function totals(db: Db, from: string, to: string): Promise<Totals> {
           WHERE p.status = 'credited' AND p.created_at >= ${S} AND p.created_at < ${E}) AS sales_paise,
        (SELECT count(*) FROM purchases WHERE status = 'credited' AND created_at >= ${S} AND created_at < ${E}) AS purchases,
        (SELECT COALESCE(sum(l.amount), 0) FROM ledger_entries l JOIN wallets w ON w.id = l.wallet_id
-          WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'refund_reversal')
+          WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'referral_bonus', 'refund_reversal')
             AND l.created_at >= ${S} AND l.created_at < ${E}) AS earnings_paise,
        (SELECT count(*) FROM users WHERE role = 'caller' AND created_at >= ${S} AND created_at < ${E}) AS new_callers,
        (SELECT count(*) FROM users WHERE role = 'companion' AND created_at >= ${S} AND created_at < ${E}) AS new_companions,
@@ -177,19 +178,26 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
                     WHERE w.kind = 'coins' AND l.created_at >= ${S} AND l.created_at < ${E} GROUP BY 1),
          earn AS (SELECT ${istDay("l.created_at")} AS date, sum(l.amount) AS paise
                     FROM ledger_entries l JOIN wallets w ON w.id = l.wallet_id
-                   WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'refund_reversal')
+                   WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'referral_bonus', 'refund_reversal')
                      AND l.created_at >= ${S} AND l.created_at < ${E} GROUP BY 1),
          sales AS (SELECT ${istDay("p.created_at")} AS date, sum(cp.price_paise) AS paise
                      FROM purchases p JOIN coin_packages cp ON cp.id = p.package_id
                     WHERE p.status = 'credited' AND p.created_at >= ${S} AND p.created_at < ${E} GROUP BY 1),
          u AS (SELECT ${istDay("created_at")} AS date, count(*) FILTER (WHERE role = 'caller') AS callers,
                       count(*) FILTER (WHERE role = 'companion') AS companions
-                 FROM users WHERE created_at >= ${S} AND created_at < ${E} GROUP BY 1)
-         SELECT d.date, COALESCE(c.calls, 0) AS calls, COALESCE(c.minutes, 0) AS minutes, COALESCE(c.active_callers, 0) AS active_callers,
+                 FROM users WHERE created_at >= ${S} AND created_at < ${E} GROUP BY 1),
+         missed AS (SELECT ${istDay("created_at")} AS date, count(*) AS n FROM calls
+                     WHERE started_at IS NULL AND status IN ('missed', 'rejected', 'failed')
+                       AND created_at >= ${S} AND created_at < ${E} GROUP BY 1),
+         rated AS (SELECT ${istDay("r.created_at")} AS date, round(avg(r.stars)::numeric, 2) AS avg
+                     FROM call_ratings r JOIN calls cl ON cl.id = r.call_id
+                    WHERE r.rater_id = cl.caller_id AND r.created_at >= ${S} AND r.created_at < ${E} GROUP BY 1)
+         SELECT d.date, COALESCE(missed.n, 0) AS missed, rated.avg AS avg_rating, COALESCE(c.calls, 0) AS calls, COALESCE(c.minutes, 0) AS minutes, COALESCE(c.active_callers, 0) AS active_callers,
                 COALESCE(coins.spent, 0) AS coins_spent, COALESCE(earn.paise, 0) AS earnings, COALESCE(sales.paise, 0) AS sales,
                 COALESCE(u.callers, 0) AS new_callers, COALESCE(u.companions, 0) AS new_companions
            FROM d LEFT JOIN c USING (date) LEFT JOIN coins USING (date) LEFT JOIN earn USING (date)
-           LEFT JOIN sales USING (date) LEFT JOIN u USING (date) ORDER BY d.date`, args),
+           LEFT JOIN sales USING (date) LEFT JOIN u USING (date) LEFT JOIN missed USING (date) LEFT JOIN rated USING (date)
+          ORDER BY d.date`, args),
       db.query<{ code: string; name: string; calls: string; minutes: string; coins: string }>(
         `SELECT l.code, l.name, count(c.id) AS calls, COALESCE(sum(c.minutes_charged), 0) AS minutes,
                 COALESCE(sum(c.coins_charged), 0) AS coins
@@ -221,7 +229,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
         `SELECT u.id, u.display_name, u.avatar_id, sum(l.amount) AS paise,
                 (SELECT count(*) FROM calls c WHERE c.companion_id = u.id AND c.started_at >= ${S} AND c.started_at < ${E}) AS calls
            FROM ledger_entries l JOIN wallets w ON w.id = l.wallet_id JOIN users u ON u.id = w.user_id
-          WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'refund_reversal')
+          WHERE w.kind = 'earnings' AND l.type IN ('call_credit', 'gift_credit', 'live_pass_credit', 'live_credit', 'group_credit', 'bonus', 'referral_bonus', 'refund_reversal')
             AND l.created_at >= ${S} AND l.created_at < ${E}
           GROUP BY u.id HAVING sum(l.amount) > 0 ORDER BY sum(l.amount) DESC LIMIT 10`, args),
       db.query<{ id: string; display_name: string; avatar_id: number; coins: string; calls: string; purchases: string }>(
@@ -260,6 +268,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
       daily: dailyRows.rows.map((r) => ({
         date: String(r.date), calls: n(r.calls), minutes: n(r.minutes), coinsSpent: n(r.coins_spent), salesPaise: n(r.sales),
         earningsPaise: n(r.earnings), newCallers: n(r.new_callers), newCompanions: n(r.new_companions), activeCallers: n(r.active_callers),
+        missedCalls: n(r.missed), avgRating: r.avg_rating === null ? null : Number(r.avg_rating),
       })),
       byLanguage: lang.rows.map((r) => ({ code: r.code, name: r.name, calls: n(r.calls), minutes: n(r.minutes), coins: n(r.coins) })),
       byType: type.rows.map((r) => ({ type: r.type, calls: n(r.calls), minutes: n(r.minutes), coins: n(r.coins) })),

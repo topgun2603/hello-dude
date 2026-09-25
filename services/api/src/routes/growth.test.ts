@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { balance, createCaller, resetState } from "../../test/fixtures.js";
+import { balance, createCaller, createCompanion, resetState } from "../../test/fixtures.js";
 import { call, createAppHarness, errorCode, json, signUp, tokenFor, type AppHarness } from "../../test/app-harness.js";
 import { tx } from "../db/pool.js";
 import { rewardReferral } from "../growth.js";
@@ -107,6 +107,25 @@ describe("referrals", () => {
     expect(await balance(h, friend.userId, "coins")).toBe(50);
     expect(json<{ rewarded: number; coinsEarned: number }>(await call(h, "GET", "/v1/referral", { token: inviter.accessToken })))
       .toMatchObject({ rewarded: 1, coinsEarned: 50 });
+  });
+
+  it("a companion's code: the caller gets coins, the companion gets ₹ in earnings after the first recharge", async () => {
+    const companionId = await createCompanion(h);
+    const companion = await tokenFor(h, companionId, "companion");
+    const ref = json<{ code: string; referrerPaise: number; referrerCoins: number }>(await call(h, "GET", "/v1/referral", { token: companion }));
+    expect(ref).toMatchObject({ referrerPaise: 2500, referrerCoins: 0 });
+    const friend = await signUp(h, "9877777777", { displayName: "Ravi", referralCode: ref.code });
+    const note = (await h.db.query<{ body: string }>(`SELECT body FROM notifications WHERE user_id = $1`, [companionId])).rows;
+    expect(note).toEqual([{ body: "You'll get ₹25 after their first recharge" }]);
+
+    const pack = (await h.db.query<{ id: number }>(`SELECT id FROM coin_packages LIMIT 1`)).rows[0]!.id;
+    await h.db.query(`INSERT INTO purchases (user_id, package_id, purchase_token, coins_credited, status) VALUES ($1, $2, 'tok-c', 100, 'credited')`,
+      [friend.userId, pack]);
+    expect(await tx(h.db, (c) => rewardReferral(c, friend.userId))).toMatchObject({ referrerCoins: 0, referrerPaise: 2500, refereeCoins: 50 });
+    expect(await balance(h, companionId, "earnings")).toBe(2500);
+    expect(await balance(h, companionId, "coins")).toBe(0);
+    expect(await balance(h, friend.userId, "coins")).toBe(50);
+    expect(json(await call(h, "GET", "/v1/referral", { token: companion }))).toMatchObject({ rewarded: 1, paiseEarned: 2500 });
   });
 
   it("stops paying the inviter past the cap (the friend still gets theirs)", async () => {

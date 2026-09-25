@@ -61,7 +61,7 @@ export const safetyRoutes: FastifyPluginAsyncZod = async (app) => {
       body: z.object({
         userId: z.uuid(),
         callId: z.uuid().nullish(),
-        reason: z.enum(["abuse", "sexual_content", "spam", "underage", "fraud", "other"]),
+        reason: z.enum(["abuse", "sexual_content", "spam", "underage", "fraud", "off_platform", "other"]),
         details: z.string().trim().max(1000).nullish(),
         alsoBlock: z.boolean().default(true),
       }),

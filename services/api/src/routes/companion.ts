@@ -1,6 +1,8 @@
 /**
- * Companion onboarding (apply → Aadhaar → selfie → PAN + UPI → submit),
- * companion home and earnings/withdrawals.
+ * Companion onboarding (apply → date of birth (18+) → live selfie → UPI → submit;
+ * PAN optional, any time), companion home and earnings/withdrawals. No Aadhaar
+ * (owner, 2026-09-24): an admin approves from the selfie; without a PAN on file
+ * withdrawals carry the higher TDS rate.
  *
  * Files arrive base64 in JSON (small, and simple for the generated Dart
  * client) and are stored only encrypted. KYC fields lock once submitted.
@@ -11,7 +13,7 @@ import { tx, type DbClient } from "../db/pool.js";
 import { bearer, me, requireAuth } from "../auth/guard.js";
 import { ApiError, conflict, forbidden } from "../errors.js";
 import { post } from "../billing/ledger.js";
-import { ageOn, verifyOfflineKyc } from "../kyc/aadhaar.js";
+import { ageOn } from "../kyc/aadhaar.js";
 import { seal } from "../storage.js";
 import { numberSetting } from "../settings.js";
 import { isOnline } from "../presence.js";
@@ -38,26 +40,38 @@ export const maskUpi = (upi: string) => {
   return `${name!.slice(0, Math.min(4, Math.max(1, name!.length - 2)))}••••@${bank}`;
 };
 
+export const KYC_ITEMS = ["age", "selfie", "voice", "pan", "upi"] as const;
+export type KycItem = (typeof KYC_ITEMS)[number];
+
 const KycState = z.object({
   status: z.enum(["in_progress", "submitted", "approved", "rejected"]),
   rejectReason: z.string().nullable(),
-  aadhaar: z.object({ done: z.boolean(), name: z.string().nullable(), last4: z.string().nullable(), age: z.number().int().nullable() }),
+  redo: z.array(z.enum(KYC_ITEMS)).describe("After a rejection: what to send again. Once all are sent, it goes back to review by itself."),
+  age: z.object({ done: z.boolean(), birthDate: z.string().nullable().describe("YYYY-MM-DD"), age: z.number().int().nullable() }),
   selfie: z.object({ done: z.boolean() }),
-  pan: z.object({ done: z.boolean(), last4: z.string().nullable() }),
+  voice: z.object({
+    needed: z.boolean().describe("Women companions record a voice intro; an admin listens to it"),
+    done: z.boolean(),
+    sentence: z.string().nullable().describe("Read this aloud (random each time)"),
+  }),
+  pan: z.object({ done: z.boolean(), last4: z.string().nullable() }).describe("Optional; without it TDS on withdrawals is higher"),
   upi: z.object({ done: z.boolean(), masked: z.string().nullable() }),
   videoEnabled: z.boolean(),
 }).meta({ id: "KycState" });
 
 interface ProfileRow {
   kyc_status: "pending" | "approved" | "rejected"; kyc_submitted_at: Date | null; kyc_reject_reason: string | null;
-  aadhaar_name: string | null; aadhaar_last4: string | null; aadhaar_dob: string | null;
+  birth_date: string | null; age_confirmed_at: Date | null;
+  gender: string; language: string; voice_sentence: string | null; voice_submitted_at: Date | null; kyc_redo: KycItem[];
   selfie_blinks: number | null; pan_last4: string | null; upi_id: string | null; video_enabled: boolean;
   takes_audio: boolean; takes_video: boolean;
 }
 
 async function profileRow(c: { query: DbClient["query"] }, userId: string, lock = false): Promise<ProfileRow> {
   const row = (await c.query<ProfileRow>(
-    `SELECT kyc_status, kyc_submitted_at, kyc_reject_reason, aadhaar_name, aadhaar_last4, to_char(aadhaar_dob, 'YYYY-MM-DD') AS aadhaar_dob,
+    `SELECT kyc_status, kyc_submitted_at, kyc_reject_reason, to_char(birth_date, 'YYYY-MM-DD') AS birth_date, age_confirmed_at,
+            (SELECT gender FROM users WHERE id = $1) AS gender, (SELECT primary_language FROM users WHERE id = $1) AS language,
+            voice_sentence, voice_submitted_at, kyc_redo,
             selfie_blinks, pan_last4, upi_id, video_enabled, takes_audio, takes_video
        FROM companion_profiles WHERE user_id = $1 ${lock ? "FOR UPDATE" : ""}`, [userId],
   )).rows[0];
@@ -70,12 +84,66 @@ function kycState(p: ProfileRow): z.infer<typeof KycState> {
   return {
     status,
     rejectReason: p.kyc_status === "rejected" ? p.kyc_reject_reason : null,
-    aadhaar: { done: !!p.aadhaar_last4, name: p.aadhaar_name, last4: p.aadhaar_last4, age: p.aadhaar_dob ? ageOn(p.aadhaar_dob) : null },
+    redo: p.kyc_status === "rejected" ? p.kyc_redo : [],
+    age: { done: !!p.age_confirmed_at, birthDate: p.birth_date, age: p.birth_date ? ageOn(p.birth_date) : null },
     selfie: { done: p.selfie_blinks !== null },
+    voice: { needed: voiceRequired(p.gender), done: !!p.voice_submitted_at, sentence: p.voice_sentence },
     pan: { done: !!p.pan_last4, last4: p.pan_last4 },
     upi: { done: !!p.upi_id, masked: p.upi_id ? maskUpi(p.upi_id) : null },
     videoEnabled: p.video_enabled,
   };
+}
+
+/** Women (and transgender) companions verify with a voice intro. */
+export const voiceRequired = (gender: string) => gender !== "male";
+
+/**
+ * Voice-intro lines in each launch language (owner: in her own language, not English).
+ * Each ends with "my number/code" and the random digits follow. Placeholder wording —
+ * have a native speaker check each before launch.
+ */
+const VOICE_LINES: Record<string, string[]> = {
+  ta: ["வணக்கம்! நான் புதிய நண்பர்களுடன் பேச விரும்புகிறேன். என் எண்", "இது Hello Dude-க்கான என் குரல். என் எண்"],
+  te: ["నమస్కారం! నాకు కొత్త స్నేహితులతో మాట్లాడటం ఇష్టం. నా సంఖ్య", "ఇది Hello Dude కోసం నా గొంతు. నా సంఖ్య"],
+  kn: ["ನಮಸ್ಕಾರ! ನನಗೆ ಹೊಸ ಸ್ನೇಹಿತರೊಂದಿಗೆ ಮಾತನಾಡಲು ಇಷ್ಟ. ನನ್ನ ಸಂಖ್ಯೆ", "ಇದು Hello Dude ಗಾಗಿ ನನ್ನ ಧ್ವನಿ. ನನ್ನ ಸಂಖ್ಯೆ"],
+  ml: ["നമസ്കാരം! പുതിയ സുഹൃത്തുക്കളോട് സംസാരിക്കാൻ എനിക്ക് ഇഷ്ടമാണ്. എന്റെ നമ്പർ", "ഇത് Hello Dude-നായുള്ള എന്റെ ശബ്ദമാണ്. എന്റെ നമ്പർ"],
+  hi: ["नमस्ते! मुझे नए दोस्तों से बात करना पसंद है। मेरा नंबर है", "यह Hello Dude के लिए मेरी आवाज़ है। मेरा नंबर है"],
+  bn: ["নমস্কার! নতুন বন্ধুদের সাথে কথা বলতে আমার ভালো লাগে। আমার নম্বর", "এটা Hello Dude-এর জন্য আমার কণ্ঠ। আমার নম্বর"],
+  mr: ["नमस्कार! मला नवीन मित्रांशी बोलायला आवडते. माझा क्रमांक", "हा Hello Dude साठी माझा आवाज आहे. माझा क्रमांक"],
+  en: ["Hello! I love talking to new friends. My number is", "This is my voice for Hello Dude. My number is"],
+};
+/** A random line in `language` (English if unknown) with random digits, so an old recording can't be reused. */
+export function voiceSentence(language: string) {
+  const lines = VOICE_LINES[language] ?? VOICE_LINES.en!;
+  const digits = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join(" ");
+  return `${lines[Math.floor(Math.random() * lines.length)]} ${digits}.`;
+}
+const MAX_VOICE_BYTES = 2 * 1024 * 1024;
+/** m4a/mp4/3gp (ftyp), Ogg, WAV or WebM. */
+export const isAudio = (b: Buffer) =>
+  b.subarray(4, 8).toString("latin1") === "ftyp" || b.subarray(0, 4).toString("latin1") === "OggS" ||
+  b.subarray(0, 4).toString("latin1") === "RIFF" || (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3);
+
+/** Every required step is done (PAN is optional). */
+const complete = (p: ProfileRow) =>
+  !!p.age_confirmed_at && p.selfie_blinks !== null && !!p.upi_id && (!voiceRequired(p.gender) || !!p.voice_submitted_at);
+
+/**
+ * After a rejection, sending an item the admin asked for ticks it off; when the
+ * last one is in (and every step is done) the case goes back to review by itself.
+ * Returns true when it was resubmitted.
+ */
+async function resubmitIfFixed(c: DbClient, userId: string, item: KycItem) {
+  const r = await c.query(
+    `UPDATE companion_profiles SET kyc_redo = array_remove(kyc_redo, $2)
+      WHERE user_id = $1 AND kyc_status = 'rejected' AND $2 = ANY(kyc_redo) RETURNING kyc_redo`, [userId, item]);
+  if (!r.rowCount || r.rows[0].kyc_redo.length) return false;
+  const p = await profileRow(c, userId);
+  if (!complete(p) || (p.birth_date && ageOn(p.birth_date) < 18)) return false;
+  await c.query(
+    `UPDATE companion_profiles SET kyc_status = 'pending', kyc_submitted_at = now(), kyc_reject_reason = NULL WHERE user_id = $1`,
+    [userId]);
+  return true;
 }
 
 /** KYC can be edited while in progress or after a rejection, not while under review or once approved. */
@@ -85,7 +153,7 @@ function assertEditable(p: ProfileRow) {
 }
 
 export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
-  const { db, redis, store, kycKey, uidaiCerts, tokens } = app.deps;
+  const { db, redis, store, kycKey, tokens } = app.deps;
   const companion = requireAuth("companion");
   const base = { tags: ["companion"], security: bearer };
 
@@ -124,51 +192,68 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get("/companion/kyc", {
     preHandler: companion,
     schema: { ...base, summary: "Verification progress", response: { 200: KycState } },
-  }, async (req) => kycState(await profileRow(db, me(req).userId)));
+  }, async (req) => {
+    const userId = me(req).userId;
+    const p = await profileRow(db, userId);
+    if (voiceRequired(p.gender) && !p.voice_sentence && !p.voice_submitted_at) {
+      await db.query(`UPDATE companion_profiles SET voice_sentence = $2 WHERE user_id = $1 AND voice_sentence IS NULL`, [userId, voiceSentence(p.language)]);
+      return kycState(await profileRow(db, userId));
+    }
+    return kycState(p);
+  });
 
-  app.post("/companion/kyc/aadhaar", {
+  app.post("/companion/kyc/voice", {
     preHandler: companion,
-    bodyLimit: 8 * 1024 * 1024,
+    bodyLimit: 4 * 1024 * 1024,
     schema: {
       ...base,
-      summary: "Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code",
-      body: z.object({ zipBase64: base64File(5 * 1024 * 1024), shareCode: z.string().trim().min(4).max(8) }),
+      summary: "Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; " +
+        "it's deleted after the decision.",
+      body: z.object({ audioBase64: base64File(MAX_VOICE_BYTES) }),
       response: { 200: KycState },
     },
   }, async (req) => {
     const { userId } = me(req);
-    const current = await profileRow(db, userId);
-    assertEditable(current);
-
-    const kyc = await verifyOfflineKyc(req.body.zipBase64, req.body.shareCode, uidaiCerts);
-    const maxAgeH = await numberSetting(db, "kyc.aadhaar_max_age_hours", 72);
-    if (Date.now() - kyc.generatedAt.getTime() > maxAgeH * 3600_000) {
-      throw new ApiError(400, "AADHAAR_ZIP_TOO_OLD", `Download a fresh file from the UIDAI site — it must be less than ${maxAgeH / 24} days old`);
-    }
-    const age = ageOn(kyc.dob);
-
+    if (!isAudio(req.body.audioBase64)) throw new ApiError(400, "AUDIO_INVALID", "Send the recording as m4a, ogg or wav");
     await tx(db, async (c) => {
-      await profileRow(c, userId, true);
-      // The same Aadhaar can't back two companion accounts.
-      const dup = await c.query(
-        `SELECT 1 FROM companion_profiles WHERE user_id <> $1 AND aadhaar_last4 = $2 AND aadhaar_dob = $3 AND lower(aadhaar_name) = lower($4)`,
-        [userId, kyc.last4, kyc.dob, kyc.name],
-      );
-      if (dup.rowCount) throw conflict("AADHAAR_ALREADY_USED", "This Aadhaar is already linked to another account");
+      const p = await profileRow(c, userId, true);
+      assertEditable(p);
+      if (!voiceRequired(p.gender)) throw new ApiError(400, "VOICE_NOT_NEEDED", "A voice intro isn't needed for your account");
+      if (!p.voice_sentence) throw conflict("NO_SENTENCE", "Open verification again to get your sentence");
+      await saveDoc(c, userId, "voice", req.body.audioBase64);
+      await c.query(`UPDATE companion_profiles SET voice_submitted_at = now() WHERE user_id = $1`, [userId]);
+      await resubmitIfFixed(c, userId, "voice");
+    });
+    return kycState(await profileRow(db, userId));
+  });
 
-      await saveDoc(c, userId, "aadhaar_offline", req.body.zipBase64);
-      await saveDoc(c, userId, "aadhaar_photo", kyc.photoJpeg);
-      await c.query(
-        `UPDATE companion_profiles SET aadhaar_name = $2, aadhaar_dob = $3, aadhaar_gender = $4, aadhaar_last4 = $5,
-                aadhaar_generated_at = $6 WHERE user_id = $1`,
-        [userId, kyc.name, kyc.dob, kyc.gender, kyc.last4, kyc.generatedAt],
-      );
+  app.post("/companion/kyc/age", {
+    preHandler: companion,
+    schema: {
+      ...base,
+      summary: "Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.",
+      body: z.object({
+        birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
+        confirm18: z.literal(true).describe("I confirm I am 18 or older"),
+      }),
+      response: { 200: KycState },
+    },
+  }, async (req) => {
+    const { userId } = me(req);
+    const d = new Date(`${req.body.birthDate}T00:00:00Z`);
+    if (Number.isNaN(d.getTime()) || d.getUTCFullYear() < 1900 || d > new Date()) {
+      throw new ApiError(400, "BAD_DATE", "Enter your real date of birth");
+    }
+    const age = ageOn(req.body.birthDate);
+    await tx(db, async (c) => {
+      assertEditable(await profileRow(c, userId, true));
+      await c.query(`UPDATE companion_profiles SET birth_date = $2, age_confirmed_at = now() WHERE user_id = $1`, [userId, req.body.birthDate]);
+      if (age >= 18) await resubmitIfFixed(c, userId, "age");
       if (age < 18) {
-        // Kit rule: auto-reject under 18.
         await c.query(`UPDATE companion_profiles SET kyc_status = 'rejected', kyc_reject_reason = 'Under 18' WHERE user_id = $1`, [userId]);
       }
     });
-    if (age < 18) throw forbidden("AADHAAR_UNDER_18");
+    if (age < 18) throw forbidden("UNDER_18");
     return kycState(await profileRow(db, userId));
   });
 
@@ -177,7 +262,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
     bodyLimit: 5 * 1024 * 1024,
     schema: {
       ...base,
-      summary: "Step 2: live selfie. The app runs the blink check (ML Kit) before sending.",
+      summary: "Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.",
       body: z.object({ imageBase64: base64File(MAX_IMAGE_BYTES), blinks: z.number().int().min(2).max(20) }),
       response: { 200: KycState },
     },
@@ -188,6 +273,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       assertEditable(await profileRow(c, userId, true));
       await saveDoc(c, userId, "selfie", req.body.imageBase64);
       await c.query(`UPDATE companion_profiles SET selfie_blinks = $2 WHERE user_id = $1`, [userId, req.body.blinks]);
+      await resubmitIfFixed(c, userId, "selfie");
     });
     return kycState(await profileRow(db, userId));
   });
@@ -197,7 +283,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
     bodyLimit: 5 * 1024 * 1024,
     schema: {
       ...base,
-      summary: "Step 3a: PAN number + photo of the card (needed for TDS)",
+      summary: "Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).",
       body: z.object({
         panNumber: z.string().trim().toUpperCase().regex(PAN_RE, "Enter a valid individual PAN, like ABCPE1234F"),
         imageBase64: base64File(MAX_IMAGE_BYTES),
@@ -208,10 +294,14 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
     const { userId } = me(req);
     if (!isJpegOrPng(req.body.imageBase64)) throw new ApiError(400, "IMAGE_INVALID", "Send a JPEG or PNG photo");
     await tx(db, async (c) => {
-      assertEditable(await profileRow(c, userId, true));
+      const p = await profileRow(c, userId, true);
+      if (p.kyc_status === "pending" && p.kyc_submitted_at) throw conflict("KYC_LOCKED", "Your details are being reviewed");
+      const open = await c.query(`SELECT 1 FROM payouts WHERE companion_id = $1 AND status IN ('requested', 'processing')`, [userId]);
+      if (open.rowCount) throw conflict("PAYOUT_PENDING", "You can change your PAN after the current withdrawal finishes");
       await saveDoc(c, userId, "pan", req.body.imageBase64);
       await c.query(`UPDATE companion_profiles SET pan_last4 = $2, pan_encrypted = $3 WHERE user_id = $1`,
         [userId, req.body.panNumber.slice(-4), seal(kycKey, Buffer.from(req.body.panNumber))]);
+      await resubmitIfFixed(c, userId, "pan");
     });
     return kycState(await profileRow(db, userId));
   });
@@ -235,6 +325,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
                 upi_id = $2 WHERE user_id = $1`,
         [userId, req.body.upiId.toLowerCase()],
       );
+      await resubmitIfFixed(c, userId, "upi");
     });
     return kycState(await profileRow(db, userId));
   });
@@ -248,10 +339,9 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       const p = await profileRow(c, userId, true);
       assertEditable(p);
       const s = kycState(p);
-      if (!s.aadhaar.done || !s.selfie.done || !s.pan.done || !s.upi.done) {
-        throw new ApiError(400, "KYC_INCOMPLETE", "Finish every step before submitting");
-      }
-      if (p.aadhaar_dob && ageOn(p.aadhaar_dob) < 18) throw forbidden("AADHAAR_UNDER_18");
+      if (!complete(p)) throw new ApiError(400, "KYC_INCOMPLETE", "Finish every step before submitting");
+      if (s.redo.length) throw new ApiError(400, "KYC_INCOMPLETE", "Send again what the review asked for first");
+      if (p.birth_date && ageOn(p.birth_date) < 18) throw forbidden("UNDER_18");
       await c.query(
         `UPDATE companion_profiles SET kyc_status = 'pending', kyc_submitted_at = now(), kyc_reject_reason = NULL WHERE user_id = $1`,
         [userId],
@@ -352,7 +442,9 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       summary: "Balance, last 7 days and withdrawals",
       response: {
         200: z.object({
-          availablePaise: z.number().int(), upi: z.string().nullable(), minWithdrawalPaise: z.number().int(), tdsBps: z.number().int(),
+          availablePaise: z.number().int(), upi: z.string().nullable(), minWithdrawalPaise: z.number().int(),
+          tdsBps: z.number().int().describe("TDS on your withdrawals now (higher without a PAN)"),
+          panOnFile: z.boolean(), tdsWithPanBps: z.number().int(), tdsNoPanBps: z.number().int(),
           canWithdraw: z.boolean(), blockedReason: z.string().nullable(),
           week: z.array(z.object({ date: z.string(), paise: z.number().int() })),
           payouts: z.array(Payout),
@@ -362,7 +454,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
   }, async (req) => {
     const { userId } = me(req);
     const p = await profileRow(db, userId);
-    const [bal, week, list, minPaise, tdsBps] = await Promise.all([
+    const [bal, week, list, minPaise, withPan, noPan] = await Promise.all([
       db.query<{ balance: number }>(`SELECT balance FROM wallets WHERE user_id = $1 AND kind = 'earnings'`, [userId]),
       db.query<{ date: string; paise: number }>(
         `SELECT to_char(d, 'YYYY-MM-DD') AS date,
@@ -374,7 +466,9 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       db.query(`SELECT * FROM payouts WHERE companion_id = $1 ORDER BY created_at DESC LIMIT 20`, [userId]),
       numberSetting(db, "payout.min_paise", 10_000),
       numberSetting(db, "payout.tds_bps", 100),
+      numberSetting(db, "payout.tds_no_pan_bps", 2000),
     ]);
+    const tdsBps = p.pan_last4 ? withPan : noPan;
     const available = bal.rows[0]?.balance ?? 0;
     const open = list.rows.some((r) => r.status === "requested" || r.status === "processing");
     const blockedReason = p.kyc_status !== "approved" ? "Finish verification to withdraw"
@@ -383,6 +477,7 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       : available < minPaise ? `You can withdraw once you have ₹${minPaise / 100}` : null;
     return {
       availablePaise: available, upi: p.upi_id ? maskUpi(p.upi_id) : null, minWithdrawalPaise: minPaise, tdsBps,
+      panOnFile: !!p.pan_last4, tdsWithPanBps: withPan, tdsNoPanBps: noPan,
       canWithdraw: blockedReason === null, blockedReason,
       week: week.rows,
       payouts: list.rows.map((r) => ({
@@ -402,7 +497,9 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   }, async (req, reply) => {
     const { userId } = me(req);
-    const [minPaise, tdsBps] = await Promise.all([numberSetting(db, "payout.min_paise", 10_000), numberSetting(db, "payout.tds_bps", 100)]);
+    const [minPaise, withPan, noPan] = await Promise.all([
+      numberSetting(db, "payout.min_paise", 10_000), numberSetting(db, "payout.tds_bps", 100), numberSetting(db, "payout.tds_no_pan_bps", 2000),
+    ]);
     const row = await tx(db, async (c) => {
       const p = await profileRow(c, userId, true);
       if (p.kyc_status !== "approved") throw forbidden("KYC_NOT_APPROVED");
@@ -414,7 +511,8 @@ export const companionOnboardingRoutes: FastifyPluginAsyncZod = async (app) => {
       const gross = req.body.amountPaise ?? balance;
       if (gross < minPaise) throw new ApiError(400, "BELOW_MINIMUM", `The minimum withdrawal is ₹${minPaise / 100}`);
       if (gross > balance) throw new ApiError(400, "INSUFFICIENT_EARNINGS", "That's more than your balance");
-      const tds = Math.round((gross * tdsBps) / 10_000);
+      // Without a PAN on file the higher TDS rate applies (Income Tax Act s.206AA).
+      const tds = Math.round((gross * (p.pan_last4 ? withPan : noPan)) / 10_000);
 
       const flags = await riskFlags(c, userId);
       let payout;
@@ -459,5 +557,17 @@ export async function riskFlags(c: DbClient, userId: string): Promise<string[]> 
   if (r.upi_recent) flags.push("upi_changed_recently");
   if (r.short_calls >= 10) flags.push("many_short_calls");
   if (r.daily_avg > 0 && r.last_day > 4 * r.daily_avg && r.last_day > 50_000) flags.push("earnings_spike");
+  // Tried to share a number / UPI / other app in chat (chat-safety.ts strikes).
+  const strikes = (await c.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM chat_violations WHERE sender_id = $1 AND created_at > now() - interval '30 days'`, [userId])).rows[0]!.n;
+  if (strikes >= 3) flags.push("contact_sharing");
+  // One phone, many accounts: the most accounts seen on any phone she used.
+  const maxAccounts = await numberSetting(c, "fraud.device_max_accounts", 3);
+  const shared = (await c.query<{ n: number }>(
+    `SELECT COALESCE(max(n), 0)::int AS n FROM (
+       SELECT count(*) AS n FROM device_accounts d
+        WHERE d.device_hash IN (SELECT device_hash FROM device_accounts WHERE user_id = $1)
+        GROUP BY d.device_hash) x`, [userId])).rows[0]!.n;
+  if (shared >= maxAccounts) flags.push("shared_device");
   return flags;
 }

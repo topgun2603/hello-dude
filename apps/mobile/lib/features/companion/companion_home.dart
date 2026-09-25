@@ -125,7 +125,7 @@ class _NotApproved extends StatelessWidget {
       ),
       _ => (
         'Finish verification',
-        'Aadhaar, a live selfie, then PAN and UPI. About 5 minutes.',
+        'Your age, a live selfie and a UPI ID. About 2 minutes.',
         'Continue',
       ),
     };
@@ -356,6 +356,8 @@ class _ApprovedState extends ConsumerState<_Approved> {
         ),
         const SizedBox(height: 16),
         _GoLiveCard(unlocked: h.videoEnabled),
+        const SizedBox(height: 12),
+        const _InviteCard(),
         const SizedBox(height: 12),
         HostGroupsCard(unlocked: h.videoEnabled),
         const SizedBox(height: 20),
@@ -678,6 +680,61 @@ class _GoLiveCard extends ConsumerWidget {
                           ? Colors.white70
                           : AppColors.textSecondary,
                     ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Invite callers with your code: a bonus in earnings after their first recharge.
+class _InviteCard extends StatelessWidget {
+  const _InviteCard();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Invite callers and earn',
+    excludeSemantics: true,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => context.push('/referral'),
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.16),
+              ),
+              child: const Icon(
+                Icons.card_giftcard_rounded,
+                color: Color(0xFFFCD34D),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Invite callers, earn', style: AppText.heading(17)),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Share your code. You earn a bonus when they make their first recharge.',
+                    style: AppText.body(12.5, color: AppColors.textSecondary),
                   ),
                 ],
               ),

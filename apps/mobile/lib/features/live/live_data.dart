@@ -7,17 +7,96 @@ import 'package:go_router/go_router.dart';
 import 'package:pesu_api/api.dart';
 
 import '../../app/theme.dart';
+import '../../data/api.dart';
 import '../../data/realtime.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
 
-/// Who is live now (favourites first, then the busiest), with pass prices.
+/// How the Live tab asks for lives (server-side sort, filters and search).
+class LiveQuery {
+  const LiveQuery({
+    this.sort = LiveSort.forYou,
+    this.language,
+    this.favourites = false,
+    this.q = '',
+  });
+  final LiveSort sort;
+  final String? language;
+  final bool favourites;
+  final String q;
+
+  LiveQuery copyWith({
+    LiveSort? sort,
+    String? Function()? language,
+    bool? favourites,
+    String? q,
+  }) => LiveQuery(
+    sort: sort ?? this.sort,
+    language: language != null ? language() : this.language,
+    favourites: favourites ?? this.favourites,
+    q: q ?? this.q,
+  );
+
+  @override
+  bool operator ==(Object o) =>
+      o is LiveQuery &&
+      o.sort == sort &&
+      o.language == language &&
+      o.favourites == favourites &&
+      o.q == q;
+
+  @override
+  int get hashCode => Object.hash(sort, language, favourites, q);
+}
+
+enum LiveSort {
+  forYou('for_you', 'For you', Icons.auto_awesome_rounded),
+  popular('popular', 'Popular', Icons.local_fire_department_rounded),
+  newest('new', 'New', Icons.fiber_new_rounded);
+
+  const LiveSort(this.api, this.label, this.icon);
+  final String api, label;
+  final IconData icon;
+}
+
+/// One page of lives for [q].
+Future<ListLives200Response> fetchLives(
+  PesuApi api,
+  LiveQuery q, {
+  int offset = 0,
+  int limit = 30,
+}) => api.call(
+  () => api.lives.listLives(
+    sort: q.sort.api,
+    language: q.language,
+    favourites: q.favourites ? 'true' : null,
+    q: q.q.trim().isEmpty ? null : q.q.trim(),
+    limit: limit,
+    offset: offset,
+  ),
+);
+
+/// Home row: the top 10 for this caller, plus how many are live in all.
 final livesProvider = FutureProvider.autoDispose<ListLives200Response>((
   ref,
 ) async {
-  final api = ref.watch(apiProvider);
-  return api.call(() => api.lives.listLives());
+  return fetchLives(ref.watch(apiProvider), const LiveQuery(), limit: 10);
 });
+
+/// What the swipe feed starts from: the list the caller was looking at (same
+/// order and filters), so swiping continues through it and loads more.
+class LiveFeedArgs {
+  const LiveFeedArgs({
+    this.startId,
+    this.initial,
+    this.total,
+    this.query = const LiveQuery(),
+  });
+  final String? startId;
+  final List<LiveCard>? initial;
+  final int? total;
+  final LiveQuery query;
+}
 
 /// `live_event`s for one live, as sent by routes/lives.ts.
 extension LiveEvents on Realtime {
@@ -97,7 +176,10 @@ class _LiveBadgeState extends State<LiveBadge>
 
 /// Home: a stories-style row of companions who are live, or a small card when nobody is.
 class LiveNowRow extends ConsumerStatefulWidget {
-  const LiveNowRow({super.key});
+  const LiveNowRow({super.key, this.onSeeAll});
+
+  /// Opens the Live tab.
+  final VoidCallback? onSeeAll;
 
   @override
   ConsumerState<LiveNowRow> createState() => _LiveNowRowState();
@@ -123,9 +205,13 @@ class _LiveNowRowState extends ConsumerState<LiveNowRow> {
 
   @override
   Widget build(BuildContext context) {
-    final lives =
-        ref.watch(livesProvider).valueOrNull?.lives ?? const <LiveCard>[];
+    final data = ref.watch(livesProvider).valueOrNull;
+    final lives = data?.lives ?? const <LiveCard>[];
     if (lives.isEmpty) return const _NobodyLive();
+    void open(String id) => context.push(
+      '/live',
+      extra: LiveFeedArgs(startId: id, initial: lives, total: data!.total),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -142,8 +228,12 @@ class _LiveNowRowState extends ConsumerState<LiveNowRow> {
                 ),
               ),
               TextButton(
-                onPressed: () => context.push('/live', extra: lives.first.id),
-                child: const Text('Watch'),
+                onPressed: widget.onSeeAll ?? () => open(lives.first.id),
+                child: Text(
+                  widget.onSeeAll != null
+                      ? 'See all ${data!.total} →'
+                      : 'Watch',
+                ),
               ),
             ],
           ),
@@ -162,7 +252,7 @@ class _LiveNowRowState extends ConsumerState<LiveNowRow> {
                       '${l.host.displayName} is live: ${l.title}. ${l.viewers} watching',
                   excludeSemantics: true,
                   child: GestureDetector(
-                    onTap: () => context.push('/live', extra: l.id),
+                    onTap: () => open(l.id),
                     child: SizedBox(
                       width: 72,
                       child: Column(
@@ -190,6 +280,7 @@ class _LiveNowRowState extends ConsumerState<LiveNowRow> {
                                     color: AppColors.background,
                                   ),
                                   child: Avatar(
+                                    key: ValueKey(l.host.photoUrl),
                                     name: l.host.displayName,
                                     avatarId: l.host.avatarId,
                                     photoUrl: l.host.photoUrl,
@@ -309,4 +400,41 @@ class FloatingHeart extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Chat over live video: newest line at the bottom and the list sticks there as
+/// messages arrive; swipe up to read older ones. The top edge fades out so the
+/// video stays visible.
+class LiveChatOverlay extends StatelessWidget {
+  const LiveChatOverlay({
+    super.key,
+    required this.count,
+    required this.itemBuilder,
+    this.height = 220,
+  });
+  final int count;
+
+  /// Builds line [index], 0 = oldest.
+  final Widget Function(BuildContext context, int index) itemBuilder;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: height,
+    child: ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (rect) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, Colors.white],
+        stops: [0, 0.18],
+      ).createShader(rect),
+      child: ListView.builder(
+        reverse: true,
+        padding: const EdgeInsets.only(top: 28),
+        itemCount: count,
+        itemBuilder: (context, i) => itemBuilder(context, count - 1 - i),
+      ),
+    ),
+  );
 }

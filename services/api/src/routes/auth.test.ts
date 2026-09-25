@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resetState, createCaller } from "../../test/fixtures.js";
 import { call, createAppHarness, errorCode, json, signUp, tokenFor, type AppHarness } from "../../test/app-harness.js";
-import { OTP_MAX_ATTEMPTS } from "../auth/otp.js";
+import { OTP_MAX_ATTEMPTS, OtpService } from "../auth/otp.js";
 import { normalizeIndianMobile } from "../auth/phone.js";
 
 let h: AppHarness;
@@ -53,6 +53,19 @@ describe("OTP sign-up and sign-in", () => {
     const female = await signUp(h, "9876500001", { gender: "female" });
     const other = await signUp(h, "9876500002", { gender: "other" });
     expect([female.profile, other.profile]).toMatchObject([{ avatarId: 1 }, { avatarId: 3 }]);
+  });
+
+  it("women (and transgender sign-ups) join as companions; men as callers", async () => {
+    const woman = await signUp(h, "9876500011", { gender: "female" });
+    const trans = await signUp(h, "9876500012", { gender: "other" });
+    const man = await signUp(h, "9876500013", { gender: "male" });
+    expect(woman.profile).toMatchObject({ role: "companion", companion: { kycStatus: "pending" } });
+    expect(trans.profile).toMatchObject({ role: "companion" });
+    expect(man.profile).toMatchObject({ role: "caller" });
+    // Their token is a companion token: companion routes work, caller-only ones don't.
+    expect((await call(h, "GET", "/v1/companion/kyc", { token: woman.accessToken })).statusCode).toBe(200);
+    expect((await call(h, "GET", "/v1/companions/online", { token: man.accessToken })).statusCode).toBe(200);
+    expect((await call(h, "POST", "/v1/companion/apply", { token: woman.accessToken, body: { firstName: "Priya" } })).statusCode).toBe(403);
   });
 
   it("existing number: OTP signs straight in", async () => {
@@ -233,5 +246,18 @@ describe("docs", () => {
     // Every documented operation has a stable name for the Dart client.
     const ops = Object.values(spec.paths).flatMap((p) => Object.values(p as Record<string, { operationId?: string }>));
     expect(ops.filter((o) => !o.operationId)).toEqual([]);
+  });
+});
+
+describe("staging OTP allow-list", () => {
+  it("the fixed dev code only works for listed test numbers", async () => {
+    const sent: string[] = [];
+    const otp = new OtpService(h.redis, { async send(p) { sent.push(p); } }, "x".repeat(32), "123456",
+      (phone) => ["6100000001"].includes(phone.replace(/^\+91/, "")));
+    await otp.send("+916100000001");
+    await otp.verify("+916100000001", "123456");
+    await expect(otp.send("+919876543210")).rejects.toMatchObject({ status: 403, code: "OTP_NOT_ALLOWED" });
+    await expect(otp.verify("+919876543210", "123456")).rejects.toMatchObject({ code: "OTP_EXPIRED" });
+    expect(sent).toEqual(["+916100000001"]);
   });
 });

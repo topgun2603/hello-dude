@@ -13,17 +13,20 @@ Method | HTTP request | Description
 [**applyAsCompanion**](CompanionApi.md#applyascompanion) | **POST** /v1/companion/apply | Become a companion. Switches the account to companion mode and returns new tokens.
 [**companionEarnings**](CompanionApi.md#companionearnings) | **GET** /v1/companion/earnings | Balance, last 7 days and withdrawals
 [**companionHome**](CompanionApi.md#companionhome) | **GET** /v1/companion/home | Companion home: status and today's numbers (India time)
+[**confirmCompanionAge**](CompanionApi.md#confirmcompanionage) | **POST** /v1/companion/kyc/age | Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.
 [**getAcademy**](CompanionApi.md#getacademy) | **GET** /v1/companion/academy | Lessons, in order, with my progress (quiz answers are not included)
 [**getCompanionRewards**](CompanionApi.md#getcompanionrewards) | **GET** /v1/companion/rewards | Rewards screen: level, today's goal, online streak and bonuses
 [**getKyc**](CompanionApi.md#getkyc) | **GET** /v1/companion/kyc | Verification progress
+[**inviteCaller**](CompanionApi.md#invitecaller) | **POST** /v1/companion/invites | Invite a caller to call you (he gets 'X wants to talk' and starts the call himself). You must be online; one invite per caller per hour; a few per hour in total.
+[**listOnlineCallers**](CompanionApi.md#listonlinecallers) | **GET** /v1/companion/callers | Callers with the app open now: your regulars and fans first
 [**requestPayout**](CompanionApi.md#requestpayout) | **POST** /v1/companion/payouts | Withdraw to UPI. The amount leaves the balance now; a failed payout is credited back.
 [**setCompanionCallTypes**](CompanionApi.md#setcompanioncalltypes) | **PUT** /v1/companion/call-types | Choose which calls to take: voice, video or both (video only once it's unlocked)
 [**setPresence**](CompanionApi.md#setpresence) | **POST** /v1/companion/presence | Go online / offline. While online, call again every 60 s as a heartbeat.
 [**setUpi**](CompanionApi.md#setupi) | **PUT** /v1/companion/upi | Step 3b / later: UPI ID for withdrawals
 [**submitKyc**](CompanionApi.md#submitkyc) | **POST** /v1/companion/kyc/submit | Send everything for review
-[**uploadAadhaar**](CompanionApi.md#uploadaadhaar) | **POST** /v1/companion/kyc/aadhaar | Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code
-[**uploadPan**](CompanionApi.md#uploadpan) | **POST** /v1/companion/kyc/pan | Step 3a: PAN number + photo of the card (needed for TDS)
-[**uploadSelfie**](CompanionApi.md#uploadselfie) | **POST** /v1/companion/kyc/selfie | Step 2: live selfie. The app runs the blink check (ML Kit) before sending.
+[**uploadPan**](CompanionApi.md#uploadpan) | **POST** /v1/companion/kyc/pan | Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).
+[**uploadSelfie**](CompanionApi.md#uploadselfie) | **POST** /v1/companion/kyc/selfie | Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.
+[**uploadVoiceIntro**](CompanionApi.md#uploadvoiceintro) | **POST** /v1/companion/kyc/voice | Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; it's deleted after the decision.
 
 
 # **answerLessonQuiz**
@@ -208,6 +211,53 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **confirmCompanionAge**
+> KycState confirmCompanionAge(confirmCompanionAgeRequest)
+
+Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+final confirmCompanionAgeRequest = ConfirmCompanionAgeRequest(); // ConfirmCompanionAgeRequest | 
+
+try {
+    final result = api_instance.confirmCompanionAge(confirmCompanionAgeRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->confirmCompanionAge: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **confirmCompanionAgeRequest** | [**ConfirmCompanionAgeRequest**](ConfirmCompanionAgeRequest.md)|  | 
+
+### Return type
+
+[**KycState**](KycState.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getAcademy**
 > GetAcademy200Response getAcademy()
 
@@ -325,6 +375,96 @@ This endpoint does not need any parameter.
 ### Return type
 
 [**KycState**](KycState.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **inviteCaller**
+> InviteCaller201Response inviteCaller(inviteCallerRequest)
+
+Invite a caller to call you (he gets 'X wants to talk' and starts the call himself). You must be online; one invite per caller per hour; a few per hour in total.
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+final inviteCallerRequest = InviteCallerRequest(); // InviteCallerRequest | 
+
+try {
+    final result = api_instance.inviteCaller(inviteCallerRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->inviteCaller: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **inviteCallerRequest** | [**InviteCallerRequest**](InviteCallerRequest.md)|  | 
+
+### Return type
+
+[**InviteCaller201Response**](InviteCaller201Response.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listOnlineCallers**
+> ListOnlineCallers200Response listOnlineCallers()
+
+Callers with the app open now: your regulars and fans first
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+
+try {
+    final result = api_instance.listOnlineCallers();
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->listOnlineCallers: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ListOnlineCallers200Response**](ListOnlineCallers200Response.md)
 
 ### Authorization
 
@@ -568,57 +708,10 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **uploadAadhaar**
-> KycState uploadAadhaar(uploadAadhaarRequest)
-
-Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code
-
-### Example
-```dart
-import 'package:pesu_api/api.dart';
-// TODO Configure HTTP Bearer authorization: bearer
-// Case 1. Use String Token
-//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
-// Case 2. Use Function which generate token.
-// String yourTokenGeneratorFunction() { ... }
-//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
-
-final api_instance = CompanionApi();
-final uploadAadhaarRequest = UploadAadhaarRequest(); // UploadAadhaarRequest | 
-
-try {
-    final result = api_instance.uploadAadhaar(uploadAadhaarRequest);
-    print(result);
-} catch (e) {
-    print('Exception when calling CompanionApi->uploadAadhaar: $e\n');
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **uploadAadhaarRequest** | [**UploadAadhaarRequest**](UploadAadhaarRequest.md)|  | 
-
-### Return type
-
-[**KycState**](KycState.md)
-
-### Authorization
-
-[bearer](../README.md#bearer)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **uploadPan**
 > KycState uploadPan(uploadPanRequest)
 
-Step 3a: PAN number + photo of the card (needed for TDS)
+Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).
 
 ### Example
 ```dart
@@ -665,7 +758,7 @@ Name | Type | Description  | Notes
 # **uploadSelfie**
 > KycState uploadSelfie(uploadSelfieRequest)
 
-Step 2: live selfie. The app runs the blink check (ML Kit) before sending.
+Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.
 
 ### Example
 ```dart
@@ -693,6 +786,53 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uploadSelfieRequest** | [**UploadSelfieRequest**](UploadSelfieRequest.md)|  | 
+
+### Return type
+
+[**KycState**](KycState.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **uploadVoiceIntro**
+> KycState uploadVoiceIntro(uploadVoiceIntroRequest)
+
+Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; it's deleted after the decision.
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = CompanionApi();
+final uploadVoiceIntroRequest = UploadVoiceIntroRequest(); // UploadVoiceIntroRequest | 
+
+try {
+    final result = api_instance.uploadVoiceIntro(uploadVoiceIntroRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling CompanionApi->uploadVoiceIntro: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **uploadVoiceIntroRequest** | [**UploadVoiceIntroRequest**](UploadVoiceIntroRequest.md)|  | 
 
 ### Return type
 

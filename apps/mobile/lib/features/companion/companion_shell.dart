@@ -16,6 +16,7 @@ import 'earnings_screen.dart';
 import 'incoming_screen.dart';
 import '../promotions/promo_sheet.dart';
 import 'package:pesu_api/api.dart' show PromotionCtaActionEnum;
+import 'callers_tab.dart';
 
 /// Signed-in shell for companions (green accents, per the design).
 class CompanionShell extends ConsumerStatefulWidget {
@@ -32,6 +33,7 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
 
   static const _tabs = [
     (Icons.home_rounded, 'Home'),
+    (Icons.people_alt_rounded, 'Callers'),
     (Icons.account_balance_wallet_outlined, 'Earnings'),
     (Icons.person_outline_rounded, 'Profile'),
   ];
@@ -86,7 +88,7 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
       if (!mounted) return;
       switch (a) {
         case PromotionCtaActionEnum.wallet:
-          setState(() => _tab = 1); // Earnings
+          setState(() => _tab = 2); // Earnings
         case PromotionCtaActionEnum.rewards:
           context.push('/rewards');
         case PromotionCtaActionEnum.rooms:
@@ -135,7 +137,12 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
   Widget build(BuildContext context) {
     ref.watch(realtimeProvider); // live connection while signed in
     ref.watch(presenceProvider);
-    const pages = [CompanionHomeTab(), EarningsTab(), ProfileTab()];
+    final pages = [
+      const CompanionHomeTab(),
+      CallersTab(active: _tab == 1),
+      const EarningsTab(),
+      const ProfileTab(),
+    ];
     const accent = Color(0xFF6EE7B7);
     return Scaffold(
       body: GlowBackground(
@@ -165,7 +172,7 @@ class _CompanionShellState extends ConsumerState<CompanionShell> {
                       child: InkWell(
                         onTap: () {
                           setState(() => _tab = i);
-                          if (i == 1) ref.invalidate(earningsProvider);
+                          if (i == 2) ref.invalidate(earningsProvider);
                         },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

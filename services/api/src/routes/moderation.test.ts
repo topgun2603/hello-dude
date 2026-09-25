@@ -48,6 +48,14 @@ describe("video moderation", () => {
     expect(h.store.keys()).toContain(rows[0]!.storage_key);
   });
 
+  it("a phone checking its own camera flags its own user", async () => {
+    const { caller, callerToken, callId } = await liveCall("video");
+    const res = await call(h, "POST", `/v1/calls/${callId}/moderation`, { token: callerToken, body: { frameBase64: JPEG, score: 0.91, own: true } });
+    expect(res.statusCode).toBe(201);
+    const rows = (await h.db.query<{ subject_id: string; detected_by: string }>(`SELECT subject_id, detected_by FROM moderation_flags`)).rows;
+    expect(rows).toEqual([{ subject_id: caller, detected_by: caller }]);
+  });
+
   it("refuses audio calls", async () => {
     const { callerToken, callId } = await liveCall("audio");
     expect(errorCode(await call(h, "POST", `/v1/calls/${callId}/moderation`, { token: callerToken, body: { frameBase64: JPEG, score: 0.9 } })))

@@ -21,6 +21,9 @@ const Phone = z.string().min(10).max(20).transform((v, ctx) => {
 });
 
 const DEFAULT_DISPLAY_NAME = "New friend";
+/** Women and transgender sign-ups are companions only (owner, 2026-09-24); men are callers. */
+export const roleForGender = (gender: string) => (gender === "male" ? "caller" as const : "companion" as const);
+
 /** Illustrated avatars: 1 female, 2 male, 3 transgender (see migration 0019). */
 export const avatarForGender = (g: "male" | "female" | "other") => (g === "female" ? 1 : g === "male" ? 2 : 3);
 
@@ -92,7 +95,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post("/auth/signup", {
     schema: {
       tags: ["auth"],
-      summary: "Create the account after OTP (Main + Language screens)",
+      summary: "Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as " +
+        "companions, men as callers.",
       body: z.object({
         signupToken: z.string(),
         gender: Gender,
@@ -118,10 +122,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       if (existing) await c.query(`UPDATE users SET phone = phone || ':deleted:' || id WHERE phone = $1`, [phone]);
 
       const id = (await c.query<{ id: string }>(
-        `INSERT INTO users (phone, gender, display_name, avatar_id, primary_language, terms_accepted_at)
-         VALUES ($1, $2, $3, $4, $5, now()) RETURNING id`,
-        [phone, gender, displayName ?? DEFAULT_DISPLAY_NAME, avatarId ?? avatarForGender(gender), language],
+        `INSERT INTO users (phone, gender, display_name, avatar_id, primary_language, terms_accepted_at, role)
+         VALUES ($1, $2, $3, $4, $5, now(), $6) RETURNING id`,
+        [phone, gender, displayName ?? DEFAULT_DISPLAY_NAME, avatarId ?? avatarForGender(gender), language, roleForGender(gender)],
       )).rows[0]!.id;
+      if (roleForGender(gender) === "companion") {
+        await c.query(`INSERT INTO companion_profiles (user_id) VALUES ($1)`, [id]);
+      }
       await c.query(`INSERT INTO user_languages (user_id, language_code) VALUES ($1, $2)`, [id, language]);
       await ensureWallets(c, id);
       let referrerId: string | null = null;
@@ -135,14 +142,14 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       return { userId: id, referrerId };
     });
     if (referrerId) {
-      const coins = await numberSetting(db, "referral.referrer_coins", 50);
-      await notify(app.deps, referrerId, {
-        type: "referral_joined", title: `${displayName ?? DEFAULT_DISPLAY_NAME} joined with your code`,
-        body: `You'll both get ${coins} coins after their first recharge`,
-      });
+      const companion = (await db.query<{ role: string }>(`SELECT role FROM users WHERE id = $1`, [referrerId])).rows[0]?.role === "companion";
+      const body = companion
+        ? `You'll get ₹${(await numberSetting(db, "referral.companion_bonus_paise", 2500)) / 100} after their first recharge`
+        : `You'll both get ${await numberSetting(db, "referral.referrer_coins", 50)} coins after their first recharge`;
+      await notify(app.deps, referrerId, { type: "referral_joined", title: `${displayName ?? DEFAULT_DISPLAY_NAME} joined with your code`, body });
     }
     reply.status(201);
-    return { tokens: await tokens.issue(userId, "caller"), profile: await loadProfile(db, userId) };
+    return { tokens: await tokens.issue(userId, roleForGender(gender)), profile: await loadProfile(db, userId) };
   });
 
   app.post("/auth/refresh", {

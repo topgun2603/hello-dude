@@ -13,6 +13,41 @@
       }
     },
     "schemas": {
+      "PurchaseResultInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "credited",
+              "pending",
+              "failed"
+            ]
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins added by this purchase (0 unless credited)"
+          },
+          "balance": {
+            "nullable": true,
+            "description": "Coin balance after crediting",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "coins",
+          "balance",
+          "message"
+        ]
+      },
       "GiftInput": {
         "type": "object",
         "properties": {
@@ -165,18 +200,29 @@
             "nullable": true,
             "type": "string"
           },
-          "aadhaar": {
+          "redo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "age",
+                "selfie",
+                "voice",
+                "pan",
+                "upi"
+              ]
+            },
+            "description": "After a rejection: what to send again. Once all are sent, it goes back to review by itself."
+          },
+          "age": {
             "type": "object",
             "properties": {
               "done": {
                 "type": "boolean"
               },
-              "name": {
+              "birthDate": {
                 "nullable": true,
-                "type": "string"
-              },
-              "last4": {
-                "nullable": true,
+                "description": "YYYY-MM-DD",
                 "type": "string"
               },
               "age": {
@@ -188,8 +234,7 @@
             },
             "required": [
               "done",
-              "name",
-              "last4",
+              "birthDate",
               "age"
             ]
           },
@@ -202,6 +247,28 @@
             },
             "required": [
               "done"
+            ]
+          },
+          "voice": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "boolean",
+                "description": "Women companions record a voice intro; an admin listens to it"
+              },
+              "done": {
+                "type": "boolean"
+              },
+              "sentence": {
+                "nullable": true,
+                "description": "Read this aloud (random each time)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "needed",
+              "done",
+              "sentence"
             ]
           },
           "pan": {
@@ -218,7 +285,8 @@
             "required": [
               "done",
               "last4"
-            ]
+            ],
+            "description": "Optional; without it TDS on withdrawals is higher"
           },
           "upi": {
             "type": "object",
@@ -243,8 +311,10 @@
         "required": [
           "status",
           "rejectReason",
-          "aadhaar",
+          "redo",
+          "age",
           "selfie",
+          "voice",
           "pan",
           "upi",
           "videoEnabled"
@@ -282,6 +352,116 @@
           "photoUrl",
           "pendingUrl",
           "rejectReason"
+        ]
+      },
+      "UserBadgeInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "rank": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "rank",
+          "kind"
+        ]
+      },
+      "LeaderboardEntryInput": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarId": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "photoUrl": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "displayName",
+              "avatarId",
+              "photoUrl"
+            ]
+          },
+          "score": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins"
+          }
+        },
+        "required": [
+          "rank",
+          "user",
+          "score"
+        ]
+      },
+      "AppEventInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "nullable": true,
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "startsAt": {},
+          "endsAt": {},
+          "giftIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tagline",
+          "theme",
+          "startsAt",
+          "endsAt",
+          "giftIds"
         ]
       },
       "CompanionRatesInput": {
@@ -361,6 +541,15 @@
           },
           "rates": {
             "$ref": "#/components/schemas/CompanionRatesInput"
+          },
+          "badge": {
+            "nullable": true,
+            "description": "Best active badge, e.g. '#1 companion this week'",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserBadgeInput"
+              }
+            ]
           }
         },
         "required": [
@@ -376,7 +565,8 @@
           "videoEnabled",
           "busy",
           "isFavourite",
-          "rates"
+          "rates",
+          "badge"
         ]
       },
       "FavouriteInput": {
@@ -1525,6 +1715,85 @@
           "livekitRoom"
         ]
       },
+      "PkSideInput": {
+        "type": "object",
+        "properties": {
+          "liveId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "hostId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "hostName": {
+            "type": "string"
+          },
+          "avatarId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "score": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "liveId",
+          "hostId",
+          "hostName",
+          "avatarId",
+          "score"
+        ]
+      },
+      "PkBattleInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "active",
+              "ended",
+              "declined",
+              "expired",
+              "cancelled"
+            ]
+          },
+          "a": {
+            "$ref": "#/components/schemas/PkSideInput"
+          },
+          "b": {
+            "$ref": "#/components/schemas/PkSideInput"
+          },
+          "endsAt": {
+            "nullable": true
+          },
+          "winnerHostId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "a",
+          "b",
+          "endsAt",
+          "winnerHostId"
+        ]
+      },
       "LiveCardInput": {
         "type": "object",
         "properties": {
@@ -1589,7 +1858,19 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
-          "startedAt": {}
+          "startedAt": {},
+          "snapshotUrl": {
+            "nullable": true,
+            "description": "Recent still from the host's camera (signed path); null = use the host's photo/avatar",
+            "type": "string"
+          },
+          "pkBattleId": {
+            "nullable": true,
+            "description": "An active PK battle this live is in (GET /pk/{id})",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
         },
         "required": [
           "id",
@@ -1597,7 +1878,9 @@
           "language",
           "host",
           "viewers",
-          "startedAt"
+          "startedAt",
+          "snapshotUrl",
+          "pkBattleId"
         ]
       },
       "LiveAccessInput": {
@@ -2644,6 +2927,7 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "nullable": true,
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -2655,7 +2939,8 @@
                   "required": [
                     "id",
                     "displayName"
-                  ]
+                  ],
+                  "description": "id null = the automatic safety check"
                 },
                 "reason": {
                   "type": "string"
@@ -2848,6 +3133,7 @@
             "type": "object",
             "properties": {
               "id": {
+                "nullable": true,
                 "type": "string",
                 "format": "uuid",
                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -2863,7 +3149,8 @@
               "id",
               "displayName",
               "role"
-            ]
+            ],
+            "description": "id null = the automatic safety check (repeated contact-sharing attempts in chat)"
           },
           "reported": {
             "type": "object",
@@ -3180,6 +3467,26 @@
               "generatedAt"
             ]
           },
+          "declared": {
+            "type": "object",
+            "properties": {
+              "birthDate": {
+                "nullable": true,
+                "type": "string"
+              },
+              "age": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "birthDate",
+              "age"
+            ],
+            "description": "Date of birth the companion entered (18+ confirmed); Aadhaar is no longer collected"
+          },
           "selfieBlinks": {
             "nullable": true,
             "type": "integer",
@@ -3227,9 +3534,50 @@
               "enum": [
                 "aadhaar_photo",
                 "selfie",
-                "pan"
+                "pan",
+                "voice"
               ]
             }
+          },
+          "redo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "age",
+                "selfie",
+                "voice",
+                "pan",
+                "upi"
+              ]
+            },
+            "description": "Items the last rejection asked them to send again"
+          },
+          "voice": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "boolean"
+              },
+              "sentence": {
+                "nullable": true,
+                "type": "string"
+              },
+              "submittedAt": {
+                "nullable": true
+              },
+              "checkedAt": {
+                "nullable": true,
+                "description": "An admin already listened and it was fine (clip deleted)"
+              }
+            },
+            "required": [
+              "needed",
+              "sentence",
+              "submittedAt",
+              "checkedAt"
+            ],
+            "description": "Women companions: play GET /admin/kyc/:userId/files/voice and check it matches the sentence and the selfie"
           }
         },
         "required": [
@@ -3241,13 +3589,16 @@
           "status",
           "submittedAt",
           "aadhaar",
+          "declared",
           "selfieBlinks",
           "panLast4",
           "upi",
           "rejectReason",
           "videoEnabled",
           "academy",
-          "documents"
+          "documents",
+          "redo",
+          "voice"
         ]
       },
       "AdminPayoutInput": {
@@ -3471,6 +3822,11 @@
               "group_reminder",
               "group_cancelled",
               "photo_decided",
+              "chat_request",
+              "chat_request_accepted",
+              "call_invite",
+              "badge_won",
+              "level_up",
               "vip",
               "bonus_earned"
             ]
@@ -4386,6 +4742,16 @@
                   "type": "integer",
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991
+                },
+                "missedCalls": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "avgRating": {
+                  "nullable": true,
+                  "description": "Callers' average stars that day",
+                  "type": "number"
                 }
               },
               "required": [
@@ -4397,7 +4763,9 @@
                 "earningsPaise",
                 "newCallers",
                 "newCompanions",
-                "activeCallers"
+                "activeCallers",
+                "missedCalls",
+                "avgRating"
               ]
             }
           },
@@ -4717,6 +5085,91 @@
           "mostReported"
         ]
       },
+      "OnlineCallerInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "language": {
+            "type": "string"
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "Has coins for a few minutes of a voice call with you"
+          },
+          "isVip": {
+            "type": "boolean"
+          },
+          "isNew": {
+            "type": "boolean",
+            "description": "Joined in the last 7 days"
+          },
+          "inCall": {
+            "type": "boolean"
+          },
+          "callsWithYou": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "lastCallAt": {
+            "nullable": true
+          },
+          "favouritedYou": {
+            "type": "boolean"
+          },
+          "invitedRecently": {
+            "type": "boolean",
+            "description": "You invited him in the last hour"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Caller level (lifetime coins spent)"
+          },
+          "levelName": {
+            "type": "string"
+          },
+          "badge": {
+            "nullable": true,
+            "description": "Best active badge, e.g. '#2 fan this week'",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserBadgeInput"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "avatarId",
+          "language",
+          "canPay",
+          "isVip",
+          "isNew",
+          "inCall",
+          "callsWithYou",
+          "lastCallAt",
+          "favouritedYou",
+          "invitedRecently",
+          "level",
+          "levelName",
+          "badge"
+        ]
+      },
       "PromotionInput": {
         "type": "object",
         "properties": {
@@ -4986,6 +5439,52 @@
           "paiseEarned"
         ]
       },
+      "RazorpayOrderInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins incl. bonus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "description": "Prefill for checkout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "keyId",
+          "amountPaise",
+          "currency",
+          "coins",
+          "name",
+          "description",
+          "phone"
+        ]
+      },
       "PayoutInput": {
         "type": "object",
         "properties": {
@@ -5041,6 +5540,116 @@
           "failureReason",
           "createdAt",
           "processedAt"
+        ]
+      },
+      "ChatRequestInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "other": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarId": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "caller",
+                  "companion"
+                ]
+              },
+              "online": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "displayName",
+              "avatarId",
+              "role",
+              "online"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "declined"
+            ]
+          },
+          "createdAt": {},
+          "conversationId": {
+            "nullable": true,
+            "description": "Set once accepted",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "id",
+          "other",
+          "body",
+          "status",
+          "createdAt",
+          "conversationId"
+        ]
+      },
+      "LiveChatHistoryInput": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "isHost": {
+                  "type": "boolean"
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "displayName",
+                "body",
+                "isHost",
+                "at"
+              ]
+            }
+          }
+        },
+        "required": [
+          "messages"
         ]
       },
       "AdminLiveInput": {
@@ -5245,6 +5854,81 @@
           "endReason"
         ]
       },
+      "AdminEventInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "nullable": true,
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "startsAt": {},
+          "endsAt": {},
+          "giftIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "badgesAwarded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tagline",
+          "theme",
+          "startsAt",
+          "endsAt",
+          "giftIds",
+          "active",
+          "badgesAwarded"
+        ]
+      },
+      "CallerLevelInput": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "minCoins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "perk": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "name",
+          "minCoins",
+          "perk"
+        ]
+      },
       "PendingPhotoInput": {
         "type": "object",
         "properties": {
@@ -5296,6 +5980,42 @@
           "currentUrl",
           "hasSelfie"
         ]
+      },
+      "PurchaseResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "credited",
+              "pending",
+              "failed"
+            ]
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins added by this purchase (0 unless credited)"
+          },
+          "balance": {
+            "nullable": true,
+            "description": "Coin balance after crediting",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "coins",
+          "balance",
+          "message"
+        ],
+        "additionalProperties": false
       },
       "Gift": {
         "type": "object",
@@ -5455,18 +6175,29 @@
             "nullable": true,
             "type": "string"
           },
-          "aadhaar": {
+          "redo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "age",
+                "selfie",
+                "voice",
+                "pan",
+                "upi"
+              ]
+            },
+            "description": "After a rejection: what to send again. Once all are sent, it goes back to review by itself."
+          },
+          "age": {
             "type": "object",
             "properties": {
               "done": {
                 "type": "boolean"
               },
-              "name": {
+              "birthDate": {
                 "nullable": true,
-                "type": "string"
-              },
-              "last4": {
-                "nullable": true,
+                "description": "YYYY-MM-DD",
                 "type": "string"
               },
               "age": {
@@ -5478,8 +6209,7 @@
             },
             "required": [
               "done",
-              "name",
-              "last4",
+              "birthDate",
               "age"
             ],
             "additionalProperties": false
@@ -5493,6 +6223,29 @@
             },
             "required": [
               "done"
+            ],
+            "additionalProperties": false
+          },
+          "voice": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "boolean",
+                "description": "Women companions record a voice intro; an admin listens to it"
+              },
+              "done": {
+                "type": "boolean"
+              },
+              "sentence": {
+                "nullable": true,
+                "description": "Read this aloud (random each time)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "needed",
+              "done",
+              "sentence"
             ],
             "additionalProperties": false
           },
@@ -5511,7 +6264,8 @@
               "done",
               "last4"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Optional; without it TDS on withdrawals is higher"
           },
           "upi": {
             "type": "object",
@@ -5537,8 +6291,10 @@
         "required": [
           "status",
           "rejectReason",
-          "aadhaar",
+          "redo",
+          "age",
           "selfie",
+          "voice",
           "pan",
           "upi",
           "videoEnabled"
@@ -5577,6 +6333,126 @@
           "photoUrl",
           "pendingUrl",
           "rejectReason"
+        ],
+        "additionalProperties": false
+      },
+      "UserBadge": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "rank": {
+            "nullable": true,
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "rank",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarId": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "photoUrl": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "displayName",
+              "avatarId",
+              "photoUrl"
+            ],
+            "additionalProperties": false
+          },
+          "score": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins"
+          }
+        },
+        "required": [
+          "rank",
+          "user",
+          "score"
+        ],
+        "additionalProperties": false
+      },
+      "AppEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "nullable": true,
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "giftIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tagline",
+          "theme",
+          "startsAt",
+          "endsAt",
+          "giftIds"
         ],
         "additionalProperties": false
       },
@@ -5658,6 +6534,15 @@
           },
           "rates": {
             "$ref": "#/components/schemas/CompanionRates"
+          },
+          "badge": {
+            "nullable": true,
+            "description": "Best active badge, e.g. '#1 companion this week'",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserBadge"
+              }
+            ]
           }
         },
         "required": [
@@ -5673,7 +6558,8 @@
           "videoEnabled",
           "busy",
           "isFavourite",
-          "rates"
+          "rates",
+          "badge"
         ],
         "additionalProperties": false
       },
@@ -6887,6 +7773,89 @@
         ],
         "additionalProperties": false
       },
+      "PkSide": {
+        "type": "object",
+        "properties": {
+          "liveId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "hostId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "hostName": {
+            "type": "string"
+          },
+          "avatarId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "score": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "liveId",
+          "hostId",
+          "hostName",
+          "avatarId",
+          "score"
+        ],
+        "additionalProperties": false
+      },
+      "PkBattle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "active",
+              "ended",
+              "declined",
+              "expired",
+              "cancelled"
+            ]
+          },
+          "a": {
+            "$ref": "#/components/schemas/PkSide"
+          },
+          "b": {
+            "$ref": "#/components/schemas/PkSide"
+          },
+          "endsAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "winnerHostId": {
+            "nullable": true,
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "a",
+          "b",
+          "endsAt",
+          "winnerHostId"
+        ],
+        "additionalProperties": false
+      },
       "LiveCard": {
         "type": "object",
         "properties": {
@@ -6955,6 +7924,18 @@
           "startedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "snapshotUrl": {
+            "nullable": true,
+            "description": "Recent still from the host's camera (signed path); null = use the host's photo/avatar",
+            "type": "string"
+          },
+          "pkBattleId": {
+            "nullable": true,
+            "description": "An active PK battle this live is in (GET /pk/{id})",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": [
@@ -6963,7 +7944,9 @@
           "language",
           "host",
           "viewers",
-          "startedAt"
+          "startedAt",
+          "snapshotUrl",
+          "pkBattleId"
         ],
         "additionalProperties": false
       },
@@ -8077,6 +9060,7 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "nullable": true,
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -8089,7 +9073,8 @@
                     "id",
                     "displayName"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "description": "id null = the automatic safety check"
                 },
                 "reason": {
                   "type": "string"
@@ -8299,6 +9284,7 @@
             "type": "object",
             "properties": {
               "id": {
+                "nullable": true,
                 "type": "string",
                 "format": "uuid",
                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -8315,7 +9301,8 @@
               "displayName",
               "role"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "id null = the automatic safety check (repeated contact-sharing attempts in chat)"
           },
           "reported": {
             "type": "object",
@@ -8651,6 +9638,27 @@
             ],
             "additionalProperties": false
           },
+          "declared": {
+            "type": "object",
+            "properties": {
+              "birthDate": {
+                "nullable": true,
+                "type": "string"
+              },
+              "age": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "birthDate",
+              "age"
+            ],
+            "additionalProperties": false,
+            "description": "Date of birth the companion entered (18+ confirmed); Aadhaar is no longer collected"
+          },
           "selfieBlinks": {
             "nullable": true,
             "type": "integer",
@@ -8699,9 +9707,55 @@
               "enum": [
                 "aadhaar_photo",
                 "selfie",
-                "pan"
+                "pan",
+                "voice"
               ]
             }
+          },
+          "redo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "age",
+                "selfie",
+                "voice",
+                "pan",
+                "upi"
+              ]
+            },
+            "description": "Items the last rejection asked them to send again"
+          },
+          "voice": {
+            "type": "object",
+            "properties": {
+              "needed": {
+                "type": "boolean"
+              },
+              "sentence": {
+                "nullable": true,
+                "type": "string"
+              },
+              "submittedAt": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time"
+              },
+              "checkedAt": {
+                "nullable": true,
+                "description": "An admin already listened and it was fine (clip deleted)",
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "needed",
+              "sentence",
+              "submittedAt",
+              "checkedAt"
+            ],
+            "additionalProperties": false,
+            "description": "Women companions: play GET /admin/kyc/:userId/files/voice and check it matches the sentence and the selfie"
           }
         },
         "required": [
@@ -8713,13 +9767,16 @@
           "status",
           "submittedAt",
           "aadhaar",
+          "declared",
           "selfieBlinks",
           "panLast4",
           "upi",
           "rejectReason",
           "videoEnabled",
           "academy",
-          "documents"
+          "documents",
+          "redo",
+          "voice"
         ],
         "additionalProperties": false
       },
@@ -8955,6 +10012,11 @@
               "group_reminder",
               "group_cancelled",
               "photo_decided",
+              "chat_request",
+              "chat_request_accepted",
+              "call_invite",
+              "badge_won",
+              "level_up",
               "vip",
               "bonus_earned"
             ]
@@ -9905,6 +10967,16 @@
                   "type": "integer",
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991
+                },
+                "missedCalls": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "avgRating": {
+                  "nullable": true,
+                  "description": "Callers' average stars that day",
+                  "type": "number"
                 }
               },
               "required": [
@@ -9916,7 +10988,9 @@
                 "earningsPaise",
                 "newCallers",
                 "newCompanions",
-                "activeCallers"
+                "activeCallers",
+                "missedCalls",
+                "avgRating"
               ],
               "additionalProperties": false
             }
@@ -10246,6 +11320,94 @@
         ],
         "additionalProperties": false
       },
+      "OnlineCaller": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarId": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "language": {
+            "type": "string"
+          },
+          "canPay": {
+            "type": "boolean",
+            "description": "Has coins for a few minutes of a voice call with you"
+          },
+          "isVip": {
+            "type": "boolean"
+          },
+          "isNew": {
+            "type": "boolean",
+            "description": "Joined in the last 7 days"
+          },
+          "inCall": {
+            "type": "boolean"
+          },
+          "callsWithYou": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "lastCallAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time"
+          },
+          "favouritedYou": {
+            "type": "boolean"
+          },
+          "invitedRecently": {
+            "type": "boolean",
+            "description": "You invited him in the last hour"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Caller level (lifetime coins spent)"
+          },
+          "levelName": {
+            "type": "string"
+          },
+          "badge": {
+            "nullable": true,
+            "description": "Best active badge, e.g. '#2 fan this week'",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserBadge"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "avatarId",
+          "language",
+          "canPay",
+          "isVip",
+          "isNew",
+          "inCall",
+          "callsWithYou",
+          "lastCallAt",
+          "favouritedYou",
+          "invitedRecently",
+          "level",
+          "levelName",
+          "badge"
+        ],
+        "additionalProperties": false
+      },
       "Promotion": {
         "type": "object",
         "properties": {
@@ -10528,6 +11690,53 @@
         ],
         "additionalProperties": false
       },
+      "RazorpayOrder": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins incl. bonus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "description": "Prefill for checkout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "keyId",
+          "amountPaise",
+          "currency",
+          "coins",
+          "name",
+          "description",
+          "phone"
+        ],
+        "additionalProperties": false
+      },
       "Payout": {
         "type": "object",
         "properties": {
@@ -10588,6 +11797,123 @@
           "failureReason",
           "createdAt",
           "processedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "other": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "avatarId": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "caller",
+                  "companion"
+                ]
+              },
+              "online": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "displayName",
+              "avatarId",
+              "role",
+              "online"
+            ],
+            "additionalProperties": false
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "declined"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "conversationId": {
+            "nullable": true,
+            "description": "Set once accepted",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "id",
+          "other",
+          "body",
+          "status",
+          "createdAt",
+          "conversationId"
+        ],
+        "additionalProperties": false
+      },
+      "LiveChatHistory": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "isHost": {
+                  "type": "boolean"
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "displayName",
+                "body",
+                "isHost",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "messages"
         ],
         "additionalProperties": false
       },
@@ -10808,6 +12134,89 @@
         ],
         "additionalProperties": false
       },
+      "AdminEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "nullable": true,
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "giftIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "badgesAwarded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tagline",
+          "theme",
+          "startsAt",
+          "endsAt",
+          "giftIds",
+          "active",
+          "badgesAwarded"
+        ],
+        "additionalProperties": false
+      },
+      "CallerLevel": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string"
+          },
+          "minCoins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "perk": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "name",
+          "minCoins",
+          "perk"
+        ],
+        "additionalProperties": false
+      },
       "PendingPhoto": {
         "type": "object",
         "properties": {
@@ -11012,7 +12421,7 @@
     "/v1/auth/signup": {
       "post": {
         "operationId": "signUp",
-        "summary": "Create the account after OTP (Main + Language screens)",
+        "summary": "Create the account after OTP (Main + Language screens). Women (and transgender sign-ups) join as companions, men as callers.",
         "tags": [
           "auth"
         ],
@@ -11312,7 +12721,7 @@
     "/v1/devices": {
       "put": {
         "operationId": "registerDevice",
-        "summary": "Register this phone's FCM token for call and message pushes",
+        "summary": "Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)",
         "tags": [
           "profile"
         ],
@@ -11327,6 +12736,12 @@
                     "type": "string",
                     "minLength": 20,
                     "maxLength": 4096
+                  },
+                  "deviceId": {
+                    "description": "Android ANDROID_ID; stored only as a hash",
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 256
                   }
                 },
                 "required": [
@@ -12484,6 +13899,7 @@
                       "spam",
                       "underage",
                       "fraud",
+                      "off_platform",
                       "other"
                     ]
                   },
@@ -12537,6 +13953,106 @@
                     "recording"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/razorpay/order": {
+      "post": {
+        "operationId": "createRazorpayOrder",
+        "summary": "Start buying a coin pack with Razorpay: creates the order the app opens checkout for",
+        "tags": [
+          "wallet"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RazorpayOrder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/razorpay/verify": {
+      "post": {
+        "operationId": "verifyRazorpayPayment",
+        "summary": "After checkout: the server checks Razorpay's signature and the payment, then credits the coins (once)",
+        "tags": [
+          "wallet"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "signature": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "orderId",
+                  "paymentId",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseResult"
                 }
               }
             }
@@ -14596,7 +16112,8 @@
               "enum": [
                 "aadhaar_photo",
                 "selfie",
-                "pan"
+                "pan",
+                "voice"
               ]
             },
             "in": "path",
@@ -14641,6 +16158,21 @@
                     "type": "string",
                     "minLength": 3,
                     "maxLength": 500
+                  },
+                  "redo": {
+                    "description": "Reject only: what they must send again (only these reset). Empty = they fix it and press Submit.",
+                    "nullable": true,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "age",
+                        "selfie",
+                        "voice",
+                        "pan",
+                        "upi"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -15036,10 +16568,10 @@
         }
       }
     },
-    "/v1/companion/kyc/aadhaar": {
+    "/v1/companion/kyc/voice": {
       "post": {
-        "operationId": "uploadAadhaar",
-        "summary": "Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code",
+        "operationId": "uploadVoiceIntro",
+        "summary": "Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; it's deleted after the decision.",
         "tags": [
           "companion"
         ],
@@ -15050,20 +16582,67 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "zipBase64": {
+                  "audioBase64": {
                     "type": "string",
                     "minLength": 8,
-                    "maxLength": 7340032
-                  },
-                  "shareCode": {
-                    "type": "string",
-                    "minLength": 4,
-                    "maxLength": 8
+                    "maxLength": 2936013
                   }
                 },
                 "required": [
-                  "zipBase64",
-                  "shareCode"
+                  "audioBase64"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KycState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/companion/kyc/age": {
+      "post": {
+        "operationId": "confirmCompanionAge",
+        "summary": "Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.",
+        "tags": [
+          "companion"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birthDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "confirm18": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "I confirm I am 18 or older"
+                  }
+                },
+                "required": [
+                  "birthDate",
+                  "confirm18"
                 ]
               }
             }
@@ -15091,7 +16670,7 @@
     "/v1/companion/kyc/selfie": {
       "post": {
         "operationId": "uploadSelfie",
-        "summary": "Step 2: live selfie. The app runs the blink check (ML Kit) before sending.",
+        "summary": "Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.",
         "tags": [
           "companion"
         ],
@@ -15143,7 +16722,7 @@
     "/v1/companion/kyc/pan": {
       "post": {
         "operationId": "uploadPan",
-        "summary": "Step 3a: PAN number + photo of the card (needed for TDS)",
+        "summary": "Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).",
         "tags": [
           "companion"
         ],
@@ -15506,6 +17085,20 @@
                     "tdsBps": {
                       "type": "integer",
                       "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "TDS on your withdrawals now (higher without a PAN)"
+                    },
+                    "panOnFile": {
+                      "type": "boolean"
+                    },
+                    "tdsWithPanBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "tdsNoPanBps": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
                     "canWithdraw": {
@@ -15548,6 +17141,9 @@
                     "upi",
                     "minWithdrawalPaise",
                     "tdsBps",
+                    "panOnFile",
+                    "tdsWithPanBps",
+                    "tdsNoPanBps",
                     "canWithdraw",
                     "blockedReason",
                     "week",
@@ -16349,7 +17945,7 @@
     "/v1/calls/{id}/moderation": {
       "post": {
         "operationId": "flagVideoFrame",
-        "summary": "Report a video frame the app's on-device check flagged as nudity (the other person's video)",
+        "summary": "Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)",
         "tags": [
           "calls"
         ],
@@ -16371,6 +17967,10 @@
                     "minimum": 0,
                     "maximum": 1,
                     "description": "On-device model confidence"
+                  },
+                  "own": {
+                    "description": "true = the frame is from the sender's own camera (the app checks its own video)",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -16693,7 +18293,7 @@
     "/v1/referral": {
       "get": {
         "operationId": "getReferral",
-        "summary": "Invite friends: my code, the reward and how many friends joined",
+        "summary": "Invite friends: my code, the reward and how many joined. Callers earn coins; companions earn ₹ in earnings (referrerPaise) — both when the invited caller makes their first recharge.",
         "tags": [
           "growth"
         ],
@@ -16719,7 +18319,14 @@
                     "referrerCoins": {
                       "type": "integer",
                       "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
+                      "maximum": 9007199254740991,
+                      "description": "Callers: coins per friend"
+                    },
+                    "referrerPaise": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Companions: earnings per invited caller"
                     },
                     "refereeCoins": {
                       "type": "integer",
@@ -16740,16 +18347,23 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "paiseEarned": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
                     "code",
                     "link",
                     "referrerCoins",
+                    "referrerPaise",
                     "refereeCoins",
                     "joined",
                     "rewarded",
-                    "coinsEarned"
+                    "coinsEarned",
+                    "paiseEarned"
                   ],
                   "additionalProperties": false
                 }
@@ -16861,7 +18475,7 @@
     "/v1/chats/with/{userId}": {
       "post": {
         "operationId": "openChat",
-        "summary": "Open the chat with someone (created on first use). Needs a connected call between you and no blocks.",
+        "summary": "Open the chat with someone (created on first use). Needs a connected call or an accepted message request, and no blocks. A caller without either gets CHAT_NEEDS_REQUEST: send one with POST /chats/requests.",
         "tags": [
           "chat"
         ],
@@ -17033,6 +18647,174 @@
       "post": {
         "operationId": "markChatRead",
         "summary": "Mark the conversation read up to now",
+        "tags": [
+          "chat"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chats/requests": {
+      "post": {
+        "operationId": "sendChatRequest",
+        "summary": "Send a companion you haven't called yet one message request (she accepts or declines). Same safety filter and strikes as chat; a few a day; after a decline you can ask again in 7 days.",
+        "tags": [
+          "chat"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "companionId",
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatRequest"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listChatRequests",
+        "summary": "Companions: requests waiting for an answer. Callers: the requests they sent (last 30 days).",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChatRequest"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chats/requests/{id}/accept": {
+      "post": {
+        "operationId": "acceptChatRequest",
+        "summary": "Accept: the chat opens with their request as the first message",
+        "tags": [
+          "chat"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chats/requests/{id}/decline": {
+      "post": {
+        "operationId": "declineChatRequest",
+        "summary": "Decline (they aren't told directly; they can ask again after 7 days)",
         "tags": [
           "chat"
         ],
@@ -19337,7 +21119,7 @@
     "/v1/lives": {
       "get": {
         "operationId": "listLives",
-        "summary": "Live now (favourites first, then the busiest), with the price per minute",
+        "summary": "Live now, a page at a time, with the total and the price per minute. sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.",
         "tags": [
           "lives"
         ],
@@ -19348,6 +21130,60 @@
             },
             "in": "query",
             "name": "language",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "for_you",
+                "popular",
+                "new"
+              ]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "favourites",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "in": "query",
+            "name": "offset",
             "required": false
           }
         ],
@@ -19370,12 +21206,18 @@
                         "$ref": "#/components/schemas/LiveCard"
                       }
                     },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "pricing": {
                       "$ref": "#/components/schemas/LivePricing"
                     }
                   },
                   "required": [
                     "lives",
+                    "total",
                     "pricing"
                   ],
                   "additionalProperties": false
@@ -19541,6 +21383,122 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/lives/{id}/snapshot": {
+      "post": {
+        "operationId": "uploadLiveSnapshot",
+        "summary": "Host: a still for the live's card (about once a minute, already safety-checked on the phone)",
+        "tags": [
+          "lives"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "frameBase64": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 573440
+                  }
+                },
+                "required": [
+                  "frameBase64"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lives/{id}/snapshot/{file}": {
+      "get": {
+        "operationId": "getLiveSnapshot",
+        "summary": "A live's card snapshot, through a signed URL from GET /lives",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "exp",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "in": "query",
+            "name": "sig",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+\\.jpg$"
+            },
+            "in": "path",
+            "name": "file",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -19741,6 +21699,42 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "liveChatHistory",
+        "summary": "Recent chat of a live (last 50, oldest first) so late joiners see the conversation",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveChatHistory"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/lives/{id}/react": {
@@ -19807,7 +21801,7 @@
     "/v1/lives/{id}/gifts": {
       "post": {
         "operationId": "sendLiveGift",
-        "summary": "Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.",
+        "summary": "Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.",
         "tags": [
           "lives"
         ],
@@ -19824,6 +21818,13 @@
                     "maximum": 9007199254740991
                   },
                   "clientRef": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "toHostId": {
+                    "description": "PK battle: gift the other side's host",
+                    "nullable": true,
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -20844,7 +22845,8 @@
                       "sexual_content",
                       "spam",
                       "underage",
-                      "fraud"
+                      "fraud",
+                      "off_platform"
                     ]
                   },
                   "details": {
@@ -20957,6 +22959,875 @@
             }
           }
         },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    null
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/companion/callers": {
+      "get": {
+        "operationId": "listOnlineCallers",
+        "summary": "Callers with the app open now: your regulars and fans first",
+        "tags": [
+          "companion"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "callers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OnlineCaller"
+                      }
+                    },
+                    "canInvite": {
+                      "type": "boolean",
+                      "description": "You're online and free"
+                    }
+                  },
+                  "required": [
+                    "callers",
+                    "canInvite"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/companion/invites": {
+      "post": {
+        "operationId": "inviteCaller",
+        "summary": "Invite a caller to call you (he gets 'X wants to talk' and starts the call himself). You must be online; one invite per caller per hour; a few per hour in total.",
+        "tags": [
+          "companion"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "callerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "callerId"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invitedUntil": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "invitedUntil"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/leaderboards": {
+      "get": {
+        "operationId": "getLeaderboard",
+        "summary": "Top companions (coins spent on them) or top fans (gift coins sent): this week, last week, or an event",
+        "tags": [
+          "growth"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "companions",
+                "fans"
+              ]
+            },
+            "in": "query",
+            "name": "board",
+            "required": true
+          },
+          {
+            "schema": {
+              "default": "this_week",
+              "type": "string",
+              "enum": [
+                "this_week",
+                "last_week",
+                "event"
+              ]
+            },
+            "in": "query",
+            "name": "period",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "eventId",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "to": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LeaderboardEntry"
+                      }
+                    },
+                    "me": {
+                      "nullable": true,
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/LeaderboardEntry"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to",
+                    "items",
+                    "me"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/current": {
+      "get": {
+        "operationId": "getCurrentEvent",
+        "summary": "The festival event running now, if any",
+        "tags": [
+          "growth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "nullable": true,
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/AppEvent"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "event"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/level": {
+      "get": {
+        "operationId": "getMyLevel",
+        "summary": "My caller level, from lifetime coins spent",
+        "tags": [
+          "growth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "perk": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "coinsSpent": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "next": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "minCoins": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "level",
+                        "name",
+                        "minCoins"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "level",
+                    "name",
+                    "perk",
+                    "coinsSpent",
+                    "next"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/events": {
+      "get": {
+        "operationId": "adminListEvents",
+        "summary": "Festival events, newest first",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminEvent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "adminCreateEvent",
+        "summary": "Create a festival event",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 60
+                  },
+                  "tagline": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "theme": {
+                    "type": "string",
+                    "enum": [
+                      "festive",
+                      "pongal",
+                      "diwali",
+                      "onam",
+                      "holi",
+                      "love",
+                      "cricket"
+                    ]
+                  },
+                  "startsAt": {},
+                  "endsAt": {},
+                  "giftIds": {
+                    "default": [],
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "active": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "theme",
+                  "startsAt",
+                  "endsAt"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/events/{id}": {
+      "put": {
+        "operationId": "adminUpdateEvent",
+        "summary": "Edit an event",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 60
+                  },
+                  "tagline": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "theme": {
+                    "type": "string",
+                    "enum": [
+                      "festive",
+                      "pongal",
+                      "diwali",
+                      "onam",
+                      "holi",
+                      "love",
+                      "cricket"
+                    ]
+                  },
+                  "startsAt": {},
+                  "endsAt": {},
+                  "giftIds": {
+                    "default": [],
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "active": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "theme",
+                  "startsAt",
+                  "endsAt"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/caller-levels": {
+      "get": {
+        "operationId": "adminListCallerLevels",
+        "summary": "Caller levels (by lifetime coins spent)",
+        "tags": [
+          "admin"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CallerLevel"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/caller-levels/{level}": {
+      "put": {
+        "operationId": "adminUpdateCallerLevel",
+        "summary": "Edit a caller level",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 30
+                  },
+                  "minCoins": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "perk": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "name",
+                  "minCoins"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "level",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallerLevel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lives/{id}/pk": {
+      "post": {
+        "operationId": "challengePk",
+        "summary": "Host: challenge another live host to a 5-minute PK battle (she has 30 s to accept)",
+        "tags": [
+          "lives"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "opponentLiveId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "opponentLiveId"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkBattle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pk/{id}/accept": {
+      "post": {
+        "operationId": "acceptPk",
+        "summary": "Accept a PK challenge: the battle starts now",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkBattle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pk/{id}/decline": {
+      "post": {
+        "operationId": "declinePk",
+        "summary": "Decline a PK challenge",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkBattle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pk/{id}": {
+      "get": {
+        "operationId": "getPk",
+        "summary": "A battle with live scores, plus a listen-only token for the other side's room (hosts and viewers of either live)",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "fromLiveId",
+            "required": true,
+            "description": "The live you're in"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "battle": {
+                      "$ref": "#/components/schemas/PkBattle"
+                    },
+                    "other": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "liveKitUrl": {
+                          "type": "string"
+                        },
+                        "livekitRoom": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "liveKitUrl",
+                        "livekitRoom",
+                        "token"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "battle",
+                    "other"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pk/{id}/end": {
+      "post": {
+        "operationId": "endPk",
+        "summary": "Either host: end the battle early (current score decides)",
+        "tags": [
+          "lives"
+        ],
         "parameters": [
           {
             "schema": {

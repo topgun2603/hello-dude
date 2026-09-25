@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **id** | **String** |  | 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **direction** | **String** |  | 
-**other** | [**AdminRefundCompanion**](AdminRefundCompanion.md) |  | 
+**other** | [**AdminUserDetailReportsInnerOther**](AdminUserDetailReportsInnerOther.md) |  | 
 **reason** | **String** |  | 
 **details** | **String** |  | 
 **status** | **String** |  | 

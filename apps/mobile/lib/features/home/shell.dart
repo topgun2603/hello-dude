@@ -11,10 +11,13 @@ import '../../widgets/common.dart';
 import 'home_data.dart';
 import 'home_screen.dart';
 import 'online_tab.dart';
+import '../live/live_data.dart' show livesProvider;
+import '../live/live_tab.dart';
 import 'other_tabs.dart';
 import '../growth/checkin_screen.dart';
 import '../promotions/promo_sheet.dart';
 import 'package:pesu_api/api.dart' show PromotionCtaActionEnum;
+import '../call/call_invite.dart';
 
 /// Signed-in shell with the bottom navigation from the Home design.
 class MainShell extends ConsumerStatefulWidget {
@@ -26,7 +29,7 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   int _tab = 0;
-  StreamSubscription<Map<String, dynamic>>? _events;
+  StreamSubscription<Map<String, dynamic>>? _events, _invites;
 
   @override
   void initState() {
@@ -53,6 +56,27 @@ class _MainShellState extends ConsumerState<MainShell> {
         }
       },
     );
+    _invites = ref
+        .read(realtimeProvider)
+        .events
+        .where((e) => e['t'] == 'call_invite')
+        .listen((e) {
+          final c = (e['companion'] as Map?) ?? const {};
+          final id = c['id'];
+          if (!mounted || id is! String) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${c['displayName'] ?? 'A companion'} wants to talk',
+              ),
+              action: SnackBarAction(
+                label: 'Call',
+                onPressed: () => showCallInviteSheet(context, ref, id),
+              ),
+              duration: const Duration(seconds: 10),
+            ),
+          );
+        });
     _events = ref
         .read(realtimeProvider)
         .events
@@ -112,13 +136,14 @@ class _MainShellState extends ConsumerState<MainShell> {
   void dispose() {
     _lifecycle.dispose();
     _events?.cancel();
+    _invites?.cancel();
     super.dispose();
   }
 
   static const _tabs = [
     (Icons.home_rounded, 'Home'),
     (Icons.people_alt_rounded, 'Online'),
-    (Icons.schedule_rounded, 'Calls'),
+    (Icons.live_tv_rounded, 'Live'),
     (Icons.account_balance_wallet_outlined, 'Wallet'),
     (Icons.person_outline_rounded, 'Profile'),
   ];
@@ -128,13 +153,15 @@ class _MainShellState extends ConsumerState<MainShell> {
     ref.watch(
       realtimeProvider,
     ); // keeps the live connection open while signed in
+    final liveNow = (ref.watch(livesProvider).valueOrNull?.total ?? 0) > 0;
     final pages = [
       HomeTab(
         onOpenWallet: () => setState(() => _tab = 3),
         onSeeAllOnline: () => setState(() => _tab = 1),
+        onSeeAllLive: () => setState(() => _tab = 2),
       ),
       OnlineTab(active: _tab == 1),
-      const CallsTab(),
+      LiveTab(active: _tab == 2),
       const WalletTab(),
       const ProfileTab(),
     ];
@@ -168,12 +195,35 @@ class _MainShellState extends ConsumerState<MainShell> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              _tabs[i].$1,
-                              size: 23,
-                              color: i == _tab
-                                  ? AppColors.pinkSoft
-                                  : AppColors.navInactive,
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Icon(
+                                  _tabs[i].$1,
+                                  size: 23,
+                                  color: i == _tab
+                                      ? AppColors.pinkSoft
+                                      : AppColors.navInactive,
+                                ),
+                                // Red dot on Live while anyone is live.
+                                if (i == 2 && liveNow)
+                                  Positioned(
+                                    right: -3,
+                                    top: -2,
+                                    child: Container(
+                                      width: 9,
+                                      height: 9,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.danger,
+                                        border: Border.all(
+                                          color: const Color(0xFF0C0B1C),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Text(

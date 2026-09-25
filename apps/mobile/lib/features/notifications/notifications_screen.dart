@@ -10,6 +10,7 @@ import '../../data/errors.dart';
 import '../../data/realtime.dart';
 import '../../data/session.dart';
 import '../../widgets/common.dart';
+import '../call/call_invite.dart';
 
 /// Bell badge number. Refetched on open, and bumped live by the server's
 /// `notification` WebSocket event (see notifications.ts on the API).
@@ -222,7 +223,7 @@ class NotificationsScreen extends ConsumerWidget {
                                     item: n,
                                     onTap: () {
                                       if (!n.read) _markRead(ref, [n.id]);
-                                      openNotification(context, n);
+                                      openNotification(context, n, ref);
                                     },
                                   ),
                               ],
@@ -240,7 +241,11 @@ class NotificationsScreen extends ConsumerWidget {
 }
 
 /// Where a tap goes. Types without a screen just mark the item read.
-void openNotification(BuildContext context, NotificationItem n) {
+void openNotification(
+  BuildContext context,
+  NotificationItem n, [
+  WidgetRef? ref,
+]) {
   switch (n.type) {
     case NotificationItemTypeEnum.favouriteOnline:
       context.push('/favourites');
@@ -254,11 +259,25 @@ void openNotification(BuildContext context, NotificationItem n) {
       context.push(roomId != null ? '/room/$roomId' : '/rooms');
     case NotificationItemTypeEnum.liveStarted:
       context.push('/live', extra: n.data['liveId']);
+    case NotificationItemTypeEnum.chatRequest:
+      context.push('/chats');
+    case NotificationItemTypeEnum.callInvite:
+      final companionId = n.data['companionId'];
+      if (ref != null && companionId is String) {
+        showCallInviteSheet(context, ref, companionId);
+      }
+    case NotificationItemTypeEnum.chatRequestAccepted:
+      final conversation = n.data['conversationId'];
+      context.push(conversation != null ? '/chat/$conversation' : '/chats');
     case NotificationItemTypeEnum.groupOpen:
     case NotificationItemTypeEnum.groupReminder:
     case NotificationItemTypeEnum.groupCancelled:
       // Companions manage their groups from their home; callers see the list.
-      final companion = ProviderScope.containerOf(context).read(sessionProvider).profile?.role == ProfileRoleEnum.companion;
+      final companion =
+          ProviderScope.containerOf(
+            context,
+          ).read(sessionProvider).profile?.role ==
+          ProfileRoleEnum.companion;
       context.push(companion ? '/companion' : '/groups');
     case NotificationItemTypeEnum.bonusEarned:
       context.push('/rewards');
@@ -393,6 +412,15 @@ String timeLabel(DateTime created, DateTime now) {
   NotificationItemTypeEnum.groupCancelled => (
     Icons.groups_rounded,
     AppColors.success,
+  ),
+  NotificationItemTypeEnum.callInvite => (
+    Icons.phone_callback_rounded,
+    AppColors.success,
+  ),
+  NotificationItemTypeEnum.chatRequest ||
+  NotificationItemTypeEnum.chatRequestAccepted => (
+    Icons.mark_chat_unread_outlined,
+    AppColors.pinkSoft,
   ),
   NotificationItemTypeEnum.liveStarted => (
     Icons.live_tv_rounded,

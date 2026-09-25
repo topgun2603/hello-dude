@@ -1,0 +1,17 @@
+# Keep secrets, local data and the Flutter app out of image builds.
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.data
+service_account.json
+*service-account*.json
+apps/mobile
+packages
+design
+docs
+.git
+.github

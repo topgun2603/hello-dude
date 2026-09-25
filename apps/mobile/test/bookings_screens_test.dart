@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pesu/data/session.dart';
 import 'package:pesu/features/bookings/bookings_screens.dart';
 import 'package:pesu/features/home/home_data.dart';
 import 'package:pesu_api/api.dart';
 
 final _companion = OnlineCompanion(
   id: 'c1',
+  badge: null,
   displayName: 'Priya',
   avatarId: 1,
   photoUrl: null,

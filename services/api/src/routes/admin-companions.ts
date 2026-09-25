@@ -14,6 +14,10 @@ import { goOffline } from "../presence.js";
 import { maskUpi } from "./companion.js";
 import { academyProgress } from "./academy.js";
 import { notify, rupeesText } from "../notifications.js";
+import { finishPayout } from "../payouts/finish.js";
+import { KYC_ITEMS, voiceRequired } from "./companion.js";
+import { ensureWallets } from "../billing/ledger.js";
+import { numberSetting } from "../settings.js";
 
 async function audit(c: DbClient, actorId: string, action: string, targetType: string, targetId: string, details: object) {
   await c.query(
@@ -32,13 +36,19 @@ const KycCase = z.object({
   submittedAt: z.date().nullable(),
   aadhaar: z.object({ name: z.string().nullable(), dob: z.string().nullable(), age: z.number().int().nullable(),
     gender: z.string().nullable(), last4: z.string().nullable(), generatedAt: z.date().nullable() }),
+  declared: z.object({ birthDate: z.string().nullable(), age: z.number().int().nullable() })
+    .describe("Date of birth the companion entered (18+ confirmed); Aadhaar is no longer collected"),
   selfieBlinks: z.number().int().nullable(),
   panLast4: z.string().nullable(),
   upi: z.string().nullable(),
   rejectReason: z.string().nullable(),
   videoEnabled: z.boolean(),
   academy: z.object({ passed: z.number().int(), total: z.number().int() }),
-  documents: z.array(z.enum(["aadhaar_photo", "selfie", "pan"])),
+  documents: z.array(z.enum(["aadhaar_photo", "selfie", "pan", "voice"])),
+  redo: z.array(z.enum(KYC_ITEMS)).describe("Items the last rejection asked them to send again"),
+  voice: z.object({ needed: z.boolean(), sentence: z.string().nullable(), submittedAt: z.date().nullable(),
+    checkedAt: z.date().nullable().describe("An admin already listened and it was fine (clip deleted)") })
+    .describe("Women companions: play GET /admin/kyc/:userId/files/voice and check it matches the sentence and the selfie"),
 }).meta({ id: "AdminKycCase" });
 
 const AdminPayout = z.object({
@@ -51,7 +61,7 @@ const AdminPayout = z.object({
 }).meta({ id: "AdminPayout" });
 
 export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
-  const { db, redis, store, payouts: provider } = app.deps;
+  const { db, redis, store } = app.deps;
   const base = { tags: ["admin"], security: bearer };
 
   // -------------------------------------------------------------------------
@@ -69,10 +79,10 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
       : `p.kyc_status = '${req.query.status === "approved" ? "approved" : "rejected"}'`;
     const rows = (await db.query(
       `SELECT u.id, u.display_name, u.phone, u.gender, u.primary_language, p.*,
-              to_char(p.aadhaar_dob, 'YYYY-MM-DD') AS dob,
+              to_char(p.aadhaar_dob, 'YYYY-MM-DD') AS dob, to_char(p.birth_date, 'YYYY-MM-DD') AS birth,
               (SELECT count(*) FROM academy_progress a WHERE a.user_id = u.id)::int AS academy_passed,
               (SELECT count(*) FROM academy_lessons)::int AS academy_total,
-              ARRAY(SELECT doc_type FROM kyc_documents d WHERE d.user_id = u.id AND doc_type IN ('aadhaar_photo', 'selfie', 'pan') ORDER BY doc_type) AS docs
+              ARRAY(SELECT doc_type FROM kyc_documents d WHERE d.user_id = u.id AND doc_type IN ('aadhaar_photo', 'selfie', 'pan', 'voice') ORDER BY doc_type) AS docs
          FROM companion_profiles p JOIN users u ON u.id = p.user_id
         WHERE ${where} ORDER BY p.kyc_submitted_at ${req.query.status === "submitted" ? "ASC" : "DESC"} NULLS LAST LIMIT 200`,
     )).rows;
@@ -82,8 +92,11 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
       submittedAt: r.kyc_submitted_at,
       aadhaar: { name: r.aadhaar_name, dob: r.dob, age: r.dob ? ageOn(r.dob) : null, gender: r.aadhaar_gender, last4: r.aadhaar_last4,
         generatedAt: r.aadhaar_generated_at },
+      declared: { birthDate: r.birth, age: r.birth ? ageOn(r.birth) : null },
       selfieBlinks: r.selfie_blinks, panLast4: r.pan_last4, upi: r.upi_id ? maskUpi(r.upi_id) : null,
       rejectReason: r.kyc_reject_reason, videoEnabled: r.video_enabled, documents: r.docs,
+      redo: r.kyc_redo,
+      voice: { needed: voiceRequired(r.gender), sentence: r.voice_sentence, submittedAt: r.voice_submitted_at, checkedAt: r.voice_verified_at },
       academy: { passed: r.academy_passed, total: r.academy_total },
     }));
   });
@@ -93,7 +106,7 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
     schema: {
       ...base,
       summary: "Decrypted KYC image for side-by-side review. Every view is audit-logged.",
-      params: z.object({ userId: z.uuid(), doc: z.enum(["aadhaar_photo", "selfie", "pan"]) }),
+      params: z.object({ userId: z.uuid(), doc: z.enum(["aadhaar_photo", "selfie", "pan", "voice"]) }),
     },
   }, async (req, reply) => {
     const doc = (await db.query<{ storage_key: string }>(
@@ -103,9 +116,13 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
     const bytes = await store.get(doc.storage_key);
     await tx(db, (c) => audit(c, me(req).userId, "kyc.view", "user", req.params.userId, { doc: req.params.doc }));
     const png = bytes[0] === 0x89 && bytes[1] === 0x50;
+    const head = bytes.subarray(0, 8).toString("latin1");
+    const type = req.params.doc === "voice"
+      ? head.slice(4, 8) === "ftyp" ? "audio/mp4" : head.startsWith("OggS") ? "audio/ogg" : head.startsWith("RIFF") ? "audio/wav" : "audio/webm"
+      : png ? "image/png" : "image/jpeg";
     return reply
       .header("cache-control", "no-store, private")
-      .type(png ? "image/png" : "image/jpeg")
+      .type(type)
       .send(bytes);
   });
 
@@ -115,33 +132,76 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
       ...base,
       summary: "Approve (companion can go online) or reject with a reason the companion will see",
       params: z.object({ userId: z.uuid() }),
-      body: z.object({ decision: z.enum(["approve", "reject"]), reason: z.string().trim().min(3).max(500) }),
+      body: z.object({
+        decision: z.enum(["approve", "reject"]),
+        reason: z.string().trim().min(3).max(500),
+        redo: z.array(z.enum(KYC_ITEMS)).nullish()
+          .describe("Reject only: what they must send again (only these reset). Empty = they fix it and press Submit."),
+      }),
       response: { 204: z.null() },
     },
   }, async (req, reply) => {
     const { decision, reason } = req.body;
-    await tx(db, async (c) => {
+    const redo = decision === "reject" ? [...new Set(req.body.redo ?? [])] : [];
+    const bonus = await tx(db, async (c) => {
       const p = (await c.query<{ kyc_status: string; kyc_submitted_at: Date | null; aadhaar_dob: string | null }>(
-        `SELECT kyc_status, kyc_submitted_at, to_char(aadhaar_dob, 'YYYY-MM-DD') AS aadhaar_dob
+        `SELECT kyc_status, kyc_submitted_at, to_char(COALESCE(birth_date, aadhaar_dob), 'YYYY-MM-DD') AS aadhaar_dob
            FROM companion_profiles WHERE user_id = $1 FOR UPDATE`, [req.params.userId])).rows[0];
       if (!p) throw notFound("NOT_A_COMPANION");
       if (p.kyc_status !== "pending" || !p.kyc_submitted_at) throw conflict("KYC_NOT_SUBMITTED", "This companion has nothing waiting for review");
       if (decision === "approve" && (!p.aadhaar_dob || ageOn(p.aadhaar_dob) < 18)) {
-        throw new ApiError(400, "AADHAAR_UNDER_18", "Can't approve: under 18 per Aadhaar");
+        throw new ApiError(400, "UNDER_18", "Can't approve: no date of birth, or under 18");
       }
       await c.query(
         decision === "approve"
           ? `UPDATE companion_profiles SET kyc_status = 'approved', kyc_verified_at = now(), kyc_reviewed_at = now(), kyc_reviewed_by = $2, kyc_reject_reason = NULL WHERE user_id = $1`
-          : `UPDATE companion_profiles SET kyc_status = 'rejected', kyc_reviewed_at = now(), kyc_reviewed_by = $2, kyc_reject_reason = $3, kyc_submitted_at = NULL WHERE user_id = $1`,
-        decision === "approve" ? [req.params.userId, me(req).userId] : [req.params.userId, me(req).userId, reason],
+          : `UPDATE companion_profiles SET kyc_status = 'rejected', kyc_reviewed_at = now(), kyc_reviewed_by = $2, kyc_reject_reason = $3,
+                    kyc_submitted_at = NULL, kyc_redo = $4,
+                    -- Only what the admin asked for resets.
+                    age_confirmed_at = CASE WHEN 'age' = ANY($4) THEN NULL ELSE age_confirmed_at END,
+                    selfie_blinks = CASE WHEN 'selfie' = ANY($4) THEN NULL ELSE selfie_blinks END,
+                    pan_last4 = CASE WHEN 'pan' = ANY($4) THEN NULL ELSE pan_last4 END,
+                    pan_encrypted = CASE WHEN 'pan' = ANY($4) THEN NULL ELSE pan_encrypted END,
+                    upi_id = CASE WHEN 'upi' = ANY($4) THEN NULL ELSE upi_id END
+              WHERE user_id = $1`,
+        decision === "approve" ? [req.params.userId, me(req).userId] : [req.params.userId, me(req).userId, reason, redo],
       );
       await c.query(`UPDATE kyc_documents SET status = $2, reviewed_by = $3 WHERE user_id = $1`,
         [req.params.userId, decision === "approve" ? "approved" : "rejected", me(req).userId]);
-      await audit(c, me(req).userId, `kyc.${decision}`, "user", req.params.userId, { reason });
+      await audit(c, me(req).userId, `kyc.${decision}`, "user", req.params.userId, { reason, ...(redo.length ? { redo } : {}) });
+
+      // The voice intro is only kept until the decision (privacy); a rejection needs a new one.
+      const voice = (await c.query<{ storage_key: string }>(
+        `DELETE FROM kyc_documents WHERE user_id = $1 AND doc_type = 'voice' RETURNING storage_key`, [req.params.userId])).rows[0];
+      if (voice) await store.delete(voice.storage_key);
+      await c.query(
+        decision === "approve"
+          ? `UPDATE companion_profiles SET voice_verified_at = CASE WHEN voice_submitted_at IS NOT NULL THEN now() END WHERE user_id = $1`
+          : `UPDATE companion_profiles SET
+               voice_submitted_at = CASE WHEN $2 THEN NULL ELSE voice_submitted_at END,
+               voice_sentence = CASE WHEN $2 THEN NULL ELSE voice_sentence END,
+               -- Not asked to redo: the admin heard it and it was fine.
+               voice_verified_at = CASE WHEN $2 OR voice_submitted_at IS NULL THEN voice_verified_at ELSE now() END
+             WHERE user_id = $1`,
+        decision === "approve" ? [req.params.userId] : [req.params.userId, redo.includes("voice")]);
+
+      // Joining bonus for women companions, once, when first approved.
+      if (decision !== "approve") return 0;
+      const who = (await c.query<{ gender: string; paid: boolean }>(
+        `SELECT u.gender, p.joining_bonus_paid_at IS NOT NULL AS paid FROM users u JOIN companion_profiles p ON p.user_id = u.id WHERE u.id = $1`,
+        [req.params.userId])).rows[0]!;
+      if (!voiceRequired(who.gender) || who.paid) return 0;
+      const paise = await numberSetting(c, "companion.joining_bonus_paise", 1000);
+      if (paise <= 0) return 0;
+      await ensureWallets(c, req.params.userId);
+      await post(c, req.params.userId, "earnings", "bonus", paise, `joining-bonus:${req.params.userId}`, { note: "Joining bonus" });
+      await c.query(`UPDATE companion_profiles SET joining_bonus_paid_at = now() WHERE user_id = $1`, [req.params.userId]);
+      return paise;
     });
     if (decision === "reject") await goOffline(redis, req.params.userId);
     await notify(app.deps, req.params.userId, decision === "approve"
-      ? { type: "kyc_decided", title: "You're verified 🎉", body: "Your KYC is approved. Finish the academy lessons, then go online to take calls." }
+      ? { type: "kyc_decided", title: "You're verified 🎉",
+          body: `${bonus ? `₹${bonus / 100} joining bonus added to your earnings. ` : ""}Finish the academy lessons, then go online to take calls.` }
       : { type: "kyc_decided", title: "KYC needs another look", body: reason });
     return reply.status(204).send(null);
   });
@@ -242,28 +302,11 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
       return p;
     });
     const name = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [claimed.companion_id])).rows[0]!.display_name;
-    const result = await provider.send({ payoutId: claimed.id, upiId: claimed.upi_id, amountPaise: Number(claimed.net_paise), name })
+    const result = await app.deps.payouts.send({ payoutId: claimed.id, upiId: claimed.upi_id, amountPaise: Number(claimed.net_paise), name })
       .catch((e: Error) => ({ status: "failed" as const, reason: `Provider error: ${e.message}` }));
 
-    // 2. Record the outcome.
-    await tx(db, async (c) => {
-      if (result.status === "failed") {
-        await c.query(`UPDATE payouts SET status = 'failed', failure_reason = $2, processed_at = now() WHERE id = $1`, [claimed.id, result.reason]);
-        await reverse(c, claimed, "Withdrawal failed, returned to balance");
-      } else {
-        await c.query(
-          `UPDATE payouts SET status = $2::payout_status, provider_ref = $3,
-                  processed_at = CASE WHEN $2::text = 'paid' THEN now() END WHERE id = $1`,
-          [claimed.id, result.status, result.providerRef]);
-      }
-    });
-    const net = Number(claimed.net_paise);
-    if (result.status === "failed") {
-      await notify(app.deps, claimed.companion_id, { type: "payout_failed", title: "Withdrawal failed",
-        body: `${rupeesText(Number(claimed.gross_paise))} is back in your earnings. Check your UPI ID and try again.` });
-    } else if (result.status === "paid") {
-      await notify(app.deps, claimed.companion_id, { type: "payout_paid", title: `${rupeesText(net)} sent to your UPI`, body: "Your withdrawal is complete." });
-    }
+    // 2. Record the outcome (paid / failed now, or processing until the webhook or worker confirms).
+    await finishPayout(app.deps, claimed.id, result);
     const row = (await db.query(
       `SELECT p.*, u.display_name, cp.kyc_status FROM payouts p JOIN users u ON u.id = p.companion_id
          JOIN companion_profiles cp ON cp.user_id = p.companion_id WHERE p.id = $1`, [claimed.id])).rows[0];

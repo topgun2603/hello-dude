@@ -12,14 +12,18 @@ import { liveKitRooms, redisUserEvents } from "./billing/ports.js";
 import { dropStalePresence } from "./presence.js";
 import { disabledRecorder } from "./recording.js";
 import { runRetention } from "./retention.js";
+import { payoutsFromConfig } from "./payouts/provider.js";
+import { checkProcessingPayouts } from "./payouts/finish.js";
 import { sendDailyBonusReminders, sendRateReminders } from "./reminders.js";
 import { sweepBookings } from "./bookings.js";
 import { payBonuses } from "./rewards.js";
 import { sweepRooms } from "./routes/rooms.js";
 import { sweepLives } from "./routes/lives.js";
+import { sweepBattles } from "./routes/pk.js";
 import { sweepGroups } from "./routes/groups.js";
+import { announceLevelUps, awardBadges, rewardCompanionInvites } from "./routes/leaderboards.js";
 import { fcmPushSender, logPushSender } from "./push.js";
-import { localEncryptedStore, parseKey } from "./storage.js";
+import { parseKey, storeFromConfig } from "./storage.js";
 
 const SWEEP_EVERY_MS = 30_000;
 const RETENTION_EVERY_MS = 60 * 60_000;
@@ -51,7 +55,7 @@ const sweeper = setInterval(async () => {
   }
 }, SWEEP_EVERY_MS);
 
-const store = localEncryptedStore(cfg.KYC_STORAGE_DIR, parseKey(cfg.KYC_ENCRYPTION_KEY));
+const store = storeFromConfig(cfg, parseKey(cfg.KYC_ENCRYPTION_KEY));
 const events = redisUserEvents(redis);
 const push = cfg.FIREBASE_SERVICE_ACCOUNT_PATH
   ? fcmPushSender({
@@ -66,6 +70,11 @@ async function reminders() {
     const rate = await sendRateReminders({ db, push, events });
     const bonus = await sendDailyBonusReminders({ db, push, events });
     if (rate || bonus) console.log(`reminders: ${rate} rate-your-call, ${bonus} daily bonus`);
+    // Growth: weekly/event badges, caller level-ups, companion-invite rewards (all run-once safe).
+    const badges = await awardBadges({ db, push, events });
+    const levels = await announceLevelUps({ db, push, events });
+    const invites = await rewardCompanionInvites({ db, push, events });
+    if (badges || levels || invites) console.log(`growth: ${badges} badges, ${levels} level-ups, ${invites} invite bonuses`);
   } catch (err) {
     console.error("reminders failed", err);
   }
@@ -77,6 +86,8 @@ const livesTimer = setInterval(async () => {
   try {
     const r = await sweepLives({ db, events: redisUserEvents(redis), rooms, push });
     if (r.ended || r.removed) console.log("lives:", r);
+    const pk = await sweepBattles({ db, events: redisUserEvents(redis), rooms });
+    if (pk) console.log("pk battles ended:", pk);
   } catch (err) {
     console.error("lives sweep failed", err);
   }
@@ -114,10 +125,22 @@ async function retention() {
 void retention();
 const retentionTimer = setInterval(retention, RETENTION_EVERY_MS);
 
+// Payouts the bank hasn't confirmed yet: ask RazorpayX (backup for a lost webhook).
+const payouts = payoutsFromConfig(cfg);
+const payoutsTimer = setInterval(async () => {
+  try {
+    const r = await checkProcessingPayouts({ db, push, events }, payouts);
+    if (r.paid || r.failed) console.log("payouts confirmed:", r);
+  } catch (err) {
+    console.error("payout check failed", err);
+  }
+}, 5 * 60_000);
+
 console.log("worker started: billing every 2 s, sweep every 30 s, reminders every 5 min, retention hourly");
 await engine.runWorker(stop.signal);
 clearInterval(sweeper);
 clearInterval(retentionTimer);
+clearInterval(payoutsTimer);
 clearInterval(remindersTimer);
 clearInterval(bookingsTimer);
 clearInterval(livesTimer);

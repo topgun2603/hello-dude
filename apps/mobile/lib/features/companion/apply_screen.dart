@@ -126,7 +126,7 @@ class _ApplyScreenState extends ConsumerState<ApplyScreen> {
                 (
                   Icons.verified_user_outlined,
                   'Verify once',
-                  'Aadhaar offline e-KYC, a live selfie and PAN. Callers never see them.',
+                  'Your date of birth (18+), a live selfie and a UPI ID. PAN is optional. Callers never see them.',
                 ),
                 (
                   Icons.shield_outlined,

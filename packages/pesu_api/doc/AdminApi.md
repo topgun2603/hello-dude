@@ -15,6 +15,7 @@ Method | HTTP request | Description
 [**adminApprovePayout**](AdminApi.md#adminapprovepayout) | **POST** /v1/admin/payouts/{id}/approve | Approve and send to UPI. Failures are credited back to the companion automatically.
 [**adminAuditLog**](AdminApi.md#adminauditlog) | **GET** /v1/admin/audit | Latest admin actions
 [**adminCreateBonusCampaign**](AdminApi.md#admincreatebonuscampaign) | **POST** /v1/admin/bonus-campaigns | Create a bonus campaign
+[**adminCreateEvent**](AdminApi.md#admincreateevent) | **POST** /v1/admin/events | Create a festival event
 [**adminCreateGift**](AdminApi.md#admincreategift) | **POST** /v1/admin/gifts | Add a gift. Its code is made from the name and never changes (the app and ledger refer to it).
 [**adminCreatePackage**](AdminApi.md#admincreatepackage) | **POST** /v1/admin/coin-packages | Add a coin pack. Create the Google Play product with the same SKU first.
 [**adminCreatePromotion**](AdminApi.md#admincreatepromotion) | **POST** /v1/admin/promotions | 
@@ -35,7 +36,9 @@ Method | HTTP request | Description
 [**adminKycFile**](AdminApi.md#adminkycfile) | **GET** /v1/admin/kyc/{userId}/files/{doc} | Decrypted KYC image for side-by-side review. Every view is audit-logged.
 [**adminKycQueue**](AdminApi.md#adminkycqueue) | **GET** /v1/admin/kyc | KYC review queue (oldest first) or decided cases
 [**adminListBonusCampaigns**](AdminApi.md#adminlistbonuscampaigns) | **GET** /v1/admin/bonus-campaigns | Time-window bonus campaigns for companions
+[**adminListCallerLevels**](AdminApi.md#adminlistcallerlevels) | **GET** /v1/admin/caller-levels | Caller levels (by lifetime coins spent)
 [**adminListCompanionLevels**](AdminApi.md#adminlistcompanionlevels) | **GET** /v1/admin/companion-levels | Companion levels
+[**adminListEvents**](AdminApi.md#adminlistevents) | **GET** /v1/admin/events | Festival events, newest first
 [**adminListGifts**](AdminApi.md#adminlistgifts) | **GET** /v1/admin/gifts | 
 [**adminListGroups**](AdminApi.md#adminlistgroups) | **GET** /v1/admin/groups | Open groups, then the last 50 that ended
 [**adminListLives**](AdminApi.md#adminlistlives) | **GET** /v1/admin/lives | Lives now, then the last 50 that ended
@@ -64,7 +67,9 @@ Method | HTTP request | Description
 [**adminSetUserStatus**](AdminApi.md#adminsetuserstatus) | **POST** /v1/admin/users/{id}/status | Suspend, ban or reactivate an account
 [**adminSetVideo**](AdminApi.md#adminsetvideo) | **POST** /v1/admin/companions/{userId}/video | Unlock or lock video calls for a companion (after academy + clean record)
 [**adminUpdateBonusCampaign**](AdminApi.md#adminupdatebonuscampaign) | **PUT** /v1/admin/bonus-campaigns/{id} | Edit or switch off a bonus campaign
+[**adminUpdateCallerLevel**](AdminApi.md#adminupdatecallerlevel) | **PUT** /v1/admin/caller-levels/{level} | Edit a caller level
 [**adminUpdateCompanionLevel**](AdminApi.md#adminupdatecompanionlevel) | **PUT** /v1/admin/companion-levels/{level} | Change a level's name, thresholds or earnings boost (applies to calls that start after this)
+[**adminUpdateEvent**](AdminApi.md#adminupdateevent) | **PUT** /v1/admin/events/{id} | Edit an event
 [**adminUpdateGift**](AdminApi.md#adminupdategift) | **PUT** /v1/admin/gifts/{id} | 
 [**adminUpdatePackage**](AdminApi.md#adminupdatepackage) | **PUT** /v1/admin/coin-packages/{id} | Edit a coin pack. The Google Play product price must be changed to match in Play Console.
 [**adminUpdatePromotion**](AdminApi.md#adminupdatepromotion) | **PUT** /v1/admin/promotions/{id} | 
@@ -350,6 +355,53 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BonusCampaign**](BonusCampaign.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **adminCreateEvent**
+> AdminEvent adminCreateEvent(adminCreateEventRequest)
+
+Create a festival event
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = AdminApi();
+final adminCreateEventRequest = AdminCreateEventRequest(); // AdminCreateEventRequest | 
+
+try {
+    final result = api_instance.adminCreateEvent(adminCreateEventRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling AdminApi->adminCreateEvent: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **adminCreateEventRequest** | [**AdminCreateEventRequest**](AdminCreateEventRequest.md)|  | 
+
+### Return type
+
+[**AdminEvent**](AdminEvent.md)
 
 ### Authorization
 
@@ -1308,6 +1360,49 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **adminListCallerLevels**
+> List<CallerLevel> adminListCallerLevels()
+
+Caller levels (by lifetime coins spent)
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = AdminApi();
+
+try {
+    final result = api_instance.adminListCallerLevels();
+    print(result);
+} catch (e) {
+    print('Exception when calling AdminApi->adminListCallerLevels: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List<CallerLevel>**](CallerLevel.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **adminListCompanionLevels**
 > List<CompanionLevel> adminListCompanionLevels()
 
@@ -1339,6 +1434,49 @@ This endpoint does not need any parameter.
 ### Return type
 
 [**List<CompanionLevel>**](CompanionLevel.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **adminListEvents**
+> List<AdminEvent> adminListEvents()
+
+Festival events, newest first
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = AdminApi();
+
+try {
+    final result = api_instance.adminListEvents();
+    print(result);
+} catch (e) {
+    print('Exception when calling AdminApi->adminListEvents: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List<AdminEvent>**](AdminEvent.md)
 
 ### Authorization
 
@@ -2647,6 +2785,55 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **adminUpdateCallerLevel**
+> CallerLevel adminUpdateCallerLevel(level, adminUpdateCallerLevelRequest)
+
+Edit a caller level
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = AdminApi();
+final level = 56; // int | 
+final adminUpdateCallerLevelRequest = AdminUpdateCallerLevelRequest(); // AdminUpdateCallerLevelRequest | 
+
+try {
+    final result = api_instance.adminUpdateCallerLevel(level, adminUpdateCallerLevelRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling AdminApi->adminUpdateCallerLevel: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **level** | **int**|  | 
+ **adminUpdateCallerLevelRequest** | [**AdminUpdateCallerLevelRequest**](AdminUpdateCallerLevelRequest.md)|  | 
+
+### Return type
+
+[**CallerLevel**](CallerLevel.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **adminUpdateCompanionLevel**
 > CompanionLevel adminUpdateCompanionLevel(level, adminUpdateCompanionLevelRequest)
 
@@ -2684,6 +2871,55 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**CompanionLevel**](CompanionLevel.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **adminUpdateEvent**
+> AdminEvent adminUpdateEvent(id, adminCreateEventRequest)
+
+Edit an event
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = AdminApi();
+final id = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final adminCreateEventRequest = AdminCreateEventRequest(); // AdminCreateEventRequest | 
+
+try {
+    final result = api_instance.adminUpdateEvent(id, adminCreateEventRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling AdminApi->adminUpdateEvent: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+ **adminCreateEventRequest** | [**AdminCreateEventRequest**](AdminCreateEventRequest.md)|  | 
+
+### Return type
+
+[**AdminEvent**](AdminEvent.md)
 
 ### Authorization
 

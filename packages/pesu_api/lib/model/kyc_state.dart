@@ -15,8 +15,10 @@ class KycState {
   KycState({
     required this.status,
     required this.rejectReason,
-    required this.aadhaar,
+    this.redo = const [],
+    required this.age,
     required this.selfie,
+    required this.voice,
     required this.pan,
     required this.upi,
     required this.videoEnabled,
@@ -26,9 +28,14 @@ class KycState {
 
   String? rejectReason;
 
-  KycStateAadhaar aadhaar;
+  /// After a rejection: what to send again. Once all are sent, it goes back to review by itself.
+  List<KycStateRedoEnum> redo;
+
+  KycStateAge age;
 
   KycStateSelfie selfie;
+
+  KycStateVoice voice;
 
   KycStatePan pan;
 
@@ -40,8 +47,10 @@ class KycState {
   bool operator ==(Object other) => identical(this, other) || other is KycState &&
     other.status == status &&
     other.rejectReason == rejectReason &&
-    other.aadhaar == aadhaar &&
+    _deepEquality.equals(other.redo, redo) &&
+    other.age == age &&
     other.selfie == selfie &&
+    other.voice == voice &&
     other.pan == pan &&
     other.upi == upi &&
     other.videoEnabled == videoEnabled;
@@ -51,14 +60,16 @@ class KycState {
     // ignore: unnecessary_parenthesis
     (status.hashCode) +
     (rejectReason == null ? 0 : rejectReason!.hashCode) +
-    (aadhaar.hashCode) +
+    (redo.hashCode) +
+    (age.hashCode) +
     (selfie.hashCode) +
+    (voice.hashCode) +
     (pan.hashCode) +
     (upi.hashCode) +
     (videoEnabled.hashCode);
 
   @override
-  String toString() => 'KycState[status=$status, rejectReason=$rejectReason, aadhaar=$aadhaar, selfie=$selfie, pan=$pan, upi=$upi, videoEnabled=$videoEnabled]';
+  String toString() => 'KycState[status=$status, rejectReason=$rejectReason, redo=$redo, age=$age, selfie=$selfie, voice=$voice, pan=$pan, upi=$upi, videoEnabled=$videoEnabled]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -68,8 +79,10 @@ class KycState {
     } else {
       json[r'rejectReason'] = null;
     }
-      json[r'aadhaar'] = this.aadhaar;
+      json[r'redo'] = this.redo;
+      json[r'age'] = this.age;
       json[r'selfie'] = this.selfie;
+      json[r'voice'] = this.voice;
       json[r'pan'] = this.pan;
       json[r'upi'] = this.upi;
       json[r'videoEnabled'] = this.videoEnabled;
@@ -90,10 +103,14 @@ class KycState {
         assert(json.containsKey(r'status'), 'Required key "KycState[status]" is missing from JSON.');
         assert(json[r'status'] != null, 'Required key "KycState[status]" has a null value in JSON.');
         assert(json.containsKey(r'rejectReason'), 'Required key "KycState[rejectReason]" is missing from JSON.');
-        assert(json.containsKey(r'aadhaar'), 'Required key "KycState[aadhaar]" is missing from JSON.');
-        assert(json[r'aadhaar'] != null, 'Required key "KycState[aadhaar]" has a null value in JSON.');
+        assert(json.containsKey(r'redo'), 'Required key "KycState[redo]" is missing from JSON.');
+        assert(json[r'redo'] != null, 'Required key "KycState[redo]" has a null value in JSON.');
+        assert(json.containsKey(r'age'), 'Required key "KycState[age]" is missing from JSON.');
+        assert(json[r'age'] != null, 'Required key "KycState[age]" has a null value in JSON.');
         assert(json.containsKey(r'selfie'), 'Required key "KycState[selfie]" is missing from JSON.');
         assert(json[r'selfie'] != null, 'Required key "KycState[selfie]" has a null value in JSON.');
+        assert(json.containsKey(r'voice'), 'Required key "KycState[voice]" is missing from JSON.');
+        assert(json[r'voice'] != null, 'Required key "KycState[voice]" has a null value in JSON.');
         assert(json.containsKey(r'pan'), 'Required key "KycState[pan]" is missing from JSON.');
         assert(json[r'pan'] != null, 'Required key "KycState[pan]" has a null value in JSON.');
         assert(json.containsKey(r'upi'), 'Required key "KycState[upi]" is missing from JSON.');
@@ -106,8 +123,10 @@ class KycState {
       return KycState(
         status: KycStateStatusEnum.fromJson(json[r'status'])!,
         rejectReason: mapValueOfType<String>(json, r'rejectReason'),
-        aadhaar: KycStateAadhaar.fromJson(json[r'aadhaar'])!,
+        redo: KycStateRedoEnum.listFromJson(json[r'redo']),
+        age: KycStateAge.fromJson(json[r'age'])!,
         selfie: KycStateSelfie.fromJson(json[r'selfie'])!,
+        voice: KycStateVoice.fromJson(json[r'voice'])!,
         pan: KycStatePan.fromJson(json[r'pan'])!,
         upi: KycStateUpi.fromJson(json[r'upi'])!,
         videoEnabled: mapValueOfType<bool>(json, r'videoEnabled')!,
@@ -160,8 +179,10 @@ class KycState {
   static const requiredKeys = <String>{
     'status',
     'rejectReason',
-    'aadhaar',
+    'redo',
+    'age',
     'selfie',
+    'voice',
     'pan',
     'upi',
     'videoEnabled',
@@ -247,6 +268,90 @@ class KycStateStatusEnumTypeTransformer {
 
   /// The singleton instance of this transformer.
   static KycStateStatusEnumTypeTransformer? _instance;
+}
+
+
+
+enum KycStateRedoEnum {
+  age._(r'age'),
+  selfie._(r'selfie'),
+  voice._(r'voice'),
+  pan._(r'pan'),
+  upi._(r'upi'),
+  ;
+
+  /// Instantiate a new enum with the provided value.
+  const KycStateRedoEnum._(this._value);
+
+  /// The underlying value of this enum member.
+  final String _value;
+
+  @override
+  String toString() => _value;
+
+  /// Encodes this enum as a value suitable for JSON.
+  String toJson() => _value;
+
+  /// Returns the instance of [KycStateRedoEnum] that was successfully decoded
+  /// from the passed [value] on success, null otherwise.
+  static KycStateRedoEnum? fromJson(dynamic value) => KycStateRedoEnumTypeTransformer().decode(value);
+
+  /// Returns a [List] containing instances of [KycStateRedoEnum]
+  /// that were successfully decoded from the passed [JSON][json].
+  static List<KycStateRedoEnum> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <KycStateRedoEnum>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = KycStateRedoEnum.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
+}
+
+/// Transformation class that can [encode] an instance of [KycStateRedoEnum] to String,
+/// and [decode] dynamic data back to [KycStateRedoEnum].
+class KycStateRedoEnumTypeTransformer {
+  factory KycStateRedoEnumTypeTransformer() => _instance ??= const KycStateRedoEnumTypeTransformer._();
+
+  const KycStateRedoEnumTypeTransformer._();
+
+  String encode(KycStateRedoEnum data) => data._value;
+
+  /// Returns the instance of [KycStateRedoEnum] that was successfully decoded
+  /// from the passed [data] value on success, null otherwise.
+  ///
+  /// If [allowNull] is true and the [dynamic value][data] cannot be decoded successfully,
+  /// then null is returned. However, if [allowNull] is false and the [dynamic value][data]
+  /// cannot be decoded successfully, then an [UnimplementedError] is thrown.
+  ///
+  /// The [allowNull] is very handy when an API changes and a new enum value is added or removed,
+  /// and users are still using an old app with the old code.
+  KycStateRedoEnum? decode(dynamic data, {bool allowNull = true}) {
+    if (data is KycStateRedoEnum) {
+      return data;
+    }
+    if (data != null) {
+      switch (data) {
+        case r'age': return KycStateRedoEnum.age;
+        case r'selfie': return KycStateRedoEnum.selfie;
+        case r'voice': return KycStateRedoEnum.voice;
+        case r'pan': return KycStateRedoEnum.pan;
+        case r'upi': return KycStateRedoEnum.upi;
+        default:
+          if (!allowNull) {
+            throw ArgumentError('Unknown enum value to decode: $data');
+          }
+      }
+    }
+    return null;
+  }
+
+  /// The singleton instance of this transformer.
+  static KycStateRedoEnumTypeTransformer? _instance;
 }
 
 

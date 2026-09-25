@@ -48,9 +48,14 @@ export class OtpService {
     private readonly secret: string,
     /** When set (dev only), this code is used instead of a random one. */
     private readonly fixedCode?: string,
+    /** Staging: only these numbers may get a code (the fixed one); others are refused. */
+    private readonly allowed?: (phone: string) => boolean,
   ) {}
 
   async send(phone: string): Promise<{ expiresInSeconds: number; resendAfterSeconds: number }> {
+    if (this.allowed && !this.allowed(phone)) {
+      throw new ApiError(403, "OTP_NOT_ALLOWED", "This test server only signs in its test accounts");
+    }
     const cooldown = await this.redis.set(`otp:cooldown:${phone}`, "1", "EX", OTP_RESEND_COOLDOWN_S, "NX");
     if (!cooldown) {
       const ttl = await this.redis.ttl(`otp:cooldown:${phone}`);

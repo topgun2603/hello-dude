@@ -217,6 +217,59 @@ class CompanionApi {
     return null;
   }
 
+  /// Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [ConfirmCompanionAgeRequest] confirmCompanionAgeRequest (required):
+  Future<Response> confirmCompanionAgeWithHttpInfo(ConfirmCompanionAgeRequest confirmCompanionAgeRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/kyc/age';
+
+    // ignore: prefer_final_locals
+    Object? postBody = confirmCompanionAgeRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Step 1: date of birth and a confirmation that you are 18 or older. Under 18 is rejected.
+  ///
+  /// Parameters:
+  ///
+  /// * [ConfirmCompanionAgeRequest] confirmCompanionAgeRequest (required):
+  Future<KycState?> confirmCompanionAge(ConfirmCompanionAgeRequest confirmCompanionAgeRequest, { Future<void>? abortTrigger, }) async {
+    final response = await confirmCompanionAgeWithHttpInfo(confirmCompanionAgeRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'KycState',) as KycState;
+    
+    }
+    return null;
+  }
+
   /// Lessons, in order, with my progress (quiz answers are not included)
   ///
   /// Note: This method returns the HTTP [Response].
@@ -347,6 +400,104 @@ class CompanionApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'KycState',) as KycState;
+    
+    }
+    return null;
+  }
+
+  /// Invite a caller to call you (he gets 'X wants to talk' and starts the call himself). You must be online; one invite per caller per hour; a few per hour in total.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [InviteCallerRequest] inviteCallerRequest (required):
+  Future<Response> inviteCallerWithHttpInfo(InviteCallerRequest inviteCallerRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/invites';
+
+    // ignore: prefer_final_locals
+    Object? postBody = inviteCallerRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Invite a caller to call you (he gets 'X wants to talk' and starts the call himself). You must be online; one invite per caller per hour; a few per hour in total.
+  ///
+  /// Parameters:
+  ///
+  /// * [InviteCallerRequest] inviteCallerRequest (required):
+  Future<InviteCaller201Response?> inviteCaller(InviteCallerRequest inviteCallerRequest, { Future<void>? abortTrigger, }) async {
+    final response = await inviteCallerWithHttpInfo(inviteCallerRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'InviteCaller201Response',) as InviteCaller201Response;
+    
+    }
+    return null;
+  }
+
+  /// Callers with the app open now: your regulars and fans first
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> listOnlineCallersWithHttpInfo({ Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/callers';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Callers with the app open now: your regulars and fans first
+  Future<ListOnlineCallers200Response?> listOnlineCallers({ Future<void>? abortTrigger, }) async {
+    final response = await listOnlineCallersWithHttpInfo(abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ListOnlineCallers200Response',) as ListOnlineCallers200Response;
     
     }
     return null;
@@ -609,60 +760,7 @@ class CompanionApi {
     return null;
   }
 
-  /// Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code
-  ///
-  /// Note: This method returns the HTTP [Response].
-  ///
-  /// Parameters:
-  ///
-  /// * [UploadAadhaarRequest] uploadAadhaarRequest (required):
-  Future<Response> uploadAadhaarWithHttpInfo(UploadAadhaarRequest uploadAadhaarRequest, { Future<void>? abortTrigger, }) async {
-    // ignore: prefer_const_declarations
-    final path = r'/v1/companion/kyc/aadhaar';
-
-    // ignore: prefer_final_locals
-    Object? postBody = uploadAadhaarRequest;
-
-    final queryParams = <QueryParam>[];
-    final headerParams = <String, String>{};
-    final formParams = <String, String>{};
-
-    const contentTypes = <String>['application/json'];
-
-
-    return apiClient.invokeAPI(
-      path,
-      'POST',
-      queryParams,
-      postBody,
-      headerParams,
-      formParams,
-      contentTypes.isEmpty ? null : contentTypes.first,
-      abortTrigger: abortTrigger,
-    );
-  }
-
-  /// Step 1: Aadhaar offline e-KYC ZIP (from myaadhaar.uidai.gov.in) + its 4-character share code
-  ///
-  /// Parameters:
-  ///
-  /// * [UploadAadhaarRequest] uploadAadhaarRequest (required):
-  Future<KycState?> uploadAadhaar(UploadAadhaarRequest uploadAadhaarRequest, { Future<void>? abortTrigger, }) async {
-    final response = await uploadAadhaarWithHttpInfo(uploadAadhaarRequest, abortTrigger: abortTrigger,);
-    if (response.statusCode >= HttpStatus.badRequest) {
-      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
-    }
-    // When a remote server returns no body with a status of 204, we shall not decode it.
-    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
-    // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'KycState',) as KycState;
-    
-    }
-    return null;
-  }
-
-  /// Step 3a: PAN number + photo of the card (needed for TDS)
+  /// Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -695,7 +793,7 @@ class CompanionApi {
     );
   }
 
-  /// Step 3a: PAN number + photo of the card (needed for TDS)
+  /// Optional, any time: PAN number + photo of the card. Without it, withdrawals carry the higher TDS (20%).
   ///
   /// Parameters:
   ///
@@ -715,7 +813,7 @@ class CompanionApi {
     return null;
   }
 
-  /// Step 2: live selfie. The app runs the blink check (ML Kit) before sending.
+  /// Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -748,13 +846,66 @@ class CompanionApi {
     );
   }
 
-  /// Step 2: live selfie. The app runs the blink check (ML Kit) before sending.
+  /// Step 2: live selfie (the admin reviews it). The app runs the blink check (ML Kit) before sending.
   ///
   /// Parameters:
   ///
   /// * [UploadSelfieRequest] uploadSelfieRequest (required):
   Future<KycState?> uploadSelfie(UploadSelfieRequest uploadSelfieRequest, { Future<void>? abortTrigger, }) async {
     final response = await uploadSelfieWithHttpInfo(uploadSelfieRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'KycState',) as KycState;
+    
+    }
+    return null;
+  }
+
+  /// Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; it's deleted after the decision.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [UploadVoiceIntroRequest] uploadVoiceIntroRequest (required):
+  Future<Response> uploadVoiceIntroWithHttpInfo(UploadVoiceIntroRequest uploadVoiceIntroRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/companion/kyc/voice';
+
+    // ignore: prefer_final_locals
+    Object? postBody = uploadVoiceIntroRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Voice intro: a recording of the sentence from GET /companion/kyc (m4a/ogg/wav, up to 2 MB). An admin listens to it; it's deleted after the decision.
+  ///
+  /// Parameters:
+  ///
+  /// * [UploadVoiceIntroRequest] uploadVoiceIntroRequest (required):
+  Future<KycState?> uploadVoiceIntro(UploadVoiceIntroRequest uploadVoiceIntroRequest, { Future<void>? abortTrigger, }) async {
+    final response = await uploadVoiceIntroWithHttpInfo(uploadVoiceIntroRequest, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

@@ -12,7 +12,7 @@ Method | HTTP request | Description
 [**deleteAccount**](ProfileApi.md#deleteaccount) | **POST** /v1/me/delete | Permanently delete my account. Unused coins are forfeited; companions must withdraw earnings first.
 [**getMe**](ProfileApi.md#getme) | **GET** /v1/me | 
 [**listLanguages**](ProfileApi.md#listlanguages) | **GET** /v1/languages | Languages users can pick
-[**registerDevice**](ProfileApi.md#registerdevice) | **PUT** /v1/devices | Register this phone's FCM token for call and message pushes
+[**registerDevice**](ProfileApi.md#registerdevice) | **PUT** /v1/devices | Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)
 [**updateMe**](ProfileApi.md#updateme) | **PATCH** /v1/me | Update name, avatar or languages (primary language must be in `languages`)
 
 
@@ -146,7 +146,7 @@ No authorization required
 # **registerDevice**
 > String registerDevice(registerDeviceRequest)
 
-Register this phone's FCM token for call and message pushes
+Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)
 
 ### Example
 ```dart

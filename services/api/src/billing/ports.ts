@@ -24,8 +24,12 @@ export type UserEvent =
   | { t: "call_accepted"; callId: string }
   | { t: "call_connected"; callId: string; coinsPerMin: number; balanceAfterFirstMinute: number | null }
   | { t: "low_balance"; callId: string }
+  /** Coin balance changed outside a call (purchase credited or refunded): refresh the wallet. */
+  | { t: "wallet"; coins: number | null }
   | { t: "gift_received"; callId: string; gift: { name: string; emoji: string; coins: number }; paiseEarned: number }
   | { t: "favourite_online"; companion: { id: string; displayName: string; avatarId: number } }
+  /** A companion invites this caller to call her (routes/invites.ts). */
+  | { t: "call_invite"; companion: { id: string; displayName: string; avatarId: number; photoUrl: string | null } }
   | { t: "call_ended"; callId: string; reason: string }
   /** A new inbox item (notifications.ts); the app bumps its bell badge. */
   | { t: "notification"; id: number; type: string; title: string }

@@ -21,6 +21,7 @@ Name | Type | Description | Notes
 **busy** | **bool** |  | 
 **isFavourite** | **bool** |  | 
 **rates** | [**CompanionRates**](CompanionRates.md) |  | 
+**badge** | [**UserBadge**](UserBadge.md) | Best active badge, e.g. '#1 companion this week' | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -16,6 +16,7 @@ import '../../data/session.dart';
 import '../../moderation/nudity_detector.dart';
 import '../../moderation/video_moderator.dart';
 import '../../widgets/common.dart';
+import '../home/buy_coins.dart' show showBuyCoinsSheet;
 import '../home/home_data.dart';
 import '../companion/companion_data.dart';
 import 'gift_sheet.dart';
@@ -84,7 +85,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         _verifyConnected();
         if (e.track is VideoTrack) {
           setState(() => _remoteVideo = e.track as VideoTrack);
-          _startModeration();
         }
       })
       ..on<TrackUnsubscribedEvent>((e) {
@@ -92,6 +92,12 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       })
       ..on<RoomDisconnectedEvent>((_) {
         if (_phase != _Phase.ended) _hangUp(reason: 'network');
+      })
+      // The other phone left the room (hung up, lost network or the app died):
+      // end the call now so billing stops and the companion is free again,
+      // instead of waiting ~30-50 s for the server's sweeper to notice.
+      ..on<ParticipantDisconnectedEvent>((_) {
+        if (_phase == _Phase.live) _hangUp(reason: 'other_left');
       });
     try {
       await _room.connect(a.liveKitUrl, a.token);
@@ -103,6 +109,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             params: VideoParametersPresets.h480_43,
           ),
         );
+        unawaited(_startModeration());
       }
       await AudioManager.instance.setSpeakerOutputPreferred(_speaker);
     } catch (e) {
@@ -112,7 +119,15 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     }
   }
 
-  /// On-device nudity check of the other person's video (see lib/moderation).
+  /// On-device nudity check of this phone's OWN camera (see lib/moderation), like
+  /// lives and groups. Silent in 1:1 calls: nothing changes on screen; flagged
+  /// frames go to the admin Moderation queue (the companion also has report,
+  /// block and recording).
+  ///
+  /// Never grab frames of the other person's video: for a remote track
+  /// flutter_webrtc calls PeerConnection.getTransceivers(), which disposes the
+  /// transceivers LiveKit is still using and crashes the app mid-call (native
+  /// abort / null pointer in RtpSender.dispose). Local tracks don't go that way.
   Future<void> _startModeration() async {
     if (!a.video || _moderator != null) return;
     final NudityDetector detector;
@@ -127,8 +142,14 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     _moderator =
         VideoModerator(
             detector: detector,
+            silent: true,
             capture: () async {
-              final track = _remoteVideo;
+              if (!_camera) return null;
+              final track = _room
+                  .localParticipant
+                  ?.videoTrackPublications
+                  .firstOrNull
+                  ?.track;
               if (track == null) return null;
               final frame = await track.mediaStreamTrack.captureFrame();
               return frame.asUint8List();
@@ -141,6 +162,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                   FlagVideoFrameRequest(
                     frameBase64: base64Encode(small),
                     score: score,
+                    own: true,
                   ),
                 ),
               );
@@ -765,10 +787,7 @@ class _LowBalanceBanner extends StatelessWidget {
           shape: const StadiumBorder(),
           child: InkWell(
             customBorder: const StadiumBorder(),
-            onTap: () => showError(
-              context,
-              'Buying coins is switched on in the next update',
-            ),
+            onTap: () => showBuyCoinsSheet(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Text(
@@ -888,9 +907,10 @@ class _ReportSheetState extends State<_ReportSheet> {
                     'Abusive or threatening language',
                   ),
                   (
-                    ReportUserRequestReasonEnum.fraud,
-                    'Asking for money or contact details',
+                    ReportUserRequestReasonEnum.offPlatform,
+                    'Asked for my number / to pay outside the app',
                   ),
+                  (ReportUserRequestReasonEnum.fraud, 'Asking for money'),
                   (ReportUserRequestReasonEnum.underage, 'Seems under 18'),
                   (ReportUserRequestReasonEnum.other, 'Something else'),
                 ])

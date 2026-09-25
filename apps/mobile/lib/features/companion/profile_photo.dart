@@ -217,30 +217,33 @@ class _PhotoSheetState extends ConsumerState<_PhotoSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            // Same height, shape and label size, so the pair lines up.
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _SheetButton(
+                    icon: Icons.photo_camera_outlined,
+                    label: 'Take photo',
                     onPressed: _busy ? null : () => _pick(ImageSource.camera),
-                    icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text('Take photo'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                    ),
+                  child: _SheetButton(
+                    filled: true,
+                    icon: Icons.photo_library_outlined,
+                    label: _busy ? 'Uploading…' : 'Choose photo',
                     onPressed: _busy ? null : () => _pick(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: Text(_busy ? 'Uploading…' : 'Choose photo'),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 6),
             if (hasAny)
               TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
                 onPressed: _busy ? null : _remove,
                 child: Text(
                   'Remove photo — use my avatar',
@@ -267,4 +270,65 @@ class _Preview extends StatelessWidget {
       Text(label, style: AppText.body(12, color: AppColors.textSecondary)),
     ],
   );
+}
+
+/// Pill button for the photo sheet: outlined or green, always 52 px tall.
+class _SheetButton extends StatelessWidget {
+  const _SheetButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.filled = false,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 8),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppText.body(15, weight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+    const size = Size.fromHeight(52);
+    const shape = StadiumBorder();
+    const padding = EdgeInsets.symmetric(horizontal: 12);
+    return filled
+        ? FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              minimumSize: size,
+              shape: shape,
+              padding: padding,
+            ),
+            onPressed: onPressed,
+            child: child,
+          )
+        : OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              minimumSize: size,
+              shape: shape,
+              padding: padding,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            onPressed: onPressed,
+            child: child,
+          );
+  }
 }

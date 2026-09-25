@@ -19,6 +19,8 @@ class LiveCard {
     required this.host,
     required this.viewers,
     required this.startedAt,
+    required this.snapshotUrl,
+    required this.pkBattleId,
   });
 
   String id;
@@ -35,6 +37,12 @@ class LiveCard {
 
   DateTime startedAt;
 
+  /// Recent still from the host's camera (signed path); null = use the host's photo/avatar
+  String? snapshotUrl;
+
+  /// An active PK battle this live is in (GET /pk/{id})
+  String? pkBattleId;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is LiveCard &&
     other.id == id &&
@@ -42,7 +50,9 @@ class LiveCard {
     other.language == language &&
     other.host == host &&
     other.viewers == viewers &&
-    other.startedAt == startedAt;
+    other.startedAt == startedAt &&
+    other.snapshotUrl == snapshotUrl &&
+    other.pkBattleId == pkBattleId;
 
   @override
   int get hashCode =>
@@ -52,10 +62,12 @@ class LiveCard {
     (language.hashCode) +
     (host.hashCode) +
     (viewers.hashCode) +
-    (startedAt.hashCode);
+    (startedAt.hashCode) +
+    (snapshotUrl == null ? 0 : snapshotUrl!.hashCode) +
+    (pkBattleId == null ? 0 : pkBattleId!.hashCode);
 
   @override
-  String toString() => 'LiveCard[id=$id, title=$title, language=$language, host=$host, viewers=$viewers, startedAt=$startedAt]';
+  String toString() => 'LiveCard[id=$id, title=$title, language=$language, host=$host, viewers=$viewers, startedAt=$startedAt, snapshotUrl=$snapshotUrl, pkBattleId=$pkBattleId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -65,6 +77,16 @@ class LiveCard {
       json[r'host'] = this.host;
       json[r'viewers'] = this.viewers;
       json[r'startedAt'] = this.startedAt.toUtc().toIso8601String();
+    if (this.snapshotUrl != null) {
+      json[r'snapshotUrl'] = this.snapshotUrl;
+    } else {
+      json[r'snapshotUrl'] = null;
+    }
+    if (this.pkBattleId != null) {
+      json[r'pkBattleId'] = this.pkBattleId;
+    } else {
+      json[r'pkBattleId'] = null;
+    }
     return json;
   }
 
@@ -91,6 +113,8 @@ class LiveCard {
         assert(json[r'viewers'] != null, 'Required key "LiveCard[viewers]" has a null value in JSON.');
         assert(json.containsKey(r'startedAt'), 'Required key "LiveCard[startedAt]" is missing from JSON.');
         assert(json[r'startedAt'] != null, 'Required key "LiveCard[startedAt]" has a null value in JSON.');
+        assert(json.containsKey(r'snapshotUrl'), 'Required key "LiveCard[snapshotUrl]" is missing from JSON.');
+        assert(json.containsKey(r'pkBattleId'), 'Required key "LiveCard[pkBattleId]" is missing from JSON.');
         return true;
       }());
 
@@ -101,6 +125,8 @@ class LiveCard {
         host: LiveCardHost.fromJson(json[r'host'])!,
         viewers: mapValueOfType<int>(json, r'viewers')!,
         startedAt: mapDateTime(json, r'startedAt', r'')!,
+        snapshotUrl: mapValueOfType<String>(json, r'snapshotUrl'),
+        pkBattleId: mapValueOfType<String>(json, r'pkBattleId'),
       );
     }
     return null;
@@ -154,6 +180,8 @@ class LiveCard {
     'host',
     'viewers',
     'startedAt',
+    'snapshotUrl',
+    'pkBattleId',
   };
 }
 

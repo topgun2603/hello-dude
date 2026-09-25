@@ -12,7 +12,7 @@ export const languageName = (code: string) => LANGUAGES[code] ?? code;
 
 export const REPORT_REASONS: Record<string, string> = {
   abuse: "Abusive or rude", sexual_content: "Sexual content", spam: "Spam or selling", fraud: "Asked for money / UPI",
-  underage: "Seems under 18", other: "Something else",
+  underage: "Seems under 18", off_platform: "Shared number / pay outside app", other: "Something else",
 };
 
 export const dateTime = (iso: string) =>

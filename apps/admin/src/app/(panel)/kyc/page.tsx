@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Check, Eye, ImageIcon, Video, VideoOff, X } from "lucide-react";
+import { AlertTriangle, Check, Eye, ImageIcon, Mic, Video, VideoOff, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/form-bits";
@@ -13,17 +13,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { api, type KycCase, type PendingPhoto } from "@/lib/api";
+import { api, type KycCase, type KycItem, type PendingPhoto } from "@/lib/api";
 import { date, dateTime, languageName } from "@/lib/format";
 import { useCan } from "@/lib/access";
 
 type Tab = "submitted" | "approved" | "rejected" | "photos";
-const REJECT_PRESETS = [
-  "Selfie doesn't match the Aadhaar photo",
-  "Selfie is too dark or blurry — please retake in good light",
-  "PAN photo is unreadable — please upload a clear photo",
-  "Name on the app doesn't match Aadhaar",
+/** Preset reasons, and what each asks the companion to send again. */
+const REJECT_PRESETS: { text: string; redo: KycItem[] }[] = [
+  { text: "Voice intro doesn't match — please record it again", redo: ["voice"] },
+  { text: "Selfie doesn't look like an adult (18+)", redo: ["selfie"] },
+  { text: "Face isn't clearly visible in the selfie", redo: ["selfie"] },
+  { text: "Selfie is too dark or blurry — please retake in good light", redo: ["selfie"] },
+  { text: "PAN photo is unreadable — please upload a clear photo", redo: ["pan"] },
+  { text: "Date of birth looks wrong — please check it", redo: ["age"] },
+  { text: "UPI ID doesn't work — please check it", redo: ["upi"] },
 ];
+const REDO_LABEL: Record<KycItem, string> = { age: "Date of birth", selfie: "Selfie", voice: "Voice intro", pan: "PAN", upi: "UPI ID" };
 const GENDER: Record<string, string> = { M: "Male", F: "Female", T: "Transgender", male: "Male", female: "Female", other: "Other" };
 
 export default function KycPage() {
@@ -34,7 +39,7 @@ export default function KycPage() {
 
   return (
     <>
-      <PageHeader title="KYC review" description="Compare the Aadhaar photo with the live selfie. Every image you open is recorded in the audit log." />
+      <PageHeader title="KYC review" description="Check the live selfie (an adult, a real face, matches the profile) and the declared age. PAN is optional — without it payouts carry 20% TDS. Every image you open is recorded in the audit log." />
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mb-4">
         <TabsList>
           <TabsTrigger value="submitted">Waiting</TabsTrigger>
@@ -70,13 +75,14 @@ function CaseCard({ c }: { c: KycCase }) {
     onError: (e) => toast.error(e.message),
   });
   const nameMismatch = !!c.aadhaar.name && !c.aadhaar.name.toLowerCase().includes(c.displayName.toLowerCase());
+  const legacy = !!c.aadhaar.last4; // verified with Aadhaar before it was dropped
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -24 }}>
       <Card>
         <CardContent className="grid gap-6 lg:grid-cols-[auto_1fr]">
           <div className="flex gap-3">
-            <Photo userId={c.userId} doc="aadhaar_photo" label="Aadhaar photo" has={c.documents.includes("aadhaar_photo")} />
+            {c.documents.includes("aadhaar_photo") && <Photo userId={c.userId} doc="aadhaar_photo" label="Aadhaar photo (older sign-up)" has />}
             <Photo userId={c.userId} doc="selfie" label={`Live selfie · ${c.selfieBlinks ?? 0} blinks`} has={c.documents.includes("selfie")} />
           </div>
 
@@ -93,17 +99,20 @@ function CaseCard({ c }: { c: KycCase }) {
             </div>
 
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-              <Item label="Name on Aadhaar" warn={nameMismatch ? "Different from app name" : undefined}>{c.aadhaar.name ?? "—"}</Item>
-              <Item label="Date of birth" warn={c.aadhaar.age !== null && c.aadhaar.age < 18 ? "Under 18" : undefined}>
-                {c.aadhaar.dob ? `${date(c.aadhaar.dob)} (${c.aadhaar.age})` : "—"}
+              <Item label="Date of birth (declared)" warn={c.declared.age !== null && c.declared.age < 18 ? "Under 18" : undefined}>
+                {c.declared.birthDate ? `${date(c.declared.birthDate)} (${c.declared.age})` : legacy && c.aadhaar.dob ? `${date(c.aadhaar.dob)} (${c.aadhaar.age}, Aadhaar)` : "—"}
               </Item>
-              <Item label="Gender">{GENDER[c.aadhaar.gender ?? ""] ?? "—"} <span className="text-muted-foreground">(app: {GENDER[c.gender] ?? c.gender})</span></Item>
-              <Item label="Aadhaar">•••• •••• {c.aadhaar.last4 ?? "????"}</Item>
-              <Item label="e-KYC downloaded">{c.aadhaar.generatedAt ? dateTime(c.aadhaar.generatedAt) : "—"}</Item>
-              <Item label="PAN">{c.panLast4 ? `••••••${c.panLast4}` : "—"}{c.documents.includes("pan") && <PanLink userId={c.userId} />}</Item>
+              <Item label="Gender">{GENDER[c.gender] ?? c.gender}</Item>
+              {legacy && <Item label="Name on Aadhaar" warn={nameMismatch ? "Different from app name" : undefined}>{c.aadhaar.name ?? "—"}</Item>}
+              {legacy && <Item label="Aadhaar">•••• •••• {c.aadhaar.last4}</Item>}
+              <Item label="PAN" warn={c.panLast4 ? undefined : "Not given — 20% TDS on payouts"}>
+                {c.panLast4 ? `••••••${c.panLast4}` : "—"}{c.documents.includes("pan") && <PanLink userId={c.userId} />}
+              </Item>
               <Item label="UPI">{c.upi ?? "—"}</Item>
               <Item label="Academy">{c.academy.passed} of {c.academy.total} lessons</Item>
             </dl>
+
+            {c.voice.needed && <VoiceIntro c={c} />}
 
             {c.rejectReason && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">Rejected: {c.rejectReason}</p>}
 
@@ -161,6 +170,32 @@ function Photo({ userId, doc, label, has }: { userId: string; doc: string; label
   );
 }
 
+/** Loaded only when played, so opening the queue doesn't log listening to every clip. */
+function VoiceIntro({ c }: { c: KycCase }) {
+  const [shown, setShown] = useState(false);
+  const has = c.documents.includes("voice");
+  return (
+    <div className="rounded-xl border bg-muted/40 p-3">
+      <p className="text-xs font-medium text-muted-foreground">Voice intro — should read:</p>
+      <p className="mb-2 text-sm font-semibold">“{c.voice.sentence ?? "—"}”</p>
+      {!has ? (
+        <p className="text-xs text-muted-foreground">
+          {c.voice.checkedAt ? `Already checked on ${dateTime(c.voice.checkedAt)} (clip deleted).` : c.status === "approved" ? "Checked and deleted after the decision." : "Not recorded yet."}
+        </p>
+      ) : shown ? (
+        <audio controls autoPlay src={`/api/v1/admin/kyc/${c.userId}/files/voice`} className="w-full">
+          <track kind="captions" />
+        </audio>
+      ) : (
+        <Button variant="outline" size="sm" onClick={() => setShown(true)}><Mic /> Play voice intro</Button>
+      )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        Check it&apos;s a woman&apos;s voice, it reads the sentence (the 4 digits change every time), and it fits the selfie. Approving pays the ₹10 joining bonus.
+      </p>
+    </div>
+  );
+}
+
 function PanLink({ userId }: { userId: string }) {
   return (
     <a className="ml-2 text-xs font-medium text-primary" target="_blank" rel="noreferrer" href={`/api/v1/admin/kyc/${userId}/files/pan`}>
@@ -172,9 +207,18 @@ function PanLink({ userId }: { userId: string }) {
 function RejectDialog({ c, open, onClose }: { c: KycCase; open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const [reason, setReason] = useState("");
+  const [redo, setRedo] = useState<KycItem[]>([]);
+  const items: KycItem[] = ["age", "selfie", ...(c.voice.needed ? ["voice" as const] : []), "pan", "upi"];
+  const toggle = (i: KycItem) => setRedo((r) => (r.includes(i) ? r.filter((x) => x !== i) : [...r, i]));
   const reject = useMutation({
-    mutationFn: () => api(`admin/kyc/${c.userId}/decision`, { method: "POST", body: { decision: "reject", reason } }),
-    onSuccess: () => { toast.success("Rejected — they'll see your reason and can resubmit"); qc.invalidateQueries({ queryKey: ["kyc"] }); onClose(); setReason(""); },
+    mutationFn: () => api(`admin/kyc/${c.userId}/decision`, { method: "POST", body: { decision: "reject", reason, redo } }),
+    onSuccess: () => {
+      toast.success(redo.length ? "Rejected — it comes back here by itself once they send those again" : "Rejected — they'll see your reason and can resubmit");
+      qc.invalidateQueries({ queryKey: ["kyc"] });
+      onClose();
+      setReason("");
+      setRedo([]);
+    },
     onError: (e) => toast.error(e.message),
   });
   return (
@@ -182,17 +226,33 @@ function RejectDialog({ c, open, onClose }: { c: KycCase; open: boolean; onClose
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Reject {c.displayName}&apos;s verification?</DialogTitle>
-          <DialogDescription>The companion sees this reason in the app and can fix it and resubmit.</DialogDescription>
+          <DialogDescription>The companion sees this reason in the app. Tick what they must send again — only those reset.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
-          {REJECT_PRESETS.map((p) => (
-            <button key={p} type="button" onClick={() => setReason(p)}
-              className="rounded-full border px-3 py-1 text-xs hover:border-primary hover:text-primary">{p}</button>
+          {REJECT_PRESETS.filter((p) => p.redo.every((i) => items.includes(i))).map((p) => (
+            <button key={p.text} type="button"
+              onClick={() => { setReason(p.text); setRedo((r) => [...new Set([...r, ...p.redo])]); }}
+              className="rounded-full border px-3 py-1 text-xs hover:border-primary hover:text-primary">{p.text}</button>
           ))}
         </div>
         <Field label="Reason shown to the companion" htmlFor="kyc-reason">
           <Textarea id="kyc-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
+        <fieldset className="space-y-2">
+          <legend className="mb-1 text-sm font-medium">Ask them to send again</legend>
+          <div className="flex flex-wrap gap-2">
+            {items.map((i) => (
+              <label key={i} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${redo.includes(i) ? "border-primary bg-primary/5 text-primary" : ""}`}>
+                <input type="checkbox" className="accent-[#6D28D9]" checked={redo.includes(i)} onChange={() => toggle(i)} />
+                {REDO_LABEL[i]}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {redo.length ? "As soon as they send these, the case comes back to this queue by itself." : "Nothing ticked: they fix things and press Submit again."}
+            {c.voice.needed && !redo.includes("voice") ? " Their voice intro counts as checked." : ""}
+          </p>
+        </fieldset>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="destructive" disabled={reason.trim().length < 3 || reject.isPending} onClick={() => reject.mutate()}>Reject</Button>

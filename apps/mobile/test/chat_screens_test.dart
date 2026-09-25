@@ -53,13 +53,16 @@ void main() {
           chatsProvider.overrideWith(
             (ref) async => ListChats200Response(unread: 0, items: []),
           ),
+          chatRequestsProvider.overrideWith((ref) async => <ChatRequest>[]),
         ],
         child: const MaterialApp(home: ChatsScreen()),
       ),
     );
     await tester.pumpAndSettle();
     expect(
-      find.text('After a call, you can keep talking here.'),
+      find.text(
+        'After a call — or when she accepts your message request — you can talk here.',
+      ),
       findsOneWidget,
     );
   });

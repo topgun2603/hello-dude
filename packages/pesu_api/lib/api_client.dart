@@ -261,6 +261,8 @@ class ApiClient {
           return AdminCoinPackageInput.fromJson(value);
         case 'AdminCreateBonusCampaignRequest':
           return AdminCreateBonusCampaignRequest.fromJson(value);
+        case 'AdminCreateEventRequest':
+          return AdminCreateEventRequest.fromJson(value);
         case 'AdminCreateGiftRequest':
           return AdminCreateGiftRequest.fromJson(value);
         case 'AdminCreatePackageRequest':
@@ -293,6 +295,10 @@ class ApiClient {
           return AdminDecidePhotoRequest.fromJson(value);
         case 'AdminDecideRefundRequest':
           return AdminDecideRefundRequest.fromJson(value);
+        case 'AdminEvent':
+          return AdminEvent.fromJson(value);
+        case 'AdminEventInput':
+          return AdminEventInput.fromJson(value);
         case 'AdminGift':
           return AdminGift.fromJson(value);
         case 'AdminGiftInput':
@@ -309,12 +315,20 @@ class ApiClient {
           return AdminKycCase.fromJson(value);
         case 'AdminKycCaseAadhaar':
           return AdminKycCaseAadhaar.fromJson(value);
+        case 'AdminKycCaseDeclared':
+          return AdminKycCaseDeclared.fromJson(value);
         case 'AdminKycCaseInput':
           return AdminKycCaseInput.fromJson(value);
         case 'AdminKycCaseInputAadhaar':
           return AdminKycCaseInputAadhaar.fromJson(value);
         case 'AdminKycCaseInputAcademy':
           return AdminKycCaseInputAcademy.fromJson(value);
+        case 'AdminKycCaseInputDeclared':
+          return AdminKycCaseInputDeclared.fromJson(value);
+        case 'AdminKycCaseInputVoice':
+          return AdminKycCaseInputVoice.fromJson(value);
+        case 'AdminKycCaseVoice':
+          return AdminKycCaseVoice.fromJson(value);
         case 'AdminKycDecisionRequest':
           return AdminKycDecisionRequest.fromJson(value);
         case 'AdminListPayouts200Response':
@@ -341,10 +355,14 @@ class ApiClient {
           return AdminModerationFlag.fromJson(value);
         case 'AdminModerationFlagCall':
           return AdminModerationFlagCall.fromJson(value);
+        case 'AdminModerationFlagDetectedBy':
+          return AdminModerationFlagDetectedBy.fromJson(value);
         case 'AdminModerationFlagInput':
           return AdminModerationFlagInput.fromJson(value);
         case 'AdminModerationFlagInputCall':
           return AdminModerationFlagInputCall.fromJson(value);
+        case 'AdminModerationFlagInputDetectedBy':
+          return AdminModerationFlagInputDetectedBy.fromJson(value);
         case 'AdminModerationFlagInputSubject':
           return AdminModerationFlagInputSubject.fromJson(value);
         case 'AdminModerationFlagSubject':
@@ -421,6 +439,8 @@ class ApiClient {
           return AdminStaff.fromJson(value);
         case 'AdminStaffInput':
           return AdminStaffInput.fromJson(value);
+        case 'AdminUpdateCallerLevelRequest':
+          return AdminUpdateCallerLevelRequest.fromJson(value);
         case 'AdminUpdateCompanionLevelRequest':
           return AdminUpdateCompanionLevelRequest.fromJson(value);
         case 'AdminUpdateGiftRequest':
@@ -461,6 +481,8 @@ class ApiClient {
           return AdminUserDetailInputRefundsInner.fromJson(value);
         case 'AdminUserDetailInputReportsInner':
           return AdminUserDetailInputReportsInner.fromJson(value);
+        case 'AdminUserDetailInputReportsInnerOther':
+          return AdminUserDetailInputReportsInnerOther.fromJson(value);
         case 'AdminUserDetailInputStats':
           return AdminUserDetailInputStats.fromJson(value);
         case 'AdminUserDetailInputVip':
@@ -475,6 +497,8 @@ class ApiClient {
           return AdminUserDetailRefundsInner.fromJson(value);
         case 'AdminUserDetailReportsInner':
           return AdminUserDetailReportsInner.fromJson(value);
+        case 'AdminUserDetailReportsInnerOther':
+          return AdminUserDetailReportsInnerOther.fromJson(value);
         case 'AdminUserDetailStats':
           return AdminUserDetailStats.fromJson(value);
         case 'AdminUserDetailVip':
@@ -489,6 +513,10 @@ class ApiClient {
           return AnswerLessonQuiz200Response.fromJson(value);
         case 'AnswerLessonQuizRequest':
           return AnswerLessonQuizRequest.fromJson(value);
+        case 'AppEvent':
+          return AppEvent.fromJson(value);
+        case 'AppEventInput':
+          return AppEventInput.fromJson(value);
         case 'ApplyAsCompanionRequest':
           return ApplyAsCompanionRequest.fromJson(value);
         case 'BlockUserRequest':
@@ -521,10 +549,20 @@ class ApiClient {
           return CallSummary.fromJson(value);
         case 'CallSummaryInput':
           return CallSummaryInput.fromJson(value);
+        case 'CallerLevel':
+          return CallerLevel.fromJson(value);
+        case 'CallerLevelInput':
+          return CallerLevelInput.fromJson(value);
+        case 'ChallengePkRequest':
+          return ChallengePkRequest.fromJson(value);
         case 'ChatItem':
           return ChatItem.fromJson(value);
         case 'ChatItemInput':
           return ChatItemInput.fromJson(value);
+        case 'ChatRequest':
+          return ChatRequest.fromJson(value);
+        case 'ChatRequestInput':
+          return ChatRequestInput.fromJson(value);
         case 'CheckIn':
           return CheckIn.fromJson(value);
         case 'CheckInDaysInner':
@@ -567,6 +605,8 @@ class ApiClient {
           return CompanionRatesInput.fromJson(value);
         case 'ConfirmBookingRequest':
           return ConfirmBookingRequest.fromJson(value);
+        case 'ConfirmCompanionAgeRequest':
+          return ConfirmCompanionAgeRequest.fromJson(value);
         case 'Conversation':
           return Conversation.fromJson(value);
         case 'ConversationInput':
@@ -581,6 +621,8 @@ class ApiClient {
           return CreateBookingRequest.fromJson(value);
         case 'CreateGroupRequest':
           return CreateGroupRequest.fromJson(value);
+        case 'CreateRazorpayOrderRequest':
+          return CreateRazorpayOrderRequest.fromJson(value);
         case 'DeleteAccount200Response':
           return DeleteAccount200Response.fromJson(value);
         case 'DeleteAccountRequest':
@@ -617,10 +659,22 @@ class ApiClient {
           return GetCompanionRewards200Response.fromJson(value);
         case 'GetCompanionRewards200ResponseAcademy':
           return GetCompanionRewards200ResponseAcademy.fromJson(value);
+        case 'GetCurrentEvent200Response':
+          return GetCurrentEvent200Response.fromJson(value);
         case 'GetCurrentPromotion200Response':
           return GetCurrentPromotion200Response.fromJson(value);
+        case 'GetLeaderboard200Response':
+          return GetLeaderboard200Response.fromJson(value);
         case 'GetLegalPage200Response':
           return GetLegalPage200Response.fromJson(value);
+        case 'GetMyLevel200Response':
+          return GetMyLevel200Response.fromJson(value);
+        case 'GetMyLevel200ResponseNext':
+          return GetMyLevel200ResponseNext.fromJson(value);
+        case 'GetPk200Response':
+          return GetPk200Response.fromJson(value);
+        case 'GetPk200ResponseOther':
+          return GetPk200ResponseOther.fromJson(value);
         case 'GetReferral200Response':
           return GetReferral200Response.fromJson(value);
         case 'GetShareCard200Response':
@@ -657,6 +711,10 @@ class ApiClient {
           return GroupRoom.fromJson(value);
         case 'GroupRoomInput':
           return GroupRoomInput.fromJson(value);
+        case 'InviteCaller201Response':
+          return InviteCaller201Response.fromJson(value);
+        case 'InviteCallerRequest':
+          return InviteCallerRequest.fromJson(value);
         case 'JoinGroupRequest':
           return JoinGroupRequest.fromJson(value);
         case 'JoinInfo':
@@ -667,24 +725,36 @@ class ApiClient {
           return JoinLiveRequest.fromJson(value);
         case 'KycState':
           return KycState.fromJson(value);
-        case 'KycStateAadhaar':
-          return KycStateAadhaar.fromJson(value);
+        case 'KycStateAge':
+          return KycStateAge.fromJson(value);
         case 'KycStateInput':
           return KycStateInput.fromJson(value);
-        case 'KycStateInputAadhaar':
-          return KycStateInputAadhaar.fromJson(value);
+        case 'KycStateInputAge':
+          return KycStateInputAge.fromJson(value);
         case 'KycStateInputPan':
           return KycStateInputPan.fromJson(value);
         case 'KycStateInputSelfie':
           return KycStateInputSelfie.fromJson(value);
         case 'KycStateInputUpi':
           return KycStateInputUpi.fromJson(value);
+        case 'KycStateInputVoice':
+          return KycStateInputVoice.fromJson(value);
         case 'KycStatePan':
           return KycStatePan.fromJson(value);
         case 'KycStateSelfie':
           return KycStateSelfie.fromJson(value);
         case 'KycStateUpi':
           return KycStateUpi.fromJson(value);
+        case 'KycStateVoice':
+          return KycStateVoice.fromJson(value);
+        case 'LeaderboardEntry':
+          return LeaderboardEntry.fromJson(value);
+        case 'LeaderboardEntryInput':
+          return LeaderboardEntryInput.fromJson(value);
+        case 'LeaderboardEntryInputUser':
+          return LeaderboardEntryInputUser.fromJson(value);
+        case 'LeaderboardEntryUser':
+          return LeaderboardEntryUser.fromJson(value);
         case 'LedgerEntry':
           return LedgerEntry.fromJson(value);
         case 'LedgerEntryInput':
@@ -711,6 +781,8 @@ class ApiClient {
           return ListBookings200Response.fromJson(value);
         case 'ListCalls200Response':
           return ListCalls200Response.fromJson(value);
+        case 'ListChatRequests200Response':
+          return ListChatRequests200Response.fromJson(value);
         case 'ListChats200Response':
           return ListChats200Response.fromJson(value);
         case 'ListCoinPackages200ResponseInner':
@@ -727,6 +799,8 @@ class ApiClient {
           return ListLives200Response.fromJson(value);
         case 'ListNotifications200Response':
           return ListNotifications200Response.fromJson(value);
+        case 'ListOnlineCallers200Response':
+          return ListOnlineCallers200Response.fromJson(value);
         case 'ListOnlineCompanions200Response':
           return ListOnlineCompanions200Response.fromJson(value);
         case 'LiveAccess':
@@ -741,6 +815,14 @@ class ApiClient {
           return LiveCardInput.fromJson(value);
         case 'LiveCardInputHost':
           return LiveCardInputHost.fromJson(value);
+        case 'LiveChatHistory':
+          return LiveChatHistory.fromJson(value);
+        case 'LiveChatHistoryInput':
+          return LiveChatHistoryInput.fromJson(value);
+        case 'LiveChatHistoryInputMessagesInner':
+          return LiveChatHistoryInputMessagesInner.fromJson(value);
+        case 'LiveChatHistoryMessagesInner':
+          return LiveChatHistoryMessagesInner.fromJson(value);
         case 'LiveHostHeartbeat200Response':
           return LiveHostHeartbeat200Response.fromJson(value);
         case 'LiveJoin':
@@ -767,6 +849,10 @@ class ApiClient {
           return NotificationItem.fromJson(value);
         case 'NotificationItemInput':
           return NotificationItemInput.fromJson(value);
+        case 'OnlineCaller':
+          return OnlineCaller.fromJson(value);
+        case 'OnlineCallerInput':
+          return OnlineCallerInput.fromJson(value);
         case 'OnlineCompanion':
           return OnlineCompanion.fromJson(value);
         case 'OnlineCompanionInput':
@@ -791,6 +877,14 @@ class ApiClient {
           return PendingPhotoInputUser.fromJson(value);
         case 'PendingPhotoUser':
           return PendingPhotoUser.fromJson(value);
+        case 'PkBattle':
+          return PkBattle.fromJson(value);
+        case 'PkBattleInput':
+          return PkBattleInput.fromJson(value);
+        case 'PkSide':
+          return PkSide.fromJson(value);
+        case 'PkSideInput':
+          return PkSideInput.fromJson(value);
         case 'Profile':
           return Profile.fromJson(value);
         case 'ProfileCompanion':
@@ -803,10 +897,18 @@ class ApiClient {
           return Promotion.fromJson(value);
         case 'PromotionInput':
           return PromotionInput.fromJson(value);
+        case 'PurchaseResult':
+          return PurchaseResult.fromJson(value);
+        case 'PurchaseResultInput':
+          return PurchaseResultInput.fromJson(value);
         case 'RaiseHandRequest':
           return RaiseHandRequest.fromJson(value);
         case 'RateCallRequest':
           return RateCallRequest.fromJson(value);
+        case 'RazorpayOrder':
+          return RazorpayOrder.fromJson(value);
+        case 'RazorpayOrderInput':
+          return RazorpayOrderInput.fromJson(value);
         case 'RefreshTokensRequest':
           return RefreshTokensRequest.fromJson(value);
         case 'RefundRequest':
@@ -849,10 +951,14 @@ class ApiClient {
           return RoomToken200Response.fromJson(value);
         case 'SendChatMessageRequest':
           return SendChatMessageRequest.fromJson(value);
+        case 'SendChatRequestRequest':
+          return SendChatRequestRequest.fromJson(value);
         case 'SendGift201Response':
           return SendGift201Response.fromJson(value);
         case 'SendGiftRequest':
           return SendGiftRequest.fromJson(value);
+        case 'SendLiveGiftRequest':
+          return SendLiveGiftRequest.fromJson(value);
         case 'SendOtp200Response':
           return SendOtp200Response.fromJson(value);
         case 'SendOtpRequest':
@@ -897,18 +1003,26 @@ class ApiClient {
           return UnreadNotificationCount200Response.fromJson(value);
         case 'UpdateMeRequest':
           return UpdateMeRequest.fromJson(value);
-        case 'UploadAadhaarRequest':
-          return UploadAadhaarRequest.fromJson(value);
+        case 'UploadLiveSnapshotRequest':
+          return UploadLiveSnapshotRequest.fromJson(value);
         case 'UploadMyPhotoRequest':
           return UploadMyPhotoRequest.fromJson(value);
         case 'UploadPanRequest':
           return UploadPanRequest.fromJson(value);
         case 'UploadSelfieRequest':
           return UploadSelfieRequest.fromJson(value);
+        case 'UploadVoiceIntroRequest':
+          return UploadVoiceIntroRequest.fromJson(value);
+        case 'UserBadge':
+          return UserBadge.fromJson(value);
+        case 'UserBadgeInput':
+          return UserBadgeInput.fromJson(value);
         case 'VerifyCallConnected200Response':
           return VerifyCallConnected200Response.fromJson(value);
         case 'VerifyOtpRequest':
           return VerifyOtpRequest.fromJson(value);
+        case 'VerifyRazorpayPaymentRequest':
+          return VerifyRazorpayPaymentRequest.fromJson(value);
         case 'VipPlan':
           return VipPlan.fromJson(value);
         case 'VipPlanInput':

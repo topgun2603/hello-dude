@@ -15,6 +15,7 @@ OnlineCompanion c(
   int? price = 10,
 }) => OnlineCompanion(
   id: name,
+  badge: null,
   displayName: name,
   avatarId: 1,
   photoUrl: null,

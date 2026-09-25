@@ -216,6 +216,10 @@ describe("in the live", () => {
     await endPreview(w.liveId, w.viewerId);
     await join(w, true);
     expect((await call(h, "POST", `/v1/lives/${w.liveId}/messages`, { token: w.viewer, body: { body: "hi!" } })).statusCode).toBe(204);
+    // Someone joining later sees the recent chat.
+    const history = json<{ messages: { body: string; isHost: boolean }[] }>(
+      await call(h, "GET", `/v1/lives/${w.liveId}/messages`, { token: w.host }));
+    expect(history.messages.map((m) => [m.body, m.isHost])).toEqual([["hi!", false]]);
 
     const gift = (await h.db.query<{ id: number }>(`SELECT id FROM gifts WHERE is_active ORDER BY coins LIMIT 1`)).rows[0]!;
     const before = await balance(w.hostId, "earnings");
@@ -243,5 +247,58 @@ describe("in the live", () => {
     expect(json<{ id: string; status: string }[]>(await call(h, "GET", "/v1/admin/lives", { token: admin }))[0]).toMatchObject({ id: w.liveId, status: "live" });
     expect((await call(h, "POST", `/v1/admin/lives/${w.liveId}/end`, { token: admin, body: { reason: "Policy check" } })).statusCode).toBe(204);
     expect((await h.db.query(`SELECT 1 FROM audit_log WHERE action = 'live.end'`)).rowCount).toBe(1);
+  });
+});
+
+describe("live tab: paging, filters, snapshots", () => {
+  type Page = { lives: { id: string; title: string; language: string; snapshotUrl: string | null }[]; total: number };
+  async function goLive(title: string, language = "ta") {
+    const id = await createCompanion(h, { language });
+    const token = await tokenFor(h, id, "companion");
+    const live = json<Join>(await call(h, "POST", "/v1/lives", { token, body: { title, language: null } }));
+    return { id, token, liveId: live.live.id };
+  }
+
+  it("pages with a total, and filters by language, favourites and name", async () => {
+    const viewerId = await createCaller(h, 100);
+    const viewer = await tokenFor(h, viewerId, "caller");
+    const made = [];
+    for (let i = 0; i < 5; i++) made.push(await goLive(`Evening chat ${i}`, i < 3 ? "ta" : "te"));
+    const page = async (qs: string) => json<Page>(await call(h, "GET", `/v1/lives?${qs}`, { token: viewer }));
+
+    const first = await page("limit=2&offset=0&sort=new");
+    expect(first.total).toBe(5);
+    expect(first.lives.map((l) => l.title)).toEqual(["Evening chat 4", "Evening chat 3"]);
+    expect((await page("limit=2&offset=4&sort=new")).lives.map((l) => l.title)).toEqual(["Evening chat 0"]);
+
+    expect((await page("language=te")).total).toBe(2);
+    await h.db.query(`INSERT INTO favourites (user_id, companion_id) VALUES ($1, $2)`, [viewerId, made[1]!.id]);
+    expect((await page("favourites=true")).lives.map((l) => l.id)).toEqual([made[1]!.liveId]);
+    // for_you puts favourites first.
+    expect((await page("sort=for_you")).lives[0]!.id).toBe(made[1]!.liveId);
+    expect((await page("q=chat%203")).lives.map((l) => l.title)).toEqual(["Evening chat 3"]);
+    expect((await page("q=%25")).total).toBe(0); // wildcards are literal
+  });
+
+  it("host snapshots show on the card through a signed link, only while live", async () => {
+    const sharp = (await import("sharp")).default;
+    const l = await goLive("Snapshot test");
+    const viewer = await tokenFor(h, await createCaller(h, 100), "caller");
+    const card = async () => json<Page>(await call(h, "GET", "/v1/lives", { token: viewer })).lives.find((x) => x.id === l.liveId)!;
+    expect((await card()).snapshotUrl).toBeNull();
+
+    const frame = await sharp({ create: { width: 640, height: 480, channels: 3, background: { r: 10, g: 200, b: 90 } } }).jpeg().toBuffer();
+    const up = await call(h, "POST", `/v1/lives/${l.liveId}/snapshot`, { token: l.token, body: { frameBase64: frame.toString("base64") } });
+    expect(up.statusCode).toBe(204);
+    const url = (await card()).snapshotUrl!;
+    const img = await h.app.inject({ method: "GET", url });
+    expect(img.statusCode).toBe(200);
+    expect((await sharp(img.rawPayload).metadata()).width).toBe(360);
+    expect((await h.app.inject({ method: "GET", url: url.replace(/sig=.{3}/, "sig=zzz") })).statusCode).toBe(404);
+
+    // Viewers can't upload; ended lives stop serving.
+    expect((await call(h, "POST", `/v1/lives/${l.liveId}/snapshot`, { token: viewer, body: { frameBase64: frame.toString("base64") } })).statusCode).toBe(403);
+    await call(h, "POST", `/v1/lives/${l.liveId}/end`, { token: l.token });
+    expect((await h.app.inject({ method: "GET", url })).statusCode).toBe(404);
   });
 });

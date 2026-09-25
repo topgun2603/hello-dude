@@ -11,7 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**acceptCall**](CallsApi.md#acceptcall) | **POST** /v1/calls/{id}/accept | Companion answers a ringing call and gets their join token
 [**endCall**](CallsApi.md#endcall) | **POST** /v1/calls/{id}/end | Hang up (either side). Safe to repeat.
-[**flagVideoFrame**](CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (the other person's video)
+[**flagVideoFrame**](CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)
 [**getCall**](CallsApi.md#getcall) | **GET** /v1/calls/{id} | Call details: every billed minute, refunds included
 [**listCalls**](CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
 [**listGifts**](CallsApi.md#listgifts) | **GET** /v1/gifts | Gifts a caller can send during a call
@@ -121,7 +121,7 @@ Name | Type | Description  | Notes
 # **flagVideoFrame**
 > FlagVideoFrame201Response flagVideoFrame(id, flagVideoFrameRequest)
 
-Report a video frame the app's on-device check flagged as nudity (the other person's video)
+Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)
 
 ### Example
 ```dart

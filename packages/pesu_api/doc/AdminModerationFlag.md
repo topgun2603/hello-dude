@@ -20,7 +20,7 @@ Name | Type | Description | Notes
 **liveId** | **String** |  | 
 **groupId** | **String** |  | 
 **subject** | [**AdminModerationFlagSubject**](AdminModerationFlagSubject.md) |  | 
-**detectedBy** | [**AdminReportReporter**](AdminReportReporter.md) |  | 
+**detectedBy** | [**AdminModerationFlagDetectedBy**](AdminModerationFlagDetectedBy.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

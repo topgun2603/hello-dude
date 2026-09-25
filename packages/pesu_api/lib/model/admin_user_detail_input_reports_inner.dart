@@ -29,7 +29,7 @@ class AdminUserDetailInputReportsInner {
 
   AdminUserDetailInputReportsInnerDirectionEnum direction;
 
-  AdminRefundInputCompanion other;
+  AdminUserDetailInputReportsInnerOther other;
 
   String reason;
 
@@ -121,7 +121,7 @@ class AdminUserDetailInputReportsInner {
         id: mapValueOfType<String>(json, r'id')!,
         createdAt: mapValueOfType<Object>(json, r'createdAt'),
         direction: AdminUserDetailInputReportsInnerDirectionEnum.fromJson(json[r'direction'])!,
-        other: AdminRefundInputCompanion.fromJson(json[r'other'])!,
+        other: AdminUserDetailInputReportsInnerOther.fromJson(json[r'other'])!,
         reason: mapValueOfType<String>(json, r'reason')!,
         details: mapValueOfType<String>(json, r'details'),
         status: mapValueOfType<String>(json, r'status')!,

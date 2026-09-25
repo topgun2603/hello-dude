@@ -16,6 +16,172 @@ class LivesApi {
 
   final ApiClient apiClient;
 
+  /// Accept a PK challenge: the battle starts now
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> acceptPkWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/pk/{id}/accept'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Accept a PK challenge: the battle starts now
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<PkBattle?> acceptPk(String id, { Future<void>? abortTrigger, }) async {
+    final response = await acceptPkWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'PkBattle',) as PkBattle;
+    
+    }
+    return null;
+  }
+
+  /// Host: challenge another live host to a 5-minute PK battle (she has 30 s to accept)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [ChallengePkRequest] challengePkRequest (required):
+  Future<Response> challengePkWithHttpInfo(String id, ChallengePkRequest challengePkRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/lives/{id}/pk'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody = challengePkRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Host: challenge another live host to a 5-minute PK battle (she has 30 s to accept)
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [ChallengePkRequest] challengePkRequest (required):
+  Future<PkBattle?> challengePk(String id, ChallengePkRequest challengePkRequest, { Future<void>? abortTrigger, }) async {
+    final response = await challengePkWithHttpInfo(id, challengePkRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'PkBattle',) as PkBattle;
+    
+    }
+    return null;
+  }
+
+  /// Decline a PK challenge
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> declinePkWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/pk/{id}/decline'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Decline a PK challenge
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<PkBattle?> declinePk(String id, { Future<void>? abortTrigger, }) async {
+    final response = await declinePkWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'PkBattle',) as PkBattle;
+    
+    }
+    return null;
+  }
+
   /// Host: end the live
   ///
   /// Note: This method returns the HTTP [Response].
@@ -57,6 +223,60 @@ class LivesApi {
   /// * [String] id (required):
   Future<String?> endLive(String id, { Future<void>? abortTrigger, }) async {
     final response = await endLiveWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
+    
+    }
+    return null;
+  }
+
+  /// Either host: end the battle early (current score decides)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> endPkWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/pk/{id}/end'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Either host: end the battle early (current score decides)
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<String?> endPk(String id, { Future<void>? abortTrigger, }) async {
+    final response = await endPkWithHttpInfo(id, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -123,6 +343,130 @@ class LivesApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'FlagVideoFrame201Response',) as FlagVideoFrame201Response;
+    
+    }
+    return null;
+  }
+
+  /// A live's card snapshot, through a signed URL from GET /lives
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [int] exp (required):
+  ///
+  /// * [String] sig (required):
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [String] file (required):
+  Future<Response> getLiveSnapshotWithHttpInfo(int exp, String sig, String id, String file, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/lives/{id}/snapshot/{file}'
+      .replaceAll('{id}', id)
+      .replaceAll('{file}', file);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+      queryParams.addAll(_queryParams('', 'exp', exp));
+      queryParams.addAll(_queryParams('', 'sig', sig));
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// A live's card snapshot, through a signed URL from GET /lives
+  ///
+  /// Parameters:
+  ///
+  /// * [int] exp (required):
+  ///
+  /// * [String] sig (required):
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [String] file (required):
+  Future<void> getLiveSnapshot(int exp, String sig, String id, String file, { Future<void>? abortTrigger, }) async {
+    final response = await getLiveSnapshotWithHttpInfo(exp, sig, id, file, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// A battle with live scores, plus a listen-only token for the other side's room (hosts and viewers of either live)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] fromLiveId (required):
+  ///   The live you're in
+  ///
+  /// * [String] id (required):
+  Future<Response> getPkWithHttpInfo(String fromLiveId, String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/pk/{id}'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+      queryParams.addAll(_queryParams('', 'fromLiveId', fromLiveId));
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// A battle with live scores, plus a listen-only token for the other side's room (hosts and viewers of either live)
+  ///
+  /// Parameters:
+  ///
+  /// * [String] fromLiveId (required):
+  ///   The live you're in
+  ///
+  /// * [String] id (required):
+  Future<GetPk200Response?> getPk(String fromLiveId, String id, { Future<void>? abortTrigger, }) async {
+    final response = await getPkWithHttpInfo(fromLiveId, id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetPk200Response',) as GetPk200Response;
     
     }
     return null;
@@ -240,14 +584,24 @@ class LivesApi {
     return null;
   }
 
-  /// Live now (favourites first, then the busiest), with the price per minute
+  /// Live now, a page at a time, with the total and the price per minute. sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
   /// Parameters:
   ///
   /// * [String] language:
-  Future<Response> listLivesWithHttpInfo({ String? language, Future<void>? abortTrigger, }) async {
+  ///
+  /// * [String] sort:
+  ///
+  /// * [String] favourites:
+  ///
+  /// * [String] q:
+  ///
+  /// * [int] limit:
+  ///
+  /// * [int] offset:
+  Future<Response> listLivesWithHttpInfo({ String? language, String? sort, String? favourites, String? q, int? limit, int? offset, Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/lives';
 
@@ -260,6 +614,21 @@ class LivesApi {
 
     if (language != null) {
       queryParams.addAll(_queryParams('', 'language', language));
+    }
+    if (sort != null) {
+      queryParams.addAll(_queryParams('', 'sort', sort));
+    }
+    if (favourites != null) {
+      queryParams.addAll(_queryParams('', 'favourites', favourites));
+    }
+    if (q != null) {
+      queryParams.addAll(_queryParams('', 'q', q));
+    }
+    if (limit != null) {
+      queryParams.addAll(_queryParams('', 'limit', limit));
+    }
+    if (offset != null) {
+      queryParams.addAll(_queryParams('', 'offset', offset));
     }
 
     const contentTypes = <String>[];
@@ -277,13 +646,23 @@ class LivesApi {
     );
   }
 
-  /// Live now (favourites first, then the busiest), with the price per minute
+  /// Live now, a page at a time, with the total and the price per minute. sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.
   ///
   /// Parameters:
   ///
   /// * [String] language:
-  Future<ListLives200Response?> listLives({ String? language, Future<void>? abortTrigger, }) async {
-    final response = await listLivesWithHttpInfo(language: language, abortTrigger: abortTrigger,);
+  ///
+  /// * [String] sort:
+  ///
+  /// * [String] favourites:
+  ///
+  /// * [String] q:
+  ///
+  /// * [int] limit:
+  ///
+  /// * [int] offset:
+  Future<ListLives200Response?> listLives({ String? language, String? sort, String? favourites, String? q, int? limit, int? offset, Future<void>? abortTrigger, }) async {
+    final response = await listLivesWithHttpInfo(language: language, sort: sort, favourites: favourites, q: q, limit: limit, offset: offset, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -292,6 +671,60 @@ class LivesApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ListLives200Response',) as ListLives200Response;
+    
+    }
+    return null;
+  }
+
+  /// Recent chat of a live (last 50, oldest first) so late joiners see the conversation
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> liveChatHistoryWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/lives/{id}/messages'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Recent chat of a live (last 50, oldest first) so late joiners see the conversation
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<LiveChatHistory?> liveChatHistory(String id, { Future<void>? abortTrigger, }) async {
+    final response = await liveChatHistoryWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'LiveChatHistory',) as LiveChatHistory;
     
     }
     return null;
@@ -405,7 +838,7 @@ class LivesApi {
     return null;
   }
 
-  /// Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.
+  /// Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.
   ///
   /// Note: This method returns the HTTP [Response].
   ///
@@ -413,14 +846,14 @@ class LivesApi {
   ///
   /// * [String] id (required):
   ///
-  /// * [SendGiftRequest] sendGiftRequest (required):
-  Future<Response> sendLiveGiftWithHttpInfo(String id, SendGiftRequest sendGiftRequest, { Future<void>? abortTrigger, }) async {
+  /// * [SendLiveGiftRequest] sendLiveGiftRequest (required):
+  Future<Response> sendLiveGiftWithHttpInfo(String id, SendLiveGiftRequest sendLiveGiftRequest, { Future<void>? abortTrigger, }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/lives/{id}/gifts'
       .replaceAll('{id}', id);
 
     // ignore: prefer_final_locals
-    Object? postBody = sendGiftRequest;
+    Object? postBody = sendLiveGiftRequest;
 
     final queryParams = <QueryParam>[];
     final headerParams = <String, String>{};
@@ -441,15 +874,15 @@ class LivesApi {
     );
   }
 
-  /// Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef.
+  /// Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.
   ///
   /// Parameters:
   ///
   /// * [String] id (required):
   ///
-  /// * [SendGiftRequest] sendGiftRequest (required):
-  Future<SendRoomGift201Response?> sendLiveGift(String id, SendGiftRequest sendGiftRequest, { Future<void>? abortTrigger, }) async {
-    final response = await sendLiveGiftWithHttpInfo(id, sendGiftRequest, abortTrigger: abortTrigger,);
+  /// * [SendLiveGiftRequest] sendLiveGiftRequest (required):
+  Future<SendRoomGift201Response?> sendLiveGift(String id, SendLiveGiftRequest sendLiveGiftRequest, { Future<void>? abortTrigger, }) async {
+    final response = await sendLiveGiftWithHttpInfo(id, sendLiveGiftRequest, abortTrigger: abortTrigger,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -627,6 +1060,64 @@ class LivesApi {
     // FormatException when trying to decode an empty string.
     if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
       return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'LiveJoin',) as LiveJoin;
+    
+    }
+    return null;
+  }
+
+  /// Host: a still for the live's card (about once a minute, already safety-checked on the phone)
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [UploadLiveSnapshotRequest] uploadLiveSnapshotRequest (required):
+  Future<Response> uploadLiveSnapshotWithHttpInfo(String id, UploadLiveSnapshotRequest uploadLiveSnapshotRequest, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final path = r'/v1/lives/{id}/snapshot'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody = uploadLiveSnapshotRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Host: a still for the live's card (about once a minute, already safety-checked on the phone)
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [UploadLiveSnapshotRequest] uploadLiveSnapshotRequest (required):
+  Future<String?> uploadLiveSnapshot(String id, UploadLiveSnapshotRequest uploadLiveSnapshotRequest, { Future<void>? abortTrigger, }) async {
+    final response = await uploadLiveSnapshotWithHttpInfo(id, uploadLiveSnapshotRequest, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
     
     }
     return null;
