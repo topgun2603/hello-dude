@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:android_id/android_id.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -189,8 +190,16 @@ class PushController {
 
   Future<void> _send(String token) async {
     final api = _ref.read(apiProvider);
+    // Android's per-app phone id: the server keeps only a hash of it, for the
+    // "one phone, many accounts" fraud check.
+    String? deviceId;
+    try {
+      deviceId = await const AndroidId().getId();
+    } catch (_) {}
     await api.send(
-      () => api.profile.registerDevice(RegisterDeviceRequest(fcmToken: token)),
+      () => api.profile.registerDevice(
+        RegisterDeviceRequest(fcmToken: token, deviceId: deviceId),
+      ),
     );
   }
 

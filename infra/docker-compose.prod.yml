@@ -1,0 +1,114 @@
+# Production on one VPS (Mumbai/Bangalore). From the repo root:
+#   cp infra/.env.production.example infra/.env.production   # fill it in (never commit)
+#   docker compose -f infra/docker-compose.prod.yml --env-file infra/.env.production up -d --build
+# The migrate service applies new migrations, then api + worker start.
+# Postgres here is fine to start; move to a managed Postgres (with backups) as money grows.
+name: hellodude
+
+x-app-env: &app-env
+  env_file: .env.production
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: postgres://pesu:${POSTGRES_PASSWORD}@postgres:5432/pesu
+    REDIS_URL: redis://redis:6379
+    FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase.json
+    KYC_STORAGE_DIR: /data/kyc
+  secrets:
+    - source: firebase
+      target: /run/secrets/firebase.json
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pesu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: pesu
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pesu"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+
+  migrate:
+    <<: *app-env
+    build: { context: .., dockerfile: services/api/Dockerfile }
+    image: hellodude-api
+    command: ["node", "dist/db/migrate.js"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *app-env
+    image: hellodude-api
+    restart: unless-stopped
+    command: ["node", "dist/server.js"]
+    volumes:
+      - kycdata:/data/kyc
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  worker:
+    <<: *app-env
+    image: hellodude-api
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    healthcheck: { disable: true }   # no HTTP port; the image's check is for the API
+    volumes:
+      - kycdata:/data/kyc
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  # One-off scripts: docker compose ... run --rm tools scripts/make-admin.ts 9999900000
+  tools:
+    <<: *app-env
+    build: { context: .., dockerfile: services/api/Dockerfile, target: build }
+    image: hellodude-api-tools
+    profiles: ["tools"]
+    entrypoint: ["npx", "tsx"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  admin:
+    build: { context: .., dockerfile: apps/admin/Dockerfile }
+    image: hellodude-admin
+    restart: unless-stopped
+    environment:
+      PESU_API_URL: http://api:9000
+    depends_on: [api]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?set ADMIN_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./downloads:/srv/downloads:ro
+      - caddydata:/data
+    depends_on: [api, admin]
+
+secrets:
+  firebase:
+    file: ./secrets/firebase-service-account.json
+
+volumes:
+  pgdata:
+  redisdata:
+  kycdata:
+  caddydata:

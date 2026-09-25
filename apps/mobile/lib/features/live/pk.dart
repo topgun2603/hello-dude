@@ -27,8 +27,12 @@ class PkController extends ChangeNotifier {
   bool get active => battle?.status == PkBattleStatusEnum.active;
   bool get ended => battle?.status == PkBattleStatusEnum.ended;
   bool get showing => active || ended;
-  PkSide? get mine => battle == null ? null : (battle!.a.liveId == fromLiveId ? battle!.a : battle!.b);
-  PkSide? get theirs => battle == null ? null : (battle!.a.liveId == fromLiveId ? battle!.b : battle!.a);
+  PkSide? get mine => battle == null
+      ? null
+      : (battle!.a.liveId == fromLiveId ? battle!.a : battle!.b);
+  PkSide? get theirs => battle == null
+      ? null
+      : (battle!.a.liveId == fromLiveId ? battle!.b : battle!.a);
 
   /// Load a battle (e.g. joined mid-battle) and connect to the other side's video.
   Future<void> load(String battleId) async {
@@ -82,7 +86,9 @@ class PkController extends ChangeNotifier {
 
   Future<void> _connect(GetPk200ResponseOther other) async {
     _disconnect();
-    final room = Room(roomOptions: const RoomOptions(adaptiveStream: true, dynacast: true));
+    final room = Room(
+      roomOptions: const RoomOptions(adaptiveStream: true, dynacast: true),
+    );
     _room = room;
     _roomEvents = room.createListener()
       ..on<TrackSubscribedEvent>((e) {
@@ -158,13 +164,26 @@ class PkBattleView extends StatelessWidget {
                 left: 6,
                 bottom: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(999)),
-                  child: Text(s.hostName, style: AppText.body(12, weight: FontWeight.w700)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    s.hostName,
+                    style: AppText.body(12, weight: FontWeight.w700),
+                  ),
                 ),
               ),
               if (pk.ended && b.winnerHostId == s.hostId)
-                const Positioned(top: 6, right: 6, child: Text('👑', style: TextStyle(fontSize: 26))),
+                const Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Text('👑', style: TextStyle(fontSize: 26)),
+                ),
             ],
           ),
         ),
@@ -175,13 +194,21 @@ class PkBattleView extends StatelessWidget {
       if (v != null) return VideoTrackRenderer(v, fit: VideoViewFit.cover);
       return ColoredBox(
         color: const Color(0xFF16142C),
-        child: Center(child: Avatar(name: theirs.hostName, avatarId: theirs.avatarId, size: 64)),
+        child: Center(
+          child: Avatar(
+            name: theirs.hostName,
+            avatarId: theirs.avatarId,
+            size: 64,
+          ),
+        ),
       );
     }
 
     String result() {
       if (b.winnerHostId == null) return "It's a draw!";
-      return b.winnerHostId == mine.hostId ? '${mine.hostName} wins! 🎉' : '${theirs.hostName} wins!';
+      return b.winnerHostId == mine.hostId
+          ? '${mine.hostName} wins! 🎉'
+          : '${theirs.hostName} wins!';
     }
 
     return Column(
@@ -191,7 +218,10 @@ class PkBattleView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              Text('${mine.score}', style: AppText.body(14, weight: FontWeight.w800)),
+              Text(
+                '${mine.score}',
+                style: AppText.body(14, weight: FontWeight.w800),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: ClipRRect(
@@ -200,16 +230,25 @@ class PkBattleView extends StatelessWidget {
                     height: 10,
                     child: Row(
                       children: [
-                        Expanded(flex: (share * 1000).round(), child: const ColoredBox(color: Color(0xFFEC4899))),
+                        Expanded(
+                          flex: (share * 1000).round(),
+                          child: const ColoredBox(color: Color(0xFFEC4899)),
+                        ),
                         const SizedBox(width: 2),
-                        Expanded(flex: ((1 - share) * 1000).round(), child: const ColoredBox(color: Color(0xFF3B82F6))),
+                        Expanded(
+                          flex: ((1 - share) * 1000).round(),
+                          child: const ColoredBox(color: Color(0xFF3B82F6)),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Text('${theirs.score}', style: AppText.body(14, weight: FontWeight.w800)),
+              Text(
+                '${theirs.score}',
+                style: AppText.body(14, weight: FontWeight.w800),
+              ),
             ],
           ),
         ),
@@ -226,16 +265,30 @@ class PkBattleView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Row(children: [side(mine, myVideo), const SizedBox(width: 2), side(theirs, otherVideo())]),
+        Row(
+          children: [
+            side(mine, myVideo),
+            const SizedBox(width: 2),
+            side(theirs, otherVideo()),
+          ],
+        ),
       ],
     );
   }
 }
 
 /// Host: pick another live to challenge. Returns the opponent's live id.
-Future<String?> pickPkOpponent(BuildContext context, PesuApi api, String myHostId) async {
-  final list = await api.call(() => api.lives.listLives(sort: 'popular', limit: 50));
-  final lives = list.lives.where((l) => l.host.id != myHostId && l.pkBattleId == null).toList();
+Future<String?> pickPkOpponent(
+  BuildContext context,
+  PesuApi api,
+  String myHostId,
+) async {
+  final list = await api.call(
+    () => api.lives.listLives(sort: 'popular', limit: 50),
+  );
+  final lives = list.lives
+      .where((l) => l.host.id != myHostId && l.pkBattleId == null)
+      .toList();
   if (!context.mounted) return null;
   return showModalBottomSheet<String>(
     context: context,
@@ -259,7 +312,10 @@ Future<String?> pickPkOpponent(BuildContext context, PesuApi api, String myHostI
           if (lives.isEmpty)
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text('Nobody else is live right now.', style: AppText.body(14)),
+              child: Text(
+                'Nobody else is live right now.',
+                style: AppText.body(14),
+              ),
             ),
           Flexible(
             child: ListView(
@@ -267,10 +323,24 @@ Future<String?> pickPkOpponent(BuildContext context, PesuApi api, String myHostI
               children: [
                 for (final l in lives)
                   ListTile(
-                    leading: Avatar(name: l.host.displayName, avatarId: l.host.avatarId, photoUrl: l.host.photoUrl, size: 40),
-                    title: Text(l.host.displayName, style: AppText.body(15, weight: FontWeight.w700)),
-                    subtitle: Text('${l.title} · ${l.viewers} watching', style: AppText.body(12.5, color: AppColors.textSecondary)),
-                    trailing: const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B)),
+                    leading: Avatar(
+                      name: l.host.displayName,
+                      avatarId: l.host.avatarId,
+                      photoUrl: l.host.photoUrl,
+                      size: 40,
+                    ),
+                    title: Text(
+                      l.host.displayName,
+                      style: AppText.body(15, weight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      '${l.title} · ${l.viewers} watching',
+                      style: AppText.body(12.5, color: AppColors.textSecondary),
+                    ),
+                    trailing: const Icon(
+                      Icons.bolt_rounded,
+                      color: Color(0xFFF59E0B),
+                    ),
                     onTap: () => Navigator.pop(ctx, l.id),
                   ),
               ],
@@ -299,14 +369,23 @@ Future<String?> pickPkSide(BuildContext context, PkController pk) {
             const SizedBox(height: 12),
             Row(
               children: [
-                for (final (s, color) in [(mine, const Color(0xFFEC4899)), (theirs, const Color(0xFF3B82F6))])
+                for (final (s, color) in [
+                  (mine, const Color(0xFFEC4899)),
+                  (theirs, const Color(0xFF3B82F6)),
+                ])
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: color, padding: const EdgeInsets.symmetric(vertical: 14)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                         onPressed: () => Navigator.pop(ctx, s.hostId),
-                        child: Text(s.hostName, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          s.hostName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ),

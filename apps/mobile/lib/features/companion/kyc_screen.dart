@@ -1245,9 +1245,12 @@ class _ReviewPageState extends ConsumerState<_ReviewPage> {
 /// One card listing each step with its status. Rows open the step when
 /// [onEdit] is given (read-only on the status screen).
 class _Checklist extends StatelessWidget {
-  const _Checklist({required this.s, this.onEdit});
+  const _Checklist({required this.s, this.onEdit, this.editable});
   final KycState s;
   final void Function(_Step)? onEdit;
+
+  /// Rows that open [onEdit]; null = all of them.
+  final Set<_Step>? editable;
 
   (String, String) _text(_Step st) => switch (st) {
     _Step.age => (
@@ -1292,8 +1295,9 @@ class _Checklist extends StatelessWidget {
     final done = _isDone(s, st);
     final redo = s.redo.contains(st.redo);
     final (title, detail) = _text(st);
+    final edit = onEdit != null && (editable?.contains(st) ?? true);
     return InkWell(
-      onTap: onEdit == null ? null : () => onEdit!(st),
+      onTap: edit ? () => onEdit!(st) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         child: Row(
@@ -1348,12 +1352,12 @@ class _Checklist extends StatelessWidget {
               )
             else if (done)
               const Icon(Icons.check_circle_rounded, color: _green, size: 22)
-            else if (onEdit != null)
+            else if (edit)
               Text(
                 'Add',
                 style: AppText.body(14, weight: FontWeight.w700, color: _mint),
               ),
-            if (onEdit != null) ...[
+            if (edit) ...[
               const SizedBox(width: 4),
               const Icon(
                 Icons.chevron_right_rounded,
@@ -1413,7 +1417,12 @@ class _StatusView extends StatelessWidget {
           style: AppText.body(14, color: AppColors.textMuted, height: 1.45),
         ),
         const SizedBox(height: 26),
-        _Checklist(s: s),
+        // UPI can change any time (not while a withdrawal is pending).
+        _Checklist(
+          s: s,
+          editable: const {_Step.upi},
+          onEdit: (_) => showChangeUpiSheet(context),
+        ),
         const SizedBox(height: 14),
         // PAN stays open after approval: it can be added any time.
         _PanCard(s: s, locked: !approved),
@@ -1622,6 +1631,134 @@ class _PanCardState extends ConsumerState<_PanCard> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+/// Change the payout UPI ID after verification (Earnings → Change, or the
+/// UPI row on the status page). The server refuses while a withdrawal is
+/// pending, and a change right before a payout is flagged for review.
+Future<void> showChangeUpiSheet(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF16142C),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const _ChangeUpiSheet(),
+    );
+
+class _ChangeUpiSheet extends ConsumerStatefulWidget {
+  const _ChangeUpiSheet();
+
+  @override
+  ConsumerState<_ChangeUpiSheet> createState() => _ChangeUpiSheetState();
+}
+
+class _ChangeUpiSheetState extends ConsumerState<_ChangeUpiSheet> {
+  final _upi = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _upi.dispose();
+    super.dispose();
+  }
+
+  bool get _valid => RegExp(
+    r'^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.]{1,63}$',
+  ).hasMatch(_upi.text.trim());
+
+  Future<void> _save() async {
+    setState(() => _busy = true);
+    final ok = await _run(
+      context,
+      ref,
+      (api) => api.companion.setUpi(SetUpiRequest(upiId: _upi.text.trim())),
+      ok: 'UPI ID changed',
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      ref.invalidate(earningsProvider);
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = ref.watch(kycProvider).valueOrNull?.upi.masked;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Change UPI ID', style: AppText.heading(20)),
+              const SizedBox(height: 6),
+              Text(
+                current == null
+                    ? 'Your withdrawals go to this UPI ID.'
+                    : 'Now paying to $current. Withdrawals after this go to the new ID.',
+                style: AppText.body(13.5, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _upi,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                onChanged: (_) => setState(() {}),
+                style: AppText.body(16),
+                decoration: InputDecoration(
+                  labelText: 'New UPI ID',
+                  hintText: 'yourname@okaxis',
+                  prefixIcon: const Icon(Icons.alternate_email_rounded),
+                  suffixIcon: _valid
+                      ? const Icon(Icons.check_circle_rounded, color: _green)
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: _amber,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Double-check it — money sent to a wrong UPI ID can\'t be pulled back. '
+                      'You can\'t change it while a withdrawal is being paid.',
+                      style: AppText.body(
+                        12.5,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              GradientButton(
+                gradient: _companion,
+                label: 'Save UPI ID',
+                loading: _busy,
+                onPressed: _valid ? _save : null,
+              ),
+            ],
+          ),
         ),
       ),
     );

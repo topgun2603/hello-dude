@@ -23,6 +23,8 @@ const FLAG_LABEL: Record<string, string> = {
   upi_changed_recently: "New UPI < 24 h",
   many_short_calls: "Many 1-min calls",
   earnings_spike: "Earnings 4× usual",
+  contact_sharing: "Shared contact in chat",
+  shared_device: "Phone used by many accounts",
 };
 const col = createColumnHelper<Features, AdminPayout>();
 

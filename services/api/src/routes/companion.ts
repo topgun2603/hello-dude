@@ -561,5 +561,13 @@ export async function riskFlags(c: DbClient, userId: string): Promise<string[]> 
   const strikes = (await c.query<{ n: number }>(
     `SELECT count(*)::int AS n FROM chat_violations WHERE sender_id = $1 AND created_at > now() - interval '30 days'`, [userId])).rows[0]!.n;
   if (strikes >= 3) flags.push("contact_sharing");
+  // One phone, many accounts: the most accounts seen on any phone she used.
+  const maxAccounts = await numberSetting(c, "fraud.device_max_accounts", 3);
+  const shared = (await c.query<{ n: number }>(
+    `SELECT COALESCE(max(n), 0)::int AS n FROM (
+       SELECT count(*) AS n FROM device_accounts d
+        WHERE d.device_hash IN (SELECT device_hash FROM device_accounts WHERE user_id = $1)
+        GROUP BY d.device_hash) x`, [userId])).rows[0]!.n;
+  if (shared >= maxAccounts) flags.push("shared_device");
   return flags;
 }

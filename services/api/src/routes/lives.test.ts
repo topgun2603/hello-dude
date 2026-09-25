@@ -216,6 +216,10 @@ describe("in the live", () => {
     await endPreview(w.liveId, w.viewerId);
     await join(w, true);
     expect((await call(h, "POST", `/v1/lives/${w.liveId}/messages`, { token: w.viewer, body: { body: "hi!" } })).statusCode).toBe(204);
+    // Someone joining later sees the recent chat.
+    const history = json<{ messages: { body: string; isHost: boolean }[] }>(
+      await call(h, "GET", `/v1/lives/${w.liveId}/messages`, { token: w.host }));
+    expect(history.messages.map((m) => [m.body, m.isHost])).toEqual([["hi!", false]]);
 
     const gift = (await h.db.query<{ id: number }>(`SELECT id FROM gifts WHERE is_active ORDER BY coins LIMIT 1`)).rows[0]!;
     const before = await balance(w.hostId, "earnings");

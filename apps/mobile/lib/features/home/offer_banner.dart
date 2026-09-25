@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
-import '../../widgets/common.dart';
+import 'buy_coins.dart';
 import 'home_data.dart';
 import 'home_screen.dart' show CoinIcon;
 
@@ -101,10 +101,7 @@ class _OfferBannerState extends ConsumerState<OfferBanner> {
                 backgroundColor: const Color(0xFF1C1917),
                 foregroundColor: Colors.white,
               ),
-              onPressed: () => showError(
-                context,
-                'Buying coins with Google Play is switched on in the next update',
-              ),
+              onPressed: () => buyCoins(context, ref, offer),
               child: const Text('Claim'),
             ),
             IconButton(

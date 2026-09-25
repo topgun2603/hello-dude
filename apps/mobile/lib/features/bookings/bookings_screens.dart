@@ -553,7 +553,6 @@ class _Section extends StatelessWidget {
     "Didn't happen · coins returned",
     AppColors.textSecondary,
   ),
-  _ => (s.toString(), AppColors.textSecondary),
 };
 
 class _BookingCard extends ConsumerStatefulWidget {

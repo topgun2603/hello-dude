@@ -1,9 +1,13 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { tx } from "../db/pool.js";
 import { bearer, me, requireAuth } from "../auth/guard.js";
 import { ApiError } from "../errors.js";
 import { assertLanguagesActive, LanguageCode, loadProfile, Profile } from "./profile.js";
+
+/** The raw ANDROID_ID never reaches the database. */
+export const deviceHash = (deviceId: string) => createHash("sha256").update(`hd-device:${deviceId}`).digest("hex");
 
 export const meRoutes: FastifyPluginAsyncZod = async (app) => {
   const { db } = app.deps;
@@ -73,8 +77,11 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
     schema: {
       tags: ["profile"],
       security: bearer,
-      summary: "Register this phone's FCM token for call and message pushes",
-      body: z.object({ fcmToken: z.string().min(20).max(4096) }),
+      summary: "Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)",
+      body: z.object({
+        fcmToken: z.string().min(20).max(4096),
+        deviceId: z.string().min(4).max(256).optional().describe("Android ANDROID_ID; stored only as a hash"),
+      }),
       response: { 204: z.null() },
     },
   }, async (req, reply) => {
@@ -83,6 +90,13 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
        ON CONFLICT (fcm_token) DO UPDATE SET user_id = EXCLUDED.user_id, updated_at = now()`,
       [req.body.fcmToken, me(req).userId],
     );
+    if (req.body.deviceId) {
+      await db.query(
+        `INSERT INTO device_accounts (device_hash, user_id) VALUES ($1, $2)
+         ON CONFLICT (device_hash, user_id) DO UPDATE SET last_seen = now()`,
+        [deviceHash(req.body.deviceId), me(req).userId],
+      );
+    }
     return reply.status(204).send(null);
   });
 };

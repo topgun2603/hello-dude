@@ -148,7 +148,7 @@ Class | Method | HTTP request | Description
 *BookingsApi* | [**startBooking**](doc//BookingsApi.md#startbooking) | **POST** /v1/bookings/{id}/start | Caller starts the booked call (from 5 min before to 15 min after). The hold comes back and the call is billed per minute.
 *CallsApi* | [**acceptCall**](doc//CallsApi.md#acceptcall) | **POST** /v1/calls/{id}/accept | Companion answers a ringing call and gets their join token
 *CallsApi* | [**endCall**](doc//CallsApi.md#endcall) | **POST** /v1/calls/{id}/end | Hang up (either side). Safe to repeat.
-*CallsApi* | [**flagVideoFrame**](doc//CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (the other person's video)
+*CallsApi* | [**flagVideoFrame**](doc//CallsApi.md#flagvideoframe) | **POST** /v1/calls/{id}/moderation | Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)
 *CallsApi* | [**getCall**](doc//CallsApi.md#getcall) | **GET** /v1/calls/{id} | Call details: every billed minute, refunds included
 *CallsApi* | [**listCalls**](doc//CallsApi.md#listcalls) | **GET** /v1/calls | Call history, newest first, with filters and totals for the same filters. Page with `before` = createdAt of the last call seen.
 *CallsApi* | [**listGifts**](doc//CallsApi.md#listgifts) | **GET** /v1/gifts | Gifts a caller can send during a call
@@ -226,6 +226,7 @@ Class | Method | HTTP request | Description
 *LivesApi* | [**joinLive**](doc//LivesApi.md#joinlive) | **POST** /v1/lives/{id}/join | Watch. The first visit has a free preview. After it, send pay=true to keep watching at the per-minute price (the first minute is charged now, then one each minute you stay). 402 PAY_TO_WATCH / INSUFFICIENT_BALANCE otherwise.
 *LivesApi* | [**leaveLive**](doc//LivesApi.md#leavelive) | **POST** /v1/lives/{id}/leave | Viewer: stop watching (stops the per-minute charge)
 *LivesApi* | [**listLives**](doc//LivesApi.md#listlives) | **GET** /v1/lives | Live now, a page at a time, with the total and the price per minute. sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.
+*LivesApi* | [**liveChatHistory**](doc//LivesApi.md#livechathistory) | **GET** /v1/lives/{id}/messages | Recent chat of a live (last 50, oldest first) so late joiners see the conversation
 *LivesApi* | [**liveHeartbeat**](doc//LivesApi.md#liveheartbeat) | **POST** /v1/lives/{id}/heartbeat | Viewer: still watching (every 20 s). Returns your access.
 *LivesApi* | [**liveHostHeartbeat**](doc//LivesApi.md#livehostheartbeat) | **POST** /v1/lives/{id}/host-heartbeat | Host: still live (every 15 s). Returns viewers and what this live has earned.
 *LivesApi* | [**sendLiveGift**](doc//LivesApi.md#sendlivegift) | **POST** /v1/lives/{id}/gifts | Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.
@@ -243,7 +244,7 @@ Class | Method | HTTP request | Description
 *ProfileApi* | [**deleteAccount**](doc//ProfileApi.md#deleteaccount) | **POST** /v1/me/delete | Permanently delete my account. Unused coins are forfeited; companions must withdraw earnings first.
 *ProfileApi* | [**getMe**](doc//ProfileApi.md#getme) | **GET** /v1/me | 
 *ProfileApi* | [**listLanguages**](doc//ProfileApi.md#listlanguages) | **GET** /v1/languages | Languages users can pick
-*ProfileApi* | [**registerDevice**](doc//ProfileApi.md#registerdevice) | **PUT** /v1/devices | Register this phone's FCM token for call and message pushes
+*ProfileApi* | [**registerDevice**](doc//ProfileApi.md#registerdevice) | **PUT** /v1/devices | Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)
 *ProfileApi* | [**updateMe**](doc//ProfileApi.md#updateme) | **PATCH** /v1/me | Update name, avatar or languages (primary language must be in `languages`)
 *PromotionsApi* | [**getCurrentPromotion**](doc//PromotionsApi.md#getcurrentpromotion) | **GET** /v1/promotions/current | The offer to show in the app-open bottom sheet, if any
 *PromotionsApi* | [**logPromotionEvent**](doc//PromotionsApi.md#logpromotionevent) | **POST** /v1/promotions/{id}/events | The app showed the sheet, or the user tapped its button (drives frequency and admin stats)
@@ -265,10 +266,12 @@ Class | Method | HTTP request | Description
 *SafetyApi* | [**reportUser**](doc//SafetyApi.md#reportuser) | **POST** /v1/reports | Report someone (also blocks them). Pass callId when reporting a call.
 *SafetyApi* | [**unblockUser**](doc//SafetyApi.md#unblockuser) | **DELETE** /v1/blocks/{userId} | 
 *VipApi* | [**getVip**](doc//VipApi.md#getvip) | **GET** /v1/vip | My VIP status, the perks and the plans on sale
+*WalletApi* | [**createRazorpayOrder**](doc//WalletApi.md#createrazorpayorder) | **POST** /v1/payments/razorpay/order | Start buying a coin pack with Razorpay: creates the order the app opens checkout for
 *WalletApi* | [**getCoinHistory**](doc//WalletApi.md#getcoinhistory) | **GET** /v1/wallet/history | Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
 *WalletApi* | [**getWallet**](doc//WalletApi.md#getwallet) | **GET** /v1/wallet | 
 *WalletApi* | [**listCoinPackages**](doc//WalletApi.md#listcoinpackages) | **GET** /v1/coin-packages | Coin packs for sale (Google Play SKUs). Signed-in new users also get the first-recharge offer.
 *WalletApi* | [**listLedger**](doc//WalletApi.md#listledger) | **GET** /v1/wallet/ledger | Every coin in or out, newest first. Page with `before` = last id seen.
+*WalletApi* | [**verifyRazorpayPayment**](doc//WalletApi.md#verifyrazorpaypayment) | **POST** /v1/payments/razorpay/verify | After checkout: the server checks Razorpay's signature and the payment, then credits the coins (once)
 
 
 ## Documentation For Models
@@ -492,6 +495,7 @@ Class | Method | HTTP request | Description
  - [CreateBooking201Response](doc//CreateBooking201Response.md)
  - [CreateBookingRequest](doc//CreateBookingRequest.md)
  - [CreateGroupRequest](doc//CreateGroupRequest.md)
+ - [CreateRazorpayOrderRequest](doc//CreateRazorpayOrderRequest.md)
  - [DeleteAccount200Response](doc//DeleteAccount200Response.md)
  - [DeleteAccountRequest](doc//DeleteAccountRequest.md)
  - [Favourite](doc//Favourite.md)
@@ -588,6 +592,10 @@ Class | Method | HTTP request | Description
  - [LiveCardHost](doc//LiveCardHost.md)
  - [LiveCardInput](doc//LiveCardInput.md)
  - [LiveCardInputHost](doc//LiveCardInputHost.md)
+ - [LiveChatHistory](doc//LiveChatHistory.md)
+ - [LiveChatHistoryInput](doc//LiveChatHistoryInput.md)
+ - [LiveChatHistoryInputMessagesInner](doc//LiveChatHistoryInputMessagesInner.md)
+ - [LiveChatHistoryMessagesInner](doc//LiveChatHistoryMessagesInner.md)
  - [LiveHostHeartbeat200Response](doc//LiveHostHeartbeat200Response.md)
  - [LiveJoin](doc//LiveJoin.md)
  - [LiveJoinInput](doc//LiveJoinInput.md)
@@ -625,8 +633,12 @@ Class | Method | HTTP request | Description
  - [ProfileInputCompanion](doc//ProfileInputCompanion.md)
  - [Promotion](doc//Promotion.md)
  - [PromotionInput](doc//PromotionInput.md)
+ - [PurchaseResult](doc//PurchaseResult.md)
+ - [PurchaseResultInput](doc//PurchaseResultInput.md)
  - [RaiseHandRequest](doc//RaiseHandRequest.md)
  - [RateCallRequest](doc//RateCallRequest.md)
+ - [RazorpayOrder](doc//RazorpayOrder.md)
+ - [RazorpayOrderInput](doc//RazorpayOrderInput.md)
  - [RefreshTokensRequest](doc//RefreshTokensRequest.md)
  - [RefundRequest](doc//RefundRequest.md)
  - [RefundRequestInput](doc//RefundRequestInput.md)
@@ -683,6 +695,7 @@ Class | Method | HTTP request | Description
  - [UserBadgeInput](doc//UserBadgeInput.md)
  - [VerifyCallConnected200Response](doc//VerifyCallConnected200Response.md)
  - [VerifyOtpRequest](doc//VerifyOtpRequest.md)
+ - [VerifyRazorpayPaymentRequest](doc//VerifyRazorpayPaymentRequest.md)
  - [VipPlan](doc//VipPlan.md)
  - [VipPlanInput](doc//VipPlanInput.md)
 

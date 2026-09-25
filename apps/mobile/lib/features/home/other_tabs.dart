@@ -13,6 +13,7 @@ import '../vip/vip_screen.dart';
 import '../../widgets/love_loader.dart';
 import '../history/coin_history.dart'
     show CoinHistoryPreview, coinHistoryPreviewProvider;
+import 'buy_coins.dart';
 import 'coin_shop.dart';
 import 'home_data.dart';
 import 'home_screen.dart' show CoinIcon, CoinStack;
@@ -126,18 +127,8 @@ class WalletTab extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         packs.when(
-          data: (list) => CoinShop(
-            packs: list,
-            onBuy: (_) => ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Buying coins with Google Play is switched on in the next update',
-                  ),
-                ),
-              ),
-          ),
+          data: (list) =>
+              CoinShop(packs: list, onBuy: (p) => buyCoins(context, ref, p)),
           loading: () => const Padding(
             padding: EdgeInsets.all(24),
             child: Center(

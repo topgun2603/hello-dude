@@ -13,6 +13,41 @@
       }
     },
     "schemas": {
+      "PurchaseResultInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "credited",
+              "pending",
+              "failed"
+            ]
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins added by this purchase (0 unless credited)"
+          },
+          "balance": {
+            "nullable": true,
+            "description": "Coin balance after crediting",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "coins",
+          "balance",
+          "message"
+        ]
+      },
       "GiftInput": {
         "type": "object",
         "properties": {
@@ -5404,6 +5439,52 @@
           "paiseEarned"
         ]
       },
+      "RazorpayOrderInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins incl. bonus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "description": "Prefill for checkout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "keyId",
+          "amountPaise",
+          "currency",
+          "coins",
+          "name",
+          "description",
+          "phone"
+        ]
+      },
       "PayoutInput": {
         "type": "object",
         "properties": {
@@ -5531,6 +5612,44 @@
           "status",
           "createdAt",
           "conversationId"
+        ]
+      },
+      "LiveChatHistoryInput": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "isHost": {
+                  "type": "boolean"
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "displayName",
+                "body",
+                "isHost",
+                "at"
+              ]
+            }
+          }
+        },
+        "required": [
+          "messages"
         ]
       },
       "AdminLiveInput": {
@@ -5861,6 +5980,42 @@
           "currentUrl",
           "hasSelfie"
         ]
+      },
+      "PurchaseResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "credited",
+              "pending",
+              "failed"
+            ]
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins added by this purchase (0 unless credited)"
+          },
+          "balance": {
+            "nullable": true,
+            "description": "Coin balance after crediting",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "coins",
+          "balance",
+          "message"
+        ],
+        "additionalProperties": false
       },
       "Gift": {
         "type": "object",
@@ -11535,6 +11690,53 @@
         ],
         "additionalProperties": false
       },
+      "RazorpayOrder": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Coins incl. bonus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "description": "Prefill for checkout",
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "keyId",
+          "amountPaise",
+          "currency",
+          "coins",
+          "name",
+          "description",
+          "phone"
+        ],
+        "additionalProperties": false
+      },
       "Payout": {
         "type": "object",
         "properties": {
@@ -11672,6 +11874,46 @@
           "status",
           "createdAt",
           "conversationId"
+        ],
+        "additionalProperties": false
+      },
+      "LiveChatHistory": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "isHost": {
+                  "type": "boolean"
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "displayName",
+                "body",
+                "isHost",
+                "at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "messages"
         ],
         "additionalProperties": false
       },
@@ -12479,7 +12721,7 @@
     "/v1/devices": {
       "put": {
         "operationId": "registerDevice",
-        "summary": "Register this phone's FCM token for call and message pushes",
+        "summary": "Register this phone's FCM token for call and message pushes (and its id, for the shared-phone fraud check)",
         "tags": [
           "profile"
         ],
@@ -12494,6 +12736,12 @@
                     "type": "string",
                     "minLength": 20,
                     "maxLength": 4096
+                  },
+                  "deviceId": {
+                    "description": "Android ANDROID_ID; stored only as a hash",
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 256
                   }
                 },
                 "required": [
@@ -13705,6 +13953,106 @@
                     "recording"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/razorpay/order": {
+      "post": {
+        "operationId": "createRazorpayOrder",
+        "summary": "Start buying a coin pack with Razorpay: creates the order the app opens checkout for",
+        "tags": [
+          "wallet"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sku": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sku"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RazorpayOrder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/razorpay/verify": {
+      "post": {
+        "operationId": "verifyRazorpayPayment",
+        "summary": "After checkout: the server checks Razorpay's signature and the payment, then credits the coins (once)",
+        "tags": [
+          "wallet"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "signature": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "orderId",
+                  "paymentId",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseResult"
                 }
               }
             }
@@ -17597,7 +17945,7 @@
     "/v1/calls/{id}/moderation": {
       "post": {
         "operationId": "flagVideoFrame",
-        "summary": "Report a video frame the app's on-device check flagged as nudity (the other person's video)",
+        "summary": "Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)",
         "tags": [
           "calls"
         ],
@@ -17619,6 +17967,10 @@
                     "minimum": 0,
                     "maximum": 1,
                     "description": "On-device model confidence"
+                  },
+                  "own": {
+                    "description": "true = the frame is from the sender's own camera (the app checks its own video)",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -21342,6 +21694,42 @@
                   "enum": [
                     null
                   ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "liveChatHistory",
+        "summary": "Recent chat of a live (last 50, oldest first) so late joiners see the conversation",
+        "tags": [
+          "lives"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveChatHistory"
                 }
               }
             }

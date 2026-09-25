@@ -228,6 +228,7 @@ doc/ConversationOther.md
 doc/CreateBooking201Response.md
 doc/CreateBookingRequest.md
 doc/CreateGroupRequest.md
+doc/CreateRazorpayOrderRequest.md
 doc/DeleteAccount200Response.md
 doc/DeleteAccountRequest.md
 doc/Favourite.md
@@ -328,6 +329,10 @@ doc/LiveCard.md
 doc/LiveCardHost.md
 doc/LiveCardInput.md
 doc/LiveCardInputHost.md
+doc/LiveChatHistory.md
+doc/LiveChatHistoryInput.md
+doc/LiveChatHistoryInputMessagesInner.md
+doc/LiveChatHistoryMessagesInner.md
 doc/LiveHostHeartbeat200Response.md
 doc/LiveJoin.md
 doc/LiveJoinInput.md
@@ -370,8 +375,12 @@ doc/ProfileInputCompanion.md
 doc/Promotion.md
 doc/PromotionInput.md
 doc/PromotionsApi.md
+doc/PurchaseResult.md
+doc/PurchaseResultInput.md
 doc/RaiseHandRequest.md
 doc/RateCallRequest.md
+doc/RazorpayOrder.md
+doc/RazorpayOrderInput.md
 doc/RefreshTokensRequest.md
 doc/RefundRequest.md
 doc/RefundRequestInput.md
@@ -430,6 +439,7 @@ doc/UserBadge.md
 doc/UserBadgeInput.md
 doc/VerifyCallConnected200Response.md
 doc/VerifyOtpRequest.md
+doc/VerifyRazorpayPaymentRequest.md
 doc/VipApi.md
 doc/VipPlan.md
 doc/VipPlanInput.md
@@ -683,6 +693,7 @@ lib/model/conversation_other.dart
 lib/model/create_booking201_response.dart
 lib/model/create_booking_request.dart
 lib/model/create_group_request.dart
+lib/model/create_razorpay_order_request.dart
 lib/model/delete_account200_response.dart
 lib/model/delete_account_request.dart
 lib/model/favourite.dart
@@ -779,6 +790,10 @@ lib/model/live_card.dart
 lib/model/live_card_host.dart
 lib/model/live_card_input.dart
 lib/model/live_card_input_host.dart
+lib/model/live_chat_history.dart
+lib/model/live_chat_history_input.dart
+lib/model/live_chat_history_input_messages_inner.dart
+lib/model/live_chat_history_messages_inner.dart
 lib/model/live_host_heartbeat200_response.dart
 lib/model/live_join.dart
 lib/model/live_join_input.dart
@@ -816,8 +831,12 @@ lib/model/profile_input.dart
 lib/model/profile_input_companion.dart
 lib/model/promotion.dart
 lib/model/promotion_input.dart
+lib/model/purchase_result.dart
+lib/model/purchase_result_input.dart
 lib/model/raise_hand_request.dart
 lib/model/rate_call_request.dart
+lib/model/razorpay_order.dart
+lib/model/razorpay_order_input.dart
 lib/model/refresh_tokens_request.dart
 lib/model/refund_request.dart
 lib/model/refund_request_input.dart
@@ -874,6 +893,11 @@ lib/model/user_badge.dart
 lib/model/user_badge_input.dart
 lib/model/verify_call_connected200_response.dart
 lib/model/verify_otp_request.dart
+lib/model/verify_razorpay_payment_request.dart
 lib/model/vip_plan.dart
 lib/model/vip_plan_input.dart
 pubspec.yaml
+test/live_chat_history_input_messages_inner_test.dart
+test/live_chat_history_input_test.dart
+test/live_chat_history_messages_inner_test.dart
+test/live_chat_history_test.dart

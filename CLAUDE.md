@@ -130,10 +130,13 @@ Reference implementation: `services/api/src/billing/billing-engine.reference.ts`
   shots 0.86–0.98; and the phone blurs/pauses + reports only after **2 flagged frames in a row**
   (~4–8 s) instead of the first. Applies to calls, live viewers, live hosts and group video.
   Next step if still noisy: replace the classifier with NudeNet (detects exposed body parts).
-  **1:1 calls use silent mode** (owner, 2026-09-24): the check still runs on the other person's
-  video but never blurs — flagged frames (2 in a row, max one per 30 s) only go to the admin
-  Moderation queue; the companion still has report, block and call recording. **Lives and group
-  video keep blurring/pausing** (public, many viewers).
+  **1:1 calls use silent mode** (owner, 2026-09-24): never blurs — flagged frames (2 in a row,
+  max one per 30 s) only go to the admin Moderation queue; the companion still has report, block
+  and call recording. **Lives and group video keep blurring/pausing** (public, many viewers).
+  **Every phone checks only its OWN camera** (fixed 2026-09-25 after crashes): grabbing frames of a
+  remote track makes flutter_webrtc call PeerConnection.getTransceivers(), which disposes the
+  transceivers LiveKit still uses and crashes the app mid-call. So 1:1 calls flag the sender's own
+  frames (`own: true`), and live viewers no longer check the host (the host's phone does).
 - Chat: block/flag phone numbers, UPI IDs and payment requests (regex); LLM
   moderation for abusive Tamil/Indic text later.
 - Fraud rules (jobs + SQL): many sub-70-second calls, UPI change right before

@@ -401,3 +401,40 @@ class FloatingHeart extends StatelessWidget {
     );
   }
 }
+
+/// Chat over live video: newest line at the bottom and the list sticks there as
+/// messages arrive; swipe up to read older ones. The top edge fades out so the
+/// video stays visible.
+class LiveChatOverlay extends StatelessWidget {
+  const LiveChatOverlay({
+    super.key,
+    required this.count,
+    required this.itemBuilder,
+    this.height = 220,
+  });
+  final int count;
+
+  /// Builds line [index], 0 = oldest.
+  final Widget Function(BuildContext context, int index) itemBuilder;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: height,
+    child: ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (rect) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, Colors.white],
+        stops: [0, 0.18],
+      ).createShader(rect),
+      child: ListView.builder(
+        reverse: true,
+        padding: const EdgeInsets.only(top: 28),
+        itemCount: count,
+        itemBuilder: (context, i) => itemBuilder(context, count - 1 - i),
+      ),
+    ),
+  );
+}

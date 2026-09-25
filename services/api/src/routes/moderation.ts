@@ -25,11 +25,12 @@ export const moderationRoutes: FastifyPluginAsyncZod = async (app) => {
     schema: {
       tags: ["calls"],
       security: bearer,
-      summary: "Report a video frame the app's on-device check flagged as nudity (the other person's video)",
+      summary: "Report a video frame the app's on-device check flagged as nudity (own camera, or the other person's video)",
       params: z.object({ id: z.uuid() }),
       body: z.object({
         frameBase64: base64File(MAX_FRAME_BYTES).describe("JPEG of the flagged frame, at most 400 KB"),
         score: z.number().min(0).max(1).describe("On-device model confidence"),
+        own: z.boolean().optional().describe("true = the frame is from the sender's own camera (the app checks its own video)"),
       }),
       response: {
         201: z.object({ accepted: z.literal(true) }),
@@ -52,7 +53,7 @@ export const moderationRoutes: FastifyPluginAsyncZod = async (app) => {
     const first = await redis.set(`mod:${req.params.id}:${userId}`, "1", "EX", FLAG_COOLDOWN_S, "NX");
     if (!first) return reply.status(202).send({ accepted: false });
 
-    const subject = call.caller_id === userId ? call.companion_id : call.caller_id;
+    const subject = req.body.own ? userId : call.caller_id === userId ? call.companion_id : call.caller_id;
     const id = (await db.query<{ id: string }>(`SELECT gen_random_uuid() AS id`)).rows[0]!.id;
     const key = `moderation/${id}`;
     await store.put(key, b);

@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../data/errors.dart';
 import '../../data/session.dart';
 import 'companion_data.dart';
+import 'kyc_screen.dart' show showChangeUpiSheet;
 
 const _green = Color(0xFF10B981);
 
@@ -156,7 +157,9 @@ class _Body extends ConsumerWidget {
                   ),
                   TextButton(
                     style: TextButton.styleFrom(foregroundColor: Colors.white),
-                    onPressed: () => context.push('/kyc'),
+                    onPressed: () => d.upi == null
+                        ? context.push('/kyc')
+                        : showChangeUpiSheet(context),
                     child: Text(d.upi == null ? 'Add' : 'Change'),
                   ),
                 ],

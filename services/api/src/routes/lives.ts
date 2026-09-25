@@ -242,6 +242,9 @@ const Join = z.object({
 type LiveRow = { id: string; host_id: string; title: string; language_code: string; livekit_room: string; status: "live" | "ended";
   started_at: Date };
 
+/** Live chat lines kept for late joiners. */
+const LIVE_CHAT_KEEP = 50;
+
 async function rateLimited(redis: Redis, key: string, seconds: number) {
   return !(await redis.set(key, "1", "EX", seconds, "NX"));
 }
@@ -564,7 +567,26 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     if (await rateLimited(redis, `live:msg:${l.id}:${userId}`, 2)) throw new ApiError(429, "TOO_FAST", "Slow down a little");
     const name = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [userId])).rows[0]!.display_name;
     await broadcastLive(db, events, l.id, { kind: "chat", userId, displayName: name, body: req.body.body, isHost: a.kind === "host" });
+    // Recent lines for people who join later (Redis only; gone 6 h after the last message).
+    const key = `live:chat:${l.id}`;
+    await redis.multi()
+      .rpush(key, JSON.stringify({ userId, displayName: name, body: req.body.body, isHost: a.kind === "host", at: new Date().toISOString() }))
+      .ltrim(key, -LIVE_CHAT_KEEP, -1)
+      .expire(key, 6 * 3600)
+      .exec();
     return reply.status(204).send(null);
+  });
+
+  app.get("/lives/:id/messages", {
+    preHandler: requireAuth("caller", "companion"),
+    schema: { ...base, summary: "Recent chat of a live (last 50, oldest first) so late joiners see the conversation",
+      params: z.object({ id: z.uuid() }),
+      response: { 200: z.object({ messages: z.array(z.object({
+        userId: z.string(), displayName: z.string(), body: z.string(), isHost: z.boolean(), at: z.string(),
+      })) }).meta({ id: "LiveChatHistory" }) } },
+  }, async (req) => {
+    const raw = await redis.lrange(`live:chat:${req.params.id}`, 0, -1);
+    return { messages: raw.map((r) => JSON.parse(r) as { userId: string; displayName: string; body: string; isHost: boolean; at: string }) };
   });
 
   app.post("/lives/:id/react", {

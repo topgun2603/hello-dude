@@ -14,25 +14,42 @@ class RegisterDeviceRequest {
   /// Returns a new [RegisterDeviceRequest] instance.
   RegisterDeviceRequest({
     required this.fcmToken,
+    this.deviceId,
   });
 
   String fcmToken;
 
+  /// Android ANDROID_ID; stored only as a hash
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? deviceId;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is RegisterDeviceRequest &&
-    other.fcmToken == fcmToken;
+    other.fcmToken == fcmToken &&
+    other.deviceId == deviceId;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (fcmToken.hashCode);
+    (fcmToken.hashCode) +
+    (deviceId == null ? 0 : deviceId!.hashCode);
 
   @override
-  String toString() => 'RegisterDeviceRequest[fcmToken=$fcmToken]';
+  String toString() => 'RegisterDeviceRequest[fcmToken=$fcmToken, deviceId=$deviceId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'fcmToken'] = this.fcmToken;
+    if (this.deviceId != null) {
+      json[r'deviceId'] = this.deviceId;
+    } else {
+      json[r'deviceId'] = null;
+    }
     return json;
   }
 
@@ -54,6 +71,7 @@ class RegisterDeviceRequest {
 
       return RegisterDeviceRequest(
         fcmToken: mapValueOfType<String>(json, r'fcmToken')!,
+        deviceId: mapValueOfType<String>(json, r'deviceId'),
       );
     }
     return null;

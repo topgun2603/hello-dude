@@ -1,0 +1,17 @@
+# HTTPS for the API (app + webhooks + WebSocket) and the admin panel. Caddy gets and renews
+# Let's Encrypt certificates by itself once the DNS names point at this server.
+{$API_DOMAIN} {
+	encode gzip
+	# Test builds of the Android app for testers (staging): /download/hellodude.apk
+	handle_path /download/* {
+		root * /srv/downloads
+		header Content-Type application/vnd.android.package-archive
+		file_server
+	}
+	reverse_proxy api:9000
+}
+
+{$ADMIN_DOMAIN} {
+	encode gzip
+	reverse_proxy admin:9001
+}

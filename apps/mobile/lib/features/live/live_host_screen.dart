@@ -176,6 +176,23 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
 
   String get liveId => widget.join.live.id;
 
+  /// Chat so far, e.g. when the host reopens the app during a live.
+  Future<void> _loadChatHistory() async {
+    final api = ref.read(apiProvider);
+    try {
+      final h = await api.call(() => api.lives.liveChatHistory(liveId));
+      if (!mounted || h.messages.isEmpty) return;
+      final seen = {for (final l in _lines) '${l.name}|${l.body}'};
+      setState(
+        () => _lines.insertAll(0, [
+          for (final m in h.messages)
+            if (!seen.contains('${m.displayName}|${m.body}'))
+              _Line(m.displayName, m.body),
+        ]),
+      );
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -185,6 +202,7 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
         if (mounted) setState(() {});
       });
     _events = ref.read(realtimeProvider).forLive(liveId).listen(_onEvent);
+    unawaited(_loadChatHistory());
     _heartbeat = Timer.periodic(const Duration(seconds: 15), (_) => _beat());
     _clock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
@@ -390,12 +408,24 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
   Future<void> _challenge() async {
     final api = ref.read(apiProvider);
     try {
-      final opponent = await pickPkOpponent(context, api, widget.join.live.host.id);
+      final opponent = await pickPkOpponent(
+        context,
+        api,
+        widget.join.live.host.id,
+      );
       if (opponent == null || !mounted) return;
-      await api.call(() => api.lives.challengePk(liveId, ChallengePkRequest(opponentLiveId: opponent)));
+      await api.call(
+        () => api.lives.challengePk(
+          liveId,
+          ChallengePkRequest(opponentLiveId: opponent),
+        ),
+      );
       if (!mounted) return;
       setState(() => _challenging = true);
-      showError(context, 'Challenge sent — waiting up to 30 s for her to accept.');
+      showError(
+        context,
+        'Challenge sent — waiting up to 30 s for her to accept.',
+      );
       Timer(const Duration(seconds: 32), () {
         if (mounted && !_pk.active) setState(() => _challenging = false);
       });
@@ -419,8 +449,14 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
             '${b.a.hostName} challenges you to a 5-minute battle. Both lives show side by side; whoever gets more gift coins wins a PK winner badge.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Accept')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Accept'),
+            ),
           ],
         );
       },
@@ -439,7 +475,7 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
 
   void _add(_Line l) => setState(() {
     _lines.add(l);
-    if (_lines.length > 40) _lines.removeAt(0);
+    if (_lines.length > 200) _lines.removeAt(0);
   });
 
   Future<void> _send() async {
@@ -594,7 +630,9 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
                       ? VideoTrackRenderer(
                           cam,
                           fit: VideoViewFit.cover,
-                          mirrorMode: _front ? VideoViewMirrorMode.mirror : VideoViewMirrorMode.off,
+                          mirrorMode: _front
+                              ? VideoViewMirrorMode.mirror
+                              : VideoViewMirrorMode.off,
                         )
                       : const ColoredBox(color: Color(0xFF16142C)),
                 ),
@@ -646,43 +684,45 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final l
-                              in _lines.length > 7
-                                  ? _lines.sublist(_lines.length - 7)
-                                  : _lines)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: l.highlight
-                                      ? const Color(0x66B45309)
-                                      : Colors.black38,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: '${l.name} ',
-                                        style: AppText.body(
-                                          13,
-                                          weight: FontWeight.w800,
-                                          color: const Color(0xFFF9A8D4),
+                          LiveChatOverlay(
+                            count: _lines.length,
+                            itemBuilder: (context, i) {
+                              final l = _lines[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: l.highlight
+                                        ? const Color(0x66B45309)
+                                        : Colors.black38,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: '${l.name} ',
+                                          style: AppText.body(
+                                            13,
+                                            weight: FontWeight.w800,
+                                            color: const Color(0xFFF9A8D4),
+                                          ),
                                         ),
-                                      ),
-                                      TextSpan(
-                                        text: l.body,
-                                        style: AppText.body(13),
-                                      ),
-                                    ],
+                                        TextSpan(
+                                          text: l.body,
+                                          style: AppText.body(13),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -730,7 +770,9 @@ class _LiveHostScreenState extends ConsumerState<LiveHostScreen> {
                         _Round(
                           icon: Icons.bolt_rounded,
                           label: 'PK battle',
-                          onTap: _pk.showing || _challenging ? null : _challenge,
+                          onTap: _pk.showing || _challenging
+                              ? null
+                              : _challenge,
                         ),
                         const SizedBox(width: 8),
                         _Round(

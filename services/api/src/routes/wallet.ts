@@ -43,7 +43,7 @@ const HistorySummary = z.object({
 const KIND_SQL = `CASE
     WHEN g.type = 'call_debit' THEN 'call'
     WHEN g.type = 'gift_debit' THEN 'gift'
-    WHEN g.type = 'purchase' THEN 'purchase'
+    WHEN g.type IN ('purchase', 'purchase_reversal') THEN 'purchase'
     WHEN g.type = 'refund' THEN 'refund'
     WHEN g.type IN ('booking_hold', 'booking_release') THEN 'booking'
     WHEN g.type = 'adjustment' THEN 'adjustment'
@@ -179,7 +179,7 @@ export const walletRoutes: FastifyPluginAsyncZod = async (app) => {
         switch (r.kind) {
           case "call": return [`${callWord} with ${who(r.other_name)}`, `${r.minutes} min`];
           case "gift": return [r.note ?? "Gift", r.other_name ? `To ${r.other_name}` : null];
-          case "purchase": return ["Coins added", "Google Play"];
+          case "purchase": return amount < 0 ? ["Purchase refunded", r.note] : ["Coins added", r.note ?? "Google Play"];
           case "refund": return ["Refund", r.other_name ? `${callWord} with ${r.other_name}` : r.note];
           case "booking": return [amount < 0 ? "Held for a booked call" : "Booked call hold released", r.note];
           case "adjustment": return [amount > 0 ? "Coins from support" : "Correction by support", r.note];

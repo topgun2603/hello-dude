@@ -20,6 +20,7 @@ Method | HTTP request | Description
 [**joinLive**](LivesApi.md#joinlive) | **POST** /v1/lives/{id}/join | Watch. The first visit has a free preview. After it, send pay=true to keep watching at the per-minute price (the first minute is charged now, then one each minute you stay). 402 PAY_TO_WATCH / INSUFFICIENT_BALANCE otherwise.
 [**leaveLive**](LivesApi.md#leavelive) | **POST** /v1/lives/{id}/leave | Viewer: stop watching (stops the per-minute charge)
 [**listLives**](LivesApi.md#listlives) | **GET** /v1/lives | Live now, a page at a time, with the total and the price per minute. sort: for_you (favourites, your language, busiest), popular or new; favourites=true shows only favourites; q searches names and titles.
+[**liveChatHistory**](LivesApi.md#livechathistory) | **GET** /v1/lives/{id}/messages | Recent chat of a live (last 50, oldest first) so late joiners see the conversation
 [**liveHeartbeat**](LivesApi.md#liveheartbeat) | **POST** /v1/lives/{id}/heartbeat | Viewer: still watching (every 20 s). Returns your access.
 [**liveHostHeartbeat**](LivesApi.md#livehostheartbeat) | **POST** /v1/lives/{id}/host-heartbeat | Host: still live (every 15 s). Returns viewers and what this live has earned.
 [**sendLiveGift**](LivesApi.md#sendlivegift) | **POST** /v1/lives/{id}/gifts | Send the host a gift (same prices and companion share as call gifts). Safe to retry with the same clientRef. During a PK battle, toHostId may name the other host.
@@ -551,6 +552,53 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ListLives200Response**](ListLives200Response.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **liveChatHistory**
+> LiveChatHistory liveChatHistory(id)
+
+Recent chat of a live (last 50, oldest first) so late joiners see the conversation
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = LivesApi();
+final id = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final result = api_instance.liveChatHistory(id);
+    print(result);
+} catch (e) {
+    print('Exception when calling LivesApi->liveChatHistory: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **String**|  | 
+
+### Return type
+
+[**LiveChatHistory**](LiveChatHistory.md)
 
 ### Authorization
 

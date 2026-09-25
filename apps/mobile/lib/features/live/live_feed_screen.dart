@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 
@@ -16,7 +15,6 @@ import '../../data/errors.dart';
 import '../../data/ids.dart';
 import '../../data/realtime.dart';
 import '../../data/session.dart';
-import '../../moderation/nudity_detector.dart';
 import '../../moderation/video_moderator.dart';
 import '../../widgets/common.dart';
 import '../call/gift_sheet.dart' show giftsProvider;
@@ -336,11 +334,14 @@ class _LivePageState extends ConsumerState<LivePage> {
       roomOptions: const RoomOptions(adaptiveStream: true, dynacast: true),
     );
     _room = room;
+    unawaited(_loadChatHistory());
     _roomEvents = room.createListener()
       ..on<TrackSubscribedEvent>((e) {
         if (e.track is VideoTrack && mounted) {
           setState(() => _video = e.track as VideoTrack);
-          _startModeration();
+          // No viewer-side nudity check: grabbing frames of a remote track makes
+          // flutter_webrtc dispose LiveKit's transceivers and crash the app. The
+          // host's phone checks its own camera (pauses it + flags the frame).
         }
       })
       ..on<TrackUnsubscribedEvent>((e) {
@@ -384,6 +385,24 @@ class _LivePageState extends ConsumerState<LivePage> {
     }
   }
 
+  /// Recent chat from before this viewer joined (the server keeps the last 50).
+  Future<void> _loadChatHistory() async {
+    final api = ref.read(apiProvider);
+    try {
+      final h = await api.call(() => api.lives.liveChatHistory(c.id));
+      if (!mounted || h.messages.isEmpty) return;
+      final seen = {for (final l in _chat) '${l.name}|${l.body}'};
+      final older = [
+        for (final m in h.messages)
+          if (!seen.contains('${m.displayName}|${m.body}'))
+            _ChatLine(m.displayName, m.body, host: m.isHost),
+      ];
+      setState(() => _chat.insertAll(0, older));
+    } catch (_) {
+      /* chat history is a nicety; live chat still works */
+    }
+  }
+
   void _lock() {
     _disconnect();
     if (mounted && _phase != _Phase.ended)
@@ -403,7 +422,7 @@ class _LivePageState extends ConsumerState<LivePage> {
               host: e['isHost'] == true,
             ),
           );
-          if (_chat.length > 40) _chat.removeAt(0);
+          if (_chat.length > 200) _chat.removeAt(0);
         });
       case 'gift':
         final g = (e['gift'] as Map?) ?? const {};
@@ -442,44 +461,6 @@ class _LivePageState extends ConsumerState<LivePage> {
     Timer(const Duration(milliseconds: 1800), () {
       if (mounted) setState(() => _hearts.remove(id));
     });
-  }
-
-  /// Same on-device check as video calls: blur at once and send that one frame.
-  Future<void> _startModeration() async {
-    if (_moderator != null) return;
-    final NudityDetector detector;
-    try {
-      detector = await sharedNudityDetector();
-    } catch (_) {
-      return;
-    }
-    if (!mounted || _moderator != null) return;
-    final api = ref.read(apiProvider);
-    _moderator =
-        VideoModerator(
-            detector: detector,
-            capture: () async {
-              final t = _video;
-              if (t == null) return null;
-              return (await t.mediaStreamTrack.captureFrame()).asUint8List();
-            },
-            report: (jpeg, score) async {
-              final small = await compute(shrinkForUpload, jpeg);
-              await api.call(
-                () => api.lives.flagLiveFrame(
-                  c.id,
-                  FlagLiveFrameRequest(
-                    frameBase64: base64Encode(small),
-                    score: score,
-                  ),
-                ),
-              );
-            },
-          )
-          ..addListener(() {
-            if (mounted) setState(() {});
-          })
-          ..start();
   }
 
   // --- actions ---------------------------------------------------------------------
@@ -595,7 +576,11 @@ class _LivePageState extends ConsumerState<LivePage> {
       await api.call(
         () => api.lives.sendLiveGift(
           c.id,
-          SendLiveGiftRequest(giftId: picked.id, clientRef: uuidV4(), toHostId: toHost),
+          SendLiveGiftRequest(
+            giftId: picked.id,
+            clientRef: uuidV4(),
+            toHostId: toHost,
+          ),
         ),
       );
       ref.invalidate(walletProvider);
@@ -989,7 +974,6 @@ class _ChatList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shown = lines.length > 6 ? lines.sublist(lines.length - 6) : lines;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 90, 8),
       child: Column(
@@ -1002,45 +986,50 @@ class _ChatList extends StatelessWidget {
             style: AppText.heading(16),
           ),
           const SizedBox(height: 8),
-          for (final l in shown)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${l.name} ',
-                        style: AppText.body(
-                          13,
-                          weight: FontWeight.w800,
-                          color: l.host
-                              ? const Color(0xFFFDE68A)
-                              : const Color(0xFFF9A8D4),
+          LiveChatOverlay(
+            count: lines.length,
+            itemBuilder: (context, i) {
+              final l = lines[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${l.name} ',
+                          style: AppText.body(
+                            13,
+                            weight: FontWeight.w800,
+                            color: l.host
+                                ? const Color(0xFFFDE68A)
+                                : const Color(0xFFF9A8D4),
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: l.body,
-                        style: AppText.body(
-                          13,
-                          color: l.system
-                              ? const Color(0xFFFDE68A)
-                              : Colors.white,
+                        TextSpan(
+                          text: l.body,
+                          style: AppText.body(
+                            13,
+                            color: l.system
+                                ? const Color(0xFFFDE68A)
+                                : Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );

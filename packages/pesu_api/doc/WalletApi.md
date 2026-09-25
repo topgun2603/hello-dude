@@ -9,11 +9,60 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**createRazorpayOrder**](WalletApi.md#createrazorpayorder) | **POST** /v1/payments/razorpay/order | Start buying a coin pack with Razorpay: creates the order the app opens checkout for
 [**getCoinHistory**](WalletApi.md#getcoinhistory) | **GET** /v1/wallet/history | Coin history for people: one line per call (all its minutes), gifts, top-ups, bonuses, refunds; with totals for the same filters
 [**getWallet**](WalletApi.md#getwallet) | **GET** /v1/wallet | 
 [**listCoinPackages**](WalletApi.md#listcoinpackages) | **GET** /v1/coin-packages | Coin packs for sale (Google Play SKUs). Signed-in new users also get the first-recharge offer.
 [**listLedger**](WalletApi.md#listledger) | **GET** /v1/wallet/ledger | Every coin in or out, newest first. Page with `before` = last id seen.
+[**verifyRazorpayPayment**](WalletApi.md#verifyrazorpaypayment) | **POST** /v1/payments/razorpay/verify | After checkout: the server checks Razorpay's signature and the payment, then credits the coins (once)
 
+
+# **createRazorpayOrder**
+> RazorpayOrder createRazorpayOrder(createRazorpayOrderRequest)
+
+Start buying a coin pack with Razorpay: creates the order the app opens checkout for
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = WalletApi();
+final createRazorpayOrderRequest = CreateRazorpayOrderRequest(); // CreateRazorpayOrderRequest | 
+
+try {
+    final result = api_instance.createRazorpayOrder(createRazorpayOrderRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling WalletApi->createRazorpayOrder: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **createRazorpayOrderRequest** | [**CreateRazorpayOrderRequest**](CreateRazorpayOrderRequest.md)|  | 
+
+### Return type
+
+[**RazorpayOrder**](RazorpayOrder.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getCoinHistory**
 > GetCoinHistory200Response getCoinHistory(filter, from, to, cursor, limit)
@@ -197,6 +246,53 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **verifyRazorpayPayment**
+> PurchaseResult verifyRazorpayPayment(verifyRazorpayPaymentRequest)
+
+After checkout: the server checks Razorpay's signature and the payment, then credits the coins (once)
+
+### Example
+```dart
+import 'package:pesu_api/api.dart';
+// TODO Configure HTTP Bearer authorization: bearer
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('bearer').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = WalletApi();
+final verifyRazorpayPaymentRequest = VerifyRazorpayPaymentRequest(); // VerifyRazorpayPaymentRequest | 
+
+try {
+    final result = api_instance.verifyRazorpayPayment(verifyRazorpayPaymentRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling WalletApi->verifyRazorpayPayment: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **verifyRazorpayPaymentRequest** | [**VerifyRazorpayPaymentRequest**](VerifyRazorpayPaymentRequest.md)|  | 
+
+### Return type
+
+[**PurchaseResult**](PurchaseResult.md)
+
+### Authorization
+
+[bearer](../README.md#bearer)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

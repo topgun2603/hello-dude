@@ -334,6 +334,57 @@ describe("earnings and withdrawals", () => {
     expect(await balance(h, a.userId, "earnings")).toBe(50_000);
   });
 
+  it("RazorpayX: 'processing' payouts are finished by the webhook or the worker check, once", async () => {
+    const { razorpayXResult } = await import("../payouts/provider.js");
+    const { checkProcessingPayouts } = await import("../payouts/finish.js");
+    const { hmacHex } = await import("../payments/razorpay.js");
+    const states = new Map<string, string>();
+    const fake = {
+      name: "razorpayx-fake",
+      async send() { states.set("pout_1", "processing"); return razorpayXResult({ id: "pout_1", status: "processing" }); },
+      async status(ref: string) { return razorpayXResult({ id: ref, status: states.get(ref) ?? "processing" }); },
+      webhookSignatureOk: (raw: string, sig: string | undefined) => hmacHex("x-secret", raw) === sig,
+    };
+    const original = h.app.deps.payouts;
+    h.app.deps.payouts = fake;
+    try {
+      const a = await withEarnings(50_000);
+      const p = json<{ id: string }>(await call(h, "POST", "/v1/companion/payouts", { token: a.token, body: {} }));
+      const r = json<{ status: string; providerRef: string }>(await call(h, "POST", `/v1/admin/payouts/${p.id}/approve`, { token: adminToken }));
+      expect(r).toMatchObject({ status: "processing", providerRef: "pout_1" });
+      await h.db.query(`UPDATE payouts SET approved_at = now() - interval '10 minutes' WHERE id = $1`, [p.id]);
+
+      // Worker: still processing at the bank → nothing changes.
+      const deps = { db: h.db, push: h.push, events: h.events };
+      expect(await checkProcessingPayouts(deps, fake)).toEqual({ paid: 0, failed: 0 });
+
+      // Webhook: bad signature refused; a failure (reversed) returns the money once.
+      const hook = (event: string, status: string, secret = "x-secret") => {
+        const payload = JSON.stringify({ event, payload: { payout: { entity: { id: "pout_1", status, reference_id: p.id } } } });
+        return h.app.inject({ method: "POST", url: "/v1/webhooks/razorpayx", payload,
+          headers: { "content-type": "application/json", "x-razorpay-signature": hmacHex(secret, payload) } });
+      };
+      expect((await hook("payout.reversed", "reversed", "wrong")).statusCode).toBe(401);
+      expect((await hook("payout.reversed", "reversed")).statusCode).toBe(200);
+      expect((await hook("payout.reversed", "reversed")).statusCode).toBe(200);
+      expect(await balance(h, a.userId, "earnings")).toBe(50_000);
+
+      // Another withdrawal, confirmed by the worker check this time.
+      const p2 = json<{ id: string }>(await call(h, "POST", "/v1/companion/payouts", { token: a.token, body: {} }));
+      states.set("pout_1", "processing");
+      await call(h, "POST", `/v1/admin/payouts/${p2.id}/approve`, { token: adminToken });
+      await h.db.query(`UPDATE payouts SET approved_at = now() - interval '10 minutes', provider_ref = 'pout_2' WHERE id = $1`, [p2.id]);
+      states.set("pout_2", "processed");
+      expect(await checkProcessingPayouts(deps, fake)).toEqual({ paid: 1, failed: 0 });
+      expect(await checkProcessingPayouts(deps, fake)).toEqual({ paid: 0, failed: 0 });
+      expect(await balance(h, a.userId, "earnings")).toBe(0);
+      const notes = (await h.db.query<{ type: string }>(`SELECT type FROM notifications WHERE user_id = $1 AND type LIKE 'payout_%' ORDER BY id`, [a.userId])).rows;
+      expect(notes.map((n) => n.type)).toEqual(["payout_failed", "payout_paid"]);
+    } finally {
+      h.app.deps.payouts = original;
+    }
+  });
+
   it("an admin rejection goes back to the balance", async () => {
     const a = await withEarnings(50_000);
     const p = json<{ id: string }>(await call(h, "POST", "/v1/companion/payouts", { token: a.token, body: {} }));
@@ -378,5 +429,29 @@ describe("encrypted storage", () => {
     sealed[sealed.length - 1]! ^= 1;
     expect(() => open(key, sealed)).toThrow();
     await expect(localEncryptedStore(dir, key).put("../escape", secret)).rejects.toThrow(/bad object key/);
+  });
+});
+
+describe("shared-phone fraud check", () => {
+  it("flags a withdrawal when her phone has been used by 3+ accounts; the raw id is never stored", async () => {
+    const { riskFlags } = await import("./companion.js");
+    const companion = await signUp(h, "9876511111");
+    const register = (token: string, deviceId: string, fcm: string) => call(h, "PUT", "/v1/devices", {
+      token, body: { fcmToken: fcm.padEnd(24, "x"), deviceId },
+    });
+    const companionId = companion.userId;
+    expect((await register(companion.accessToken, "android-abc123", "fcm-a")).statusCode).toBe(204);
+    expect(await tx(h.db, (c) => riskFlags(c, companionId))).not.toContain("shared_device");
+
+    const second = await signUp(h, "9876511112");
+    await register(second.accessToken, "android-abc123", "fcm-a"); // same phone, same push token
+    expect(await tx(h.db, (c) => riskFlags(c, companionId))).not.toContain("shared_device");
+    const third = await signUp(h, "9876511113");
+    await register(third.accessToken, "android-abc123", "fcm-b");
+    expect(await tx(h.db, (c) => riskFlags(c, companionId))).toContain("shared_device");
+
+    const stored = (await h.db.query<{ device_hash: string }>(`SELECT DISTINCT device_hash FROM device_accounts`)).rows;
+    expect(stored).toHaveLength(1);
+    expect(stored[0]!.device_hash).toMatch(/^[0-9a-f]{64}$/);
   });
 });

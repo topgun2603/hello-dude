@@ -10,7 +10,7 @@ import { ensureWallets, post } from "../src/billing/ledger.js";
 import { ONLINE_SET } from "../src/billing/engine.js";
 
 const cfg = loadConfig();
-if (cfg.NODE_ENV === "production") throw new Error("seed-dev must never run in production");
+if (cfg.NODE_ENV === "production" && !cfg.STAGING) throw new Error("seed-dev must never run in production");
 
 const DEMO = [
   { name: "Priya", phone: "+916000000001", avatar: 1, langs: ["ta", "en"] },

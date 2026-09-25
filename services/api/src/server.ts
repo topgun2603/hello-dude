@@ -9,8 +9,9 @@ import { BillingEngine } from "./billing/engine.js";
 import { liveKitRooms, liveKitWebhooks, redisUserEvents } from "./billing/ports.js";
 import { fcmPushSender, logPushSender } from "./push.js";
 import { readFile } from "node:fs/promises";
-import { localEncryptedStore, parseKey } from "./storage.js";
-import { simulatedPayouts } from "./payouts/provider.js";
+import { parseKey, storeFromConfig } from "./storage.js";
+import { payoutsFromConfig } from "./payouts/provider.js";
+import { razorpayGateway } from "./payments/razorpay.js";
 import { disabledRecorder } from "./recording.js";
 
 const cfg = loadConfig();
@@ -36,19 +37,23 @@ const otpSender = isDev ? devOtpSender(console.log) : msg91OtpSender(cfg.MSG91_A
 
 const app = await buildApp({
   db, redis, engine, rooms, events,
-  otp: new OtpService(redis, otpSender, cfg.JWT_SECRET, isDev ? cfg.DEV_OTP_CODE : undefined),
+  otp: new OtpService(redis, otpSender, cfg.JWT_SECRET, isDev ? cfg.DEV_OTP_CODE : undefined,
+    isDev && cfg.DEV_OTP_NUMBERS.length ? (phone) => cfg.DEV_OTP_NUMBERS.includes(phone.replace(/^\+91/, "")) : undefined),
   tokens: new TokenService(db, cfg.JWT_SECRET),
   push,
   // Mobile app sign-in (Firebase Auth phone). Without the key the app falls back to the dev OTP.
   phoneAuth: cfg.FIREBASE_SERVICE_ACCOUNT_PATH ? firebasePhoneVerifier(cfg.FIREBASE_SERVICE_ACCOUNT_PATH) : undefined,
   webhooks: liveKitWebhooks(cfg.LIVEKIT_KEY, cfg.LIVEKIT_SECRET),
-  store: localEncryptedStore(cfg.KYC_STORAGE_DIR, kycKey),
+  store: storeFromConfig(cfg, kycKey),
   kycKey,
   uidaiCerts,
-  payouts: simulatedPayouts(),
+  payouts: payoutsFromConfig(cfg),
+  razorpay: cfg.RAZORPAY_KEY_ID && cfg.RAZORPAY_KEY_SECRET
+    ? razorpayGateway(cfg.RAZORPAY_KEY_ID, cfg.RAZORPAY_KEY_SECRET, cfg.RAZORPAY_WEBHOOK_SECRET)
+    : undefined,
   recorder: disabledRecorder,
   liveKitUrl: cfg.LIVEKIT_URL.replace(/^http/, "ws"),
-  devTools: isDev,
+  devTools: isDev && cfg.NODE_ENV !== "production",
   legal: {
     companyName: cfg.LEGAL_COMPANY_NAME, companyAddress: cfg.LEGAL_COMPANY_ADDRESS, supportEmail: cfg.LEGAL_SUPPORT_EMAIL,
     grievanceOfficerName: cfg.LEGAL_GRIEVANCE_OFFICER_NAME, grievanceEmail: cfg.LEGAL_GRIEVANCE_EMAIL,
@@ -65,7 +70,11 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 
 await app.listen({ port: cfg.PORT, host: "0.0.0.0" });
-if (isDev) app.log.warn(`DEV OTP mode: every number accepts ${cfg.DEV_OTP_CODE}`);
+if (isDev) {
+  app.log.warn(cfg.DEV_OTP_NUMBERS.length
+    ? `DEV OTP mode for ${cfg.DEV_OTP_NUMBERS.length} test number(s) only`
+    : `DEV OTP mode: every number accepts ${cfg.DEV_OTP_CODE}`);
+}
 if (!uidaiCerts.length) app.log.warn("UIDAI_CERT_PATHS is empty: Aadhaar uploads will be refused");
 app.log.warn("Payouts use the SIMULATOR (no real money moves)");
 app.log.warn("Report recording is DISABLED until LiveKit Egress + S3 are configured");

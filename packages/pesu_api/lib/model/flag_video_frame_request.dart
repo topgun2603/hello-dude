@@ -15,6 +15,7 @@ class FlagVideoFrameRequest {
   FlagVideoFrameRequest({
     required this.frameBase64,
     required this.score,
+    this.own,
   });
 
   /// JPEG of the flagged frame, at most 400 KB
@@ -26,24 +27,40 @@ class FlagVideoFrameRequest {
   /// Maximum value: 1
   num score;
 
+  /// true = the frame is from the sender's own camera (the app checks its own video)
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? own;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is FlagVideoFrameRequest &&
     other.frameBase64 == frameBase64 &&
-    other.score == score;
+    other.score == score &&
+    other.own == own;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (frameBase64.hashCode) +
-    (score.hashCode);
+    (score.hashCode) +
+    (own == null ? 0 : own!.hashCode);
 
   @override
-  String toString() => 'FlagVideoFrameRequest[frameBase64=$frameBase64, score=$score]';
+  String toString() => 'FlagVideoFrameRequest[frameBase64=$frameBase64, score=$score, own=$own]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'frameBase64'] = this.frameBase64;
       json[r'score'] = this.score;
+    if (this.own != null) {
+      json[r'own'] = this.own;
+    } else {
+      json[r'own'] = null;
+    }
     return json;
   }
 
@@ -68,6 +85,7 @@ class FlagVideoFrameRequest {
       return FlagVideoFrameRequest(
         frameBase64: mapValueOfType<String>(json, r'frameBase64')!,
         score: num.parse('${json[r'score']}'),
+        own: mapValueOfType<bool>(json, r'own'),
       );
     }
     return null;

@@ -92,5 +92,15 @@ The Dart API client in `packages/pesu_api` is generated — after API changes ru
 - [x] v2 — notifications inbox, daily check-in, referrals + share card, chat (safety filter),
       scheduled calls (coin hold), VIP (admin grant; Play purchase pending), companion levels +
       bonuses, voice rooms, admin Engagement page
-- [ ] Next — admin roles (admin/moderator/finance), fraud detection jobs
-- [ ] Needs accounts — Play Billing + UCB/Razorpay, MSG91, LiveKit Cloud, S3/R2, RazorpayX/Cashfree
+- [x] Admin roles (RBAC: Admin / Moderator / Finance + custom) and fraud flags on withdrawals
+      (new UPI, short calls, earnings spike, contact sharing, one phone with many accounts)
+- [x] Razorpay coin purchases inside the app (order → checkout → server verifies signature + payment,
+      webhook fallback, refunds take coins back) — `RAZORPAY_KEY_ID/SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+- [x] RazorpayX UPI payouts (webhook + worker check for "processing") — `RAZORPAYX_ACCOUNT_NUMBER`
+      (simulator without it; refused in production)
+- [x] S3 / R2 storage for KYC files (encrypted before upload) — `S3_BUCKET` etc. (local disk without it)
+- [x] Deploy: Dockerfiles (API/worker, admin), `infra/docker-compose.prod.yml` + Caddy HTTPS,
+      GitHub Actions CI (API tests, admin build, Flutter analyze/test, image builds)
+- [ ] Needs Play Console — Play Billing + the User Choice Billing choice screen, reporting Razorpay
+      sales to Google (external transactions API), VIP subscriptions
+- [ ] Needs accounts — MSG91 (admin OTP), LiveKit Cloud, live Razorpay/RazorpayX keys, S3/R2 bucket

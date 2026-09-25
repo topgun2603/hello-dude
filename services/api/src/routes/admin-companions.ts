@@ -14,6 +14,7 @@ import { goOffline } from "../presence.js";
 import { maskUpi } from "./companion.js";
 import { academyProgress } from "./academy.js";
 import { notify, rupeesText } from "../notifications.js";
+import { finishPayout } from "../payouts/finish.js";
 import { KYC_ITEMS, voiceRequired } from "./companion.js";
 import { ensureWallets } from "../billing/ledger.js";
 import { numberSetting } from "../settings.js";
@@ -60,7 +61,7 @@ const AdminPayout = z.object({
 }).meta({ id: "AdminPayout" });
 
 export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
-  const { db, redis, store, payouts: provider } = app.deps;
+  const { db, redis, store } = app.deps;
   const base = { tags: ["admin"], security: bearer };
 
   // -------------------------------------------------------------------------
@@ -301,28 +302,11 @@ export const adminCompanionRoutes: FastifyPluginAsyncZod = async (app) => {
       return p;
     });
     const name = (await db.query<{ display_name: string }>(`SELECT display_name FROM users WHERE id = $1`, [claimed.companion_id])).rows[0]!.display_name;
-    const result = await provider.send({ payoutId: claimed.id, upiId: claimed.upi_id, amountPaise: Number(claimed.net_paise), name })
+    const result = await app.deps.payouts.send({ payoutId: claimed.id, upiId: claimed.upi_id, amountPaise: Number(claimed.net_paise), name })
       .catch((e: Error) => ({ status: "failed" as const, reason: `Provider error: ${e.message}` }));
 
-    // 2. Record the outcome.
-    await tx(db, async (c) => {
-      if (result.status === "failed") {
-        await c.query(`UPDATE payouts SET status = 'failed', failure_reason = $2, processed_at = now() WHERE id = $1`, [claimed.id, result.reason]);
-        await reverse(c, claimed, "Withdrawal failed, returned to balance");
-      } else {
-        await c.query(
-          `UPDATE payouts SET status = $2::payout_status, provider_ref = $3,
-                  processed_at = CASE WHEN $2::text = 'paid' THEN now() END WHERE id = $1`,
-          [claimed.id, result.status, result.providerRef]);
-      }
-    });
-    const net = Number(claimed.net_paise);
-    if (result.status === "failed") {
-      await notify(app.deps, claimed.companion_id, { type: "payout_failed", title: "Withdrawal failed",
-        body: `${rupeesText(Number(claimed.gross_paise))} is back in your earnings. Check your UPI ID and try again.` });
-    } else if (result.status === "paid") {
-      await notify(app.deps, claimed.companion_id, { type: "payout_paid", title: `${rupeesText(net)} sent to your UPI`, body: "Your withdrawal is complete." });
-    }
+    // 2. Record the outcome (paid / failed now, or processing until the webhook or worker confirms).
+    await finishPayout(app.deps, claimed.id, result);
     const row = (await db.query(
       `SELECT p.*, u.display_name, cp.kyc_status FROM payouts p JOIN users u ON u.id = p.companion_id
          JOIN companion_profiles cp ON cp.user_id = p.companion_id WHERE p.id = $1`, [claimed.id])).rows[0];

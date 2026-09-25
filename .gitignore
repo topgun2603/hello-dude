@@ -25,3 +25,7 @@ service_account.json
 *service-account*.json
 # Firebase app config (API key); download from the Firebase console, see README
 apps/mobile/android/app/google-services.json
+
+# Production secrets for infra/docker-compose.prod.yml
+infra/secrets/
+!infra/.env.production.example

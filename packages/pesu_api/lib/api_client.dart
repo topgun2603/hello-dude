@@ -621,6 +621,8 @@ class ApiClient {
           return CreateBookingRequest.fromJson(value);
         case 'CreateGroupRequest':
           return CreateGroupRequest.fromJson(value);
+        case 'CreateRazorpayOrderRequest':
+          return CreateRazorpayOrderRequest.fromJson(value);
         case 'DeleteAccount200Response':
           return DeleteAccount200Response.fromJson(value);
         case 'DeleteAccountRequest':
@@ -813,6 +815,14 @@ class ApiClient {
           return LiveCardInput.fromJson(value);
         case 'LiveCardInputHost':
           return LiveCardInputHost.fromJson(value);
+        case 'LiveChatHistory':
+          return LiveChatHistory.fromJson(value);
+        case 'LiveChatHistoryInput':
+          return LiveChatHistoryInput.fromJson(value);
+        case 'LiveChatHistoryInputMessagesInner':
+          return LiveChatHistoryInputMessagesInner.fromJson(value);
+        case 'LiveChatHistoryMessagesInner':
+          return LiveChatHistoryMessagesInner.fromJson(value);
         case 'LiveHostHeartbeat200Response':
           return LiveHostHeartbeat200Response.fromJson(value);
         case 'LiveJoin':
@@ -887,10 +897,18 @@ class ApiClient {
           return Promotion.fromJson(value);
         case 'PromotionInput':
           return PromotionInput.fromJson(value);
+        case 'PurchaseResult':
+          return PurchaseResult.fromJson(value);
+        case 'PurchaseResultInput':
+          return PurchaseResultInput.fromJson(value);
         case 'RaiseHandRequest':
           return RaiseHandRequest.fromJson(value);
         case 'RateCallRequest':
           return RateCallRequest.fromJson(value);
+        case 'RazorpayOrder':
+          return RazorpayOrder.fromJson(value);
+        case 'RazorpayOrderInput':
+          return RazorpayOrderInput.fromJson(value);
         case 'RefreshTokensRequest':
           return RefreshTokensRequest.fromJson(value);
         case 'RefundRequest':
@@ -1003,6 +1021,8 @@ class ApiClient {
           return VerifyCallConnected200Response.fromJson(value);
         case 'VerifyOtpRequest':
           return VerifyOtpRequest.fromJson(value);
+        case 'VerifyRazorpayPaymentRequest':
+          return VerifyRazorpayPaymentRequest.fromJson(value);
         case 'VipPlan':
           return VipPlan.fromJson(value);
         case 'VipPlanInput':

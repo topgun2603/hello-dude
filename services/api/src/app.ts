@@ -19,6 +19,8 @@ import { registerRealtime } from "./realtime.js";
 import type { PushSender } from "./push.js";
 import type { ObjectStore } from "./storage.js";
 import type { PayoutProvider } from "./payouts/provider.js";
+import type { RazorpayGateway } from "./payments/razorpay.js";
+import { paymentRoutes, razorpayWebhookRoutes } from "./routes/payments.js";
 import type { Recorder } from "./recording.js";
 import { giftRoutes } from "./routes/gifts.js";
 import { favouriteRoutes } from "./routes/favourites.js";
@@ -71,6 +73,8 @@ export interface AppDeps {
   kycKey: Buffer;
   uidaiCerts: string[];
   payouts: PayoutProvider;
+  /** Razorpay coin purchases; unset = buying coins is off (503 PAYMENTS_OFF). */
+  razorpay?: RazorpayGateway;
   recorder: Recorder;
   liveKitUrl: string;
   logger?: boolean;
@@ -117,6 +121,8 @@ export const OPERATION_IDS: Record<string, string> = {
   "PUT /v1/devices": "registerDevice",
   "GET /v1/wallet": "getWallet",
   "GET /v1/coin-packages": "listCoinPackages",
+  "POST /v1/payments/razorpay/order": "createRazorpayOrder",
+  "POST /v1/payments/razorpay/verify": "verifyRazorpayPayment",
   "GET /v1/wallet/ledger": "listLedger",
   "GET /v1/companions/online": "listOnlineCompanions",
   "POST /v1/companion/presence": "setPresence",
@@ -184,6 +190,7 @@ export const OPERATION_IDS: Record<string, string> = {
   "POST /v1/lives/:id/heartbeat": "liveHeartbeat",
   "POST /v1/lives/:id/leave": "leaveLive",
   "POST /v1/lives/:id/messages": "sendLiveMessage",
+  "GET /v1/lives/:id/messages": "liveChatHistory",
   "POST /v1/lives/:id/react": "sendLiveReaction",
   "POST /v1/lives/:id/gifts": "sendLiveGift",
   "POST /v1/lives/:id/moderation": "flagLiveFrame",
@@ -389,6 +396,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     await v1.register(callRoutes);
     await v1.register(safetyRoutes);
     await v1.register(webhookRoutes);
+    await v1.register(razorpayWebhookRoutes);
+    await v1.register(paymentRoutes);
     await v1.register(adminRoutes);
     await v1.register(adminCompanionRoutes);
     await v1.register(companionOnboardingRoutes);
